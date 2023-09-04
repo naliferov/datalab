@@ -1,21 +1,21 @@
-//dynamic dependency change
-
+//automatic and dynamic dependency management, or relation manager
 const deps = {};
+
+class Relation {}
+class FSObject {}
 
 class UObject {
 
-  constructor(s, ulid) {
+  constructor(s, ulid, pathRelation) {
     this.conf = {
       useFS: false,
       createFileWithExtention: false,
     }
     this.s = s;
     this.ulid = ulid;
+    this.pathRelation = pathRelation;
   }
-
-  setPath(path) {
-    this.path = pathFactory(path);
-  }
+  setPath(path) { this.path = this.pathRelation(path) }
 
   //move this out of stream
   async createFSPathIfNotExists(path) {
@@ -61,37 +61,24 @@ class UObject {
 
   async useFS() {
     //create more consistent code logic between createFSPath and getDataFromFS
-    //get path
 
-    //const fsPath = this.getFSPath(this.path);
+    return;
 
     if (!this.data) {
       //deal with dir
-      //GET DATA FROM FS PATH
       const FSData = await this.getDataFromFS();
       if (FSData) {
         this.data = FSData.v;
         this.type = FSData.type;
       }
-
       //try to LOAD FROM .js
-      if (!this.data) {
-        //const jsFsPath = [...fsPath];
-        //jsFsPath[jsFsPath.length - 1] = jsFsPath[jsFsPath.length - 1] + '.js';
-        //const js = await this.getDataFromFS(jsFsPath, 'txt');
-        //this.data = js;
-        //this.setDataToFS(fsPath);
-      }
+      //try to create with dataDefault
+      if (this.data) return;
 
-      //try create with dataDefault
-      if (!this.data) {
-
-        if (this.dataDefault) {
-          this.data = this.dataDefault;
-        } else {
-          s.l('No data and no dataDefault, so file not created.');
-          return;
-        }
+      if (this.dataDefault) {
+        this.data = this.dataDefault;
+      } else {
+        console.log('No data and no dataDefault, so file not created.');
       }
     }
 
@@ -139,7 +126,6 @@ class UObject {
       }
     }
 
-    //todo REMOVE
     return;
 
     if (this.data === undefined) {
@@ -168,31 +154,18 @@ class UObject {
   get() { return this.data; }
 }
 
-class Relation {}
+export const createObjectFactory = async (s, ulid, pathRelationFactory) => {
 
-const pathRelation = path => {
+  const root = (await s.nodeFS.readFile('./root.json')).toString();
+  //add to root, remove from root
+  //after that more simple way. test.key1.key2. get test from root, get key1, from test and futher
 
-  const pathArr = s.pathToArr(path ? path : '*');
-  return {
-    arr: pathArr,
-    toArr() { return this.arr },
-    toDirPath() {
-      if (this.arr.length <= 1) return;
-      return pathRelation(this.arr.slice(0, -1));
-    },
-    toFsPath() { return pathRelation(['state', ...this.arr]); },
-    toStr() { return this.arr.join('/'); },
-  }
-}
-
-const factory = (s, ulid) => {
-
-  const objectFactory = async ({ path, type, dataDefault, conf = {} }) => {
+  const ObjectFactory = async ({ path, type, dataDefault, conf = {} }) => {
 
     let v;
-    const pathRelationObject = pathRelation(path);
+    const pathRelation = pathRelationFactory(path);
     if (path) {
-      v = s.find(pathRelationObject.toArr());
+      v = s.find(pathRelation.toArr());
     } else {
       v = s;
     }
@@ -204,12 +177,12 @@ const factory = (s, ulid) => {
     const u = new UObject(s, ulid);
     u[s.sys.sym.TYPE_STREAM] = true;
 
-    u.path = pathRelationObject;
+    u.path = pathRelation;
     u.isWorking = false;
     u.type = type;
     u.data = v;
     u.dataDefault = dataDefault;
-    //stream.fn = undefined;
+    u.fn = undefined;
     u.conf = conf;
     u.objectsInternal = new Map; //callback, fs, http, ws, ssh and etc.
     u.objectsConnected = new Set;
@@ -218,7 +191,5 @@ const factory = (s, ulid) => {
     return u;
   };
 
-  return objectFactory;
+  return ObjectFactory;
 }
-
-export { factory };

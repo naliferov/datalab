@@ -25,10 +25,10 @@
     writable: true, configurable: true, enumerable: false,
     value: (o, k, v) => Object.defineProperty(o, k, { writable: true, configurable: true, enumerable: false, value: v })
   });
-  s.d('l', console.log);
   s.isObject = d => typeof d === 'object' && !Array.isArray(d) && d !== null;
   s.d('isStr', str => typeof str === 'string');
-  s.d('pathToArr', path => Array.isArray(path) ? path : path.split('.'));
+  s.l = console.log;
+  s.pathToArr = path => Array.isArray(path) ? path : path.split('.');
   s.d('find', (path, nodeForSearch) => {
     let node = s;
     if (s.isObject(nodeForSearch)) node = nodeForSearch;
@@ -224,12 +224,6 @@
     }
   });
 
-  if (!s.u) {
-    const {ulid} = await import('ulid');
-    const { factory } = await import('./core/core.js');
-    s.u = factory(s, ulid);
-  }
-
   //GLOBAL PUB SUB
   s.defObjectProp(sys, 'eventHandlers', {});
   globalThis.e = new Proxy(() => { }, {
@@ -389,6 +383,17 @@
     list = list.filter(i => !ignore.includes(i));
     return list.length === 0;
   });
+
+  if (!s.u) {
+    const {ulid} = await import('ulid');
+
+    const { createObjectFactory } = await import('./core/core.js');
+
+    const { createPathRelationFactory } = await import('./core/pathRelation.js');
+    const pathRelationFactory = createPathRelationFactory(s.pathToArr);
+
+    s.u = await createObjectFactory(s, ulid, pathRelationFactory);
+  }
 
   const cliArgs = s.parseCliArgs(s.process.argv);
   if (cliArgs[0] === 'set') {
