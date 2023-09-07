@@ -10,8 +10,8 @@
   sys.sym.FN ??= Symbol('fn');
   sys.sym.IS_EMPTY ??= Symbol('isEmptyNode');
   sys.sym.IS_LOADED_FROM_DISC ??= Symbol('isLoadedFromDisc');
+  sys.sym.TYPE_OBJECT ??= Symbol('typeObject');
   sys.sym.TYPE_PATH ??= Symbol('typePath');
-  sys.sym.TYPE_STREAM ??= Symbol('typeStream');
 
   Object.defineProperty(s, 'd', {
     writable: true, configurable: true, enumerable: false,
@@ -284,15 +284,15 @@
     return args;
   });
 
-  s.d('process', (await import('node:process')).default);
+  s.process = (await import('node:process')).default;
   s.d('processStop', () => { s.l('stop process ', s.process.pid); s.process.exit(0); });
   //s.def('processRestart', () => { s.l('stop process ', s.process.pid); s.process.exit(0); });
   s.d('nodeCrypto', await import('node:crypto'));
-  s.d('nodeFS', (await import('node:fs')).promises);
-  s.d('fsAccess', async path => {
+  s.nodeFS = (await import('node:fs')).promises;
+  s.nodeFS.isExists = async path => {
     try { await s.nodeFS.access(path); return true; }
     catch { return false; }
-  });
+  }
   s.d('pathToFSPath', path => `state/${s.pathToArr(path).join('/')}`);
   s.d('isPathExistsOnFS', async (path, fileExtension = '') => {
     const fsPath = s.pathToFSPath(path) + (fileExtension ? '.' + fileExtension : '');
@@ -384,32 +384,39 @@
     return list.length === 0;
   });
 
-  if (!s.u) {
-    const {ulid} = await import('ulid');
+  const { VarRegistry } = await import('./core/varRegistry.js');
+  const varRegistry = new VarRegistry(s.nodeFS);
+  await varRegistry.load();
 
-    const { createObjectFactory } = await import('./core/core.js');
+  if (!s.o) {
+    const {ulid} = await import('ulid');
 
     const { createPathRelationFactory } = await import('./core/pathRelation.js');
     const pathRelationFactory = createPathRelationFactory(s.pathToArr);
 
-    s.u = await createObjectFactory(s, ulid, pathRelationFactory);
+    const { createVarFactory } = await import('./core/varFactory.js');
+    s.v = await createVarFactory(ulid, pathRelationFactory, varRegistry);
   }
 
   const cliArgs = s.parseCliArgs(s.process.argv);
-  if (cliArgs[0] === 'set') {
-    //const stream = await s.u({ path: cliArgs[1], conf: { useFS: true } });
-    //return;
+  const map = {
+    'set': () => {
+      //const stream = await s.u({ path: cliArgs[1], conf: { useFS: true } });
+      //return;
+    },
+    'get': async () => {
+      if (!cliArgs[1]) return;
+      const stream = await s.v({ path: cliArgs[1] });
+      s.l(stream);
+    },
+    'list': () => {
+      console.log(varRegistry.list());
+    },
   }
-  if (cliArgs[0] === 'get' && cliArgs[1]) {
-    const stream = await s.u({ path: cliArgs[1], conf: { useFS: true } });
-    s.l(stream);
-    return;
-  }
+  if (map[cliArgs[0]]) await map[cliArgs[0]]();
 
-  //netObject, netObjectPart >> relation type net, relation type telephone
-  await s.u({ path: 'item22', dataDefault: 'defaultNetId', conf: { useFS: true } });
-
-  //fsBucket
+  const obj = await s.v({ path: 'blogArticle', dataDefault: 'So i decided to create a blog' });
+  console.log(obj);
 
   //const stream = await s.u({ path: 'sys.isObject', type: 'js', conf: { useFS: true, createFileWithExtention: true } });
   //s.l(stream.get());
@@ -517,7 +524,7 @@
   }
   if (!s.connectedSSERequests) s.def('connectedSSERequests', new Map);
 
-  sys.rqParseBody = async (rq, limitMb = 12) => {
+  const rqParseBody = async (rq, limitMb = 12) => {
 
     let limit = limitMb * 1024 * 1024;
     return new Promise((resolve, reject) => {
@@ -610,12 +617,6 @@
     rq.mp = `${rq.method}:${url.pathname}`;
     s.l(ip, rq.mp);
 
-    if (rq.pathname.includes('..')) {
-      rs.writeHead(403).end('Path include ".." denied.'); return;
-    }
-    if (rq.pathname.toLowerCase().includes('/state/')) {
-      rs.writeHead(403).end('Access to state dir is denied.'); return;
-    }
     rs.s = (v, contentType) => {
       const s = (value, type) => rs.writeHead(200, { 'Content-Type': type }).end(value);
 
@@ -626,176 +627,14 @@
       else s('', 'text/plain');
     }
 
-    const m = {
-      'GET:/': async () => {
-        if (!s.js) {
-          rs.writeHead(500).end('server not ready');
-          return;
-        }
-        const htmlStream = await s.u({ path: 'sys.apps.GUI.mainHtml', type: 'html', options: { useFS: 1 } });
-        const html = htmlStream.get().replace('JS_SCRIPT', s.js);
-        rs.s(html, 'text/html');
-      },
-      'POST:/cmd': async () => {
-        if (!isLocal || !sys.rqAuthenticate(rq)) {
-          rs.writeHead(403).end('denied');
-          return;
-        }
-        const { cmd } = await sys.rqParseBody(rq);
-        if (cmd) {
-          try { eval(cmd); }
-          catch (e) { console.log(e); }
-        }
-      },
-      'GET:/stream': async () => {
-        const rqId = await s.f('sys.uuid');
-
-        s.log.info('SSE connected');
-        s.connectedSSERequests.set(rqId, rs);
-        rs.writeHead(200, { 'Content-Type': 'text/event-stream', 'Connection': 'keep-alive', 'Cache-Control': 'no-cache' });
-
-        rq.on('close', () => {
-          s.connectedSSERequests.delete(rqId);
-          s.log.info('SSE closed');
-        });
-        rq.isLongRequest = true;
-      },
-      'POST:/state': async () => {
-        const { path, type } = await sys.rqParseBody(rq);
-        if (!Array.isArray(path)) {
-          rs.writeHead(403).end('Path is invalid.'); return;
-        }
-        //todo fix this according to new places of tokens
-        if (path[0] === 'sys') {
-          if (path[1] === 'secrets' || path[1] === 'token') {
-            rs.writeHead(403).end('Access denied.'); return;
-          }
-        }
-        if (path.length === 0) {
-          const obj = {};
-          Object.keys(s).forEach((k) => obj[k] = {});
-          rs.s(obj); return;
-        }
-
-        //todo is path is dir so list dir in other case get file
-        const stream = await s.u({ path, type, options: { useFS: 1 } });
-
-        //turnOnFallbackEditing
-        //let node = s.find(path);
-
-        //detect is this dir or file
-        // if (typeof node === 'object' && !Array.isArray(node)) {
-
-        //     const pathStr = 'state/' + path.join('/');
-
-        //     if (await s.fsAccess(pathStr)) {
-        //         const list = await s.nodeFS.readdir(pathStr);
-        //         for (let i = 0; i < list.length; i++) {
-        //             const item = list[i];
-        //             if (item.trim() === '.gitignore') continue;
-        //             if (!node[item]) node[item] = {};
-        //         }
-
-        //     } else if (await s.fsAccess(pathStr + '.json')) {
-        //         const { parent, k } = s.findParentAndK(path);
-        //         node = JSON.parse(await s.nodeFS.readFile(pathStr + '.json', 'utf8'));
-        //         if (parent && k) parent[k] = node;
-        //     }
-        // }
-        rs.s({ js: js.get() });
-      },
-      'POST:/stateUpdate': async () => {
-        if (!sys.rqStateUpdate) {
-          rs.s('Server state is not ready.'); return;
-        }
-        //todo path on dysc js, css or move it inside sys.rqStateUpdate
-        await s.f('sys.rqStateUpdate', rq, rs);
-        //send updates to frontend
-      },
-      'POST:/sign/in': async () => {
-
-        const { username, password } = await sys.rqParseBody(rq);
-        if (!username || typeof username !== 'string') {
-          rs.writeHead(400).end('userName is invalid.');
-          return;
-        }
-        if (!password || typeof password !== 'string') {
-          rs.writeHead(400).end('Token is invalid.');
-          return;
-        }
-        const user = s.users[username];
-        const userPassword = user._sys_.password;
-
-        if (!user || !userPassword) {
-          rs.writeHead(404).end('User not found or password not set.');
-          return;
-        }
-        if (password !== userPassword) {
-          rs.writeHead(401).end('Password is incorrect.');
-          return;
-        }
-        rs.writeHead(200, {
-          'Content-Type': 'text/plain',
-          'Set-Cookie': [
-            `username=${username}; Path=/; Max-Age=2580000; SameSite=Strict; Secure; HttpOnly`,
-            `password=${password}; Path=/; Max-Age=2580000; SameSite=Strict; Secure; HttpOnly`
-          ],
-        }).end('ok');
-      },
-      'POST:/sign/out': async () => {
-        rs.writeHead(200, {
-          'Set-Cookie': `token=str; Path=/; Max-Age=-1; SameSite=Strict; Secure; HttpOnly`,
-          'Content-Type': 'text/plain'
-        }).end('ok');
-      },
-      'GET:/sign/user': async () => {
-        let { username, password } = sys.rqGetCookies(rq);
-        if (!username || !password) {
-          rs.s({ user: null }); return;
-        }
-        if (typeof username !== 'string' || typeof password !== 'string') {
-          rs.s({ user: null }); return;
-        }
-        //when try to read, make attempt read from disc
-        const user = s.users[username];
-        if (!user) {
-          rs.s({ user: null }); return;
-        }
-        if (password !== user._sys_.password) {
-          rs.s({ user: null }); return;
-        }
-        rs.s({ user: { username } });
-      },
-      'POST:/uploadFile': async () => {
-        if (!rq.isLocal) { rs.writeHead(403).end('denied'); return; }
-
-        const b = await sys.rqParseBody(rq);
-        if (b.err) return;
-        if (b) await s.nodeFS.writeFile('testFIL', b);
-        rs.s('ok');
-      },
-    }
-
-    if (sys.rqResolveStatic && await sys.rqResolveStatic(rq, rs)) return;
-    if (m[rq.mp]) {
-      try { await m[rq.mp](); }
-      catch (e) {
-        s.log ? s.log.error(e) : console.log(e);
-        rs.writeHead(500).end('Internal server error.');
-      }
-    }
-    if (!rq.isLongRequest && !rs.writableEnded) {
-      rs.s('Default response.');
-    }
+    // if (!rq.isLongRequest && !rs.writableEnded) {
+    //   rs.s('Default response.');
+    // }
   };
 
   if (!s.server) {
-    s.def('nodeHttp', await import('node:http'));
+    s.nodeHttp = await import('node:http');
     s.def('server', s.nodeHttp.createServer((rq, rs) => {
-      if (!sys.httpRqHandler || typeof sys.httpRqHandler !== 'function') {
-        rs.writeHead(500).end('Server not ready.');
-        return;
-      }
       sys.httpRqHandler(rq, rs)
     }));
     s.def('serverStop', () => {
@@ -812,20 +651,6 @@
       });
     });
   }
-
-  // if (!s.logListenerProc && sys.logger) {
-
-  //     const logger = new (await s.f('sys.logger'));
-  //     logger.mute();
-  //     logger.onMessage(msg => {
-  //         const json = JSON.stringify({ logMsg: msg });
-  //         for (let [k, v] of s.connectedSSERequests) {
-  //             v.write(`data: ${json}\n\n`);
-  //         }
-  //     });
-  //     s.def('logListenerProc', new s.os(logger));
-  //     s.logListenerProc.run('tail -f index.log', false, false);
-  // }
 
   const trigger = async () => {
     console.log('ONCE', new Date);
@@ -892,8 +717,6 @@
       })();
     });
   }
-
-  if (!s.net[sys.netId]) return;
 
   const netCmds = s.net[sys.netId].cmds;
 

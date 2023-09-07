@@ -13,10 +13,8 @@ class PathRelation {
 }
 
 export const createPathRelationFactory = (pathToArray) => {
-
     return (path) => {
         const pathArr = pathToArray(path ? path : '*');
-        const relation = new PathRelation(pathArr);
-        return relation;
+        return new PathRelation(pathArr);
     }
 }
