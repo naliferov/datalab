@@ -5,7 +5,6 @@ export const createVarFactory = async (ulid, pathRelationFactory, registry) => {
     const serialize = (u) => {
         const data = {}
         if (u.data) data.data = u.data;
-        if (u.objects) data.objects = u.objects;
         return data;
     }
 
@@ -14,30 +13,37 @@ export const createVarFactory = async (ulid, pathRelationFactory, registry) => {
         const pathRelation = pathRelationFactory(path);
         const u = new Var;
 
-        for (const pathPart of pathRelation.toArr()) {
+        let pathObject;
+        let pathArr = pathRelation.toArr();
+        for (let i = 0; i < pathArr.length; i++) {
+            const pathPart = pathArr[i];
 
             u.name = pathPart;
-            u.id = registry.getIdByName(pathPart);
-            if (!u.id) continue;
+            const id = registry.getIdByName(pathPart);
+            if (!id) {
+                if (i > 0) return; //item not found
+                continue;
+            }
 
-            const object = await registry.getObjectById(u.id);
+            const object = await registry.getObjectById(id);
             if (object) {
                 for (const prop in object) u[prop] = object[prop];
             }
+            pathObject = object;
         }
 
-        if (!u.id) u.id = ulid();
         //caching of created object in registry
-
-        if (!u.data && dataDefault) {
+        if (!u.id) u.id = ulid();
+        if (!u.data && !dataDefault) {
             u.data = dataDefault;
             await registry.setObject(u.id, u.name, serialize(u));
+        } else {
+            return;
         }
-        // u.onChange(async () => {
-        //   await registry.setObject(serialize(u));
-        // });
-        //listen data change
 
+        u.onUpdate(async () => {
+          await registry.setObject(u.id, u.name, serialize(u));
+        });
         return u;
     };
 

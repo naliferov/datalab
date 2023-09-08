@@ -400,23 +400,31 @@
 
   const cliArgs = s.parseCliArgs(s.process.argv);
   const map = {
-    'set': () => {
-      //const stream = await s.u({ path: cliArgs[1], conf: { useFS: true } });
-      //return;
+    'set': async () => {
+      if (!cliArgs[1]) return;
+      const u = await s.v({ path: cliArgs[1] });
+      if (u && cliArgs[2]) {
+        await u.setData(cliArgs[2]);
+      }
     },
     'get': async () => {
       if (!cliArgs[1]) return;
-      const stream = await s.v({ path: cliArgs[1] });
-      s.l(stream);
+      const u = await s.v({ path: cliArgs[1] });
+      s.l(u);
+    },
+    'del': async () => {
+      if (!cliArgs[1]) return;
+      const u = await s.v({ path: cliArgs[1] });
+      if (u) await varRegistry.deleteObject(u);
     },
     'list': () => {
-      console.log(varRegistry.list());
-    },
+      s.l(varRegistry.list());
+    }
   }
   if (map[cliArgs[0]]) await map[cliArgs[0]]();
 
-  const obj = await s.v({ path: 'blogArticle', dataDefault: 'So i decided to create a blog' });
-  console.log(obj);
+  //const obj = await s.v({ path: 'blogArticle', dataDefault: 'So i decided to create a blog' });
+  //console.log(obj);
 
   //const stream = await s.u({ path: 'sys.isObject', type: 'js', conf: { useFS: true, createFileWithExtention: true } });
   //s.l(stream.get());

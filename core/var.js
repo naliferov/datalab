@@ -1,10 +1,15 @@
 export class Var {
 
   constructor() {
-    this.subscribers = [];
+    this.updateCallback = null;
   }
-  setData(data) {}
-  onDataChange(fn) {
-    this.subscribers.push(fn);
+  async setData(data) {
+    this.data = data;
+    if (this.updateCallback) {
+      await this.updateCallback(data);
+    }
+  }
+  onUpdate(fn) {
+    this.updateCallback = fn;
   }
 }

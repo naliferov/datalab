@@ -13,20 +13,26 @@ export class VarRegistry {
     list() {
        return Object.keys(this.registry);
     }
-
     getIdByName(name) {
         return this.registry[name];
     }
-    async getObjectById(id, object) {
+    async getObjectById(id) {
         const data = await this.fs.readFile(`./var/${id}`);
         return JSON.parse(data);
     }
-    async setObject(id, name, o) {
+    async setObject(id, name, data) {
         if (!this.registry[name]) {
             this.registry[name] = id;
             await this.save();
         }
-        await this.fs.writeFile(`./var/${id}`, JSON.stringify(o));
+        await this.fs.writeFile(`./var/${id}`, JSON.stringify(data));
+    }
+    async deleteObject(o) {
+        if (this.registry[o.name]) {
+            delete this.registry[o.name];
+            await this.save();
+        }
+        await this.fs.unlink(`./var/${o.id}`);
     }
     async save() {
         await this.fs.writeFile(this.registryPath, JSON.stringify(this.registry));
