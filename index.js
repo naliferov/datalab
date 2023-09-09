@@ -400,12 +400,22 @@
 
   const cliArgs = s.parseCliArgs(s.process.argv);
   const map = {
+
+    'setVar': async () => {
+      const v = await s.v({ path: cliArgs[1] });
+      if (v && cliArgs[2] && cliArgs[3]) {
+        const newV = await s.v({ path: cliArgs[2] });
+        if (newV) await u.setValue(cliArgs[3]);
+
+        //console.log(newV);
+        //v.setVar(cliArgs[2], newV.id);
+      }
+    },
+
     'set': async () => {
       if (!cliArgs[1]) return;
       const u = await s.v({ path: cliArgs[1] });
-      if (u && cliArgs[2]) {
-        await u.setData(cliArgs[2]);
-      }
+      if (u) await u.setValue(cliArgs[2]);
     },
     'get': async () => {
       if (!cliArgs[1]) return;
@@ -414,9 +424,10 @@
     },
     'del': async () => {
       if (!cliArgs[1]) return;
-      const u = await s.v({ path: cliArgs[1] });
-      if (u) await varRegistry.deleteObject(u);
+      const v = await s.v({ path: cliArgs[1] });
+      if (v) await varRegistry.delete(v);
     },
+
     'list': () => {
       s.l(varRegistry.list());
     }
