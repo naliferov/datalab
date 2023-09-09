@@ -4,27 +4,29 @@ export class Var {
     this.updateCallback = null;
   }
 
-  async setValue(value) {
-    this.value = value;
+  getVarIdByName(name) {
+    return this.vars ? this.vars[name] : undefined;
+  }
+
+  async setData(data) {
+    this.data = data;
     if (this.updateCallback) {
       await this.updateCallback();
     }
   }
 
-  getVarIdByName(name) {
-    return this.vars ? this.vars[name] : undefined;
-  }
-
-  async setVar(name, id) {
+  async set(name, id) {
     if (!this.vars) this.vars = {};
     this.vars[name] = id;
     if (this.updateCallback) {
       await this.updateCallback();
     }
   }
-  //deleteVar
+  get(name) {}
+  del() {
 
-  onUpdate(fn) {
+  }
+  sub(fn) {
     this.updateCallback = fn;
   }
 }
