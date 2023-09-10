@@ -21,8 +21,11 @@ export class Var {
   get(name) {
     return this.vars ? this.vars[name] : undefined;
   }
-  del() {}
-
+  async del(name) {
+    if (!this.vars) return;
+    delete this.vars[name];
+    await this.updateCallback();
+  }
   sub(fn) {
     this.updateCallback = fn;
   }

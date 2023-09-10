@@ -9,6 +9,9 @@ export class VarStorage {
         if (u.vars) o.vars = u.vars;
         return o;
     }
+    async set(id, u) {
+        await this.fs.writeFile(`./var/${id}`, JSON.stringify(this.serialize(u)));
+    }
     async get(id) {
         try {
             const data = await this.fs.readFile(`./var/${id}`);
@@ -17,10 +20,7 @@ export class VarStorage {
             console.log(e.message);
         }
     }
-    async set(id, u) {
-        await this.fs.writeFile(`./var/${id}`, JSON.stringify(this.serialize(u)));
-    }
     async del(id) {
-        await this.fs.unlink(`./var/${o.id}`);
+        await this.fs.unlink(`./var/${id}`);
     }
 }

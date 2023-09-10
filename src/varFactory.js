@@ -13,21 +13,21 @@ export class VarFactory {
 
         let lastVar = this.varRoot;
         let pathArr = pathRelation.toArr();
-        if (pathArr[0] === 'root') {
-            return this.varRoot;
-        }
+        if (pathArr[0] === 'root') return this.varRoot;
 
-        let u = new Var;
+        let u;
+        let notFoundCount = 0;
 
         for (let i = 0; i < pathArr.length; i++) {
             const name = pathArr[i];
 
+            u = new Var;
             u.id = lastVar.get(name);
             u.name = name;
             u.parent = lastVar;
 
             if (!u.id) {
-                if (i > 0) return;
+                if (++notFoundCount > 1) return;
                 continue;
             }
 
@@ -51,16 +51,26 @@ export class VarFactory {
         if (!u) return;
         if (!u.id) u.id = this.ulid();
 
-        u.sub(async () => {
-            const p = u.parent;
-            if (!p) return;
+        const p = u.parent;
+        if (!p || !u.name) return;
 
+        p.sub(async () => await this.varStorage.set(p.id, p));
+        u.sub(async () => {
             await this.varStorage.set(u.id, u);
             if (!p.get(u.name)) {
                 p.set(u.name, u.id);
             }
         });
         return u;
+    }
+
+    async delete(v) {
+        const p = v.parent;
+        if (!p || !v.name) {
+            return;
+        }
+        p.del(v.name);
+        await this.varStorage.del(v.id);
     }
 
     async save(u) {

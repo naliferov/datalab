@@ -400,9 +400,6 @@ import {Var} from "./src/var.js";
   } else {
     await varStorage.set(varRoot.id, varRoot);
   }
-  varRoot.sub(async () => {
-    await varStorage.set(varRoot.id, varRoot);
-  });
 
   let varFactory;
   if (!s.o) {
@@ -433,18 +430,18 @@ import {Var} from "./src/var.js";
     },
     'set': async () => {
       if (!cliArgs[1]) return;
-      const u = await varFactory.create({ path: cliArgs[1] });
-      if (u) await u.setData(cliArgs[2]);
+      const v = await varFactory.create({ path: cliArgs[1] });
+      if (v) await v.setData(cliArgs[2]);
     },
     'get': async () => {
       if (!cliArgs[1]) return;
-      const u = await varFactory.create({ path: cliArgs[1] });
-      s.l(u);
+      const v = await varFactory.create({ path: cliArgs[1] });
+      s.l(v);
     },
     'del': async () => {
       if (!cliArgs[1]) return;
       const v = await varFactory.create({ path: cliArgs[1] });
-      //if (v) await varFactory.delete(v);
+      if (v) await varFactory.delete(v);
     },
     'getById': () => {},
     'list': () => {
