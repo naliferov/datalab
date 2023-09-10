@@ -386,6 +386,7 @@ import {Var} from "./src/var.js";
     return list.length === 0;
   });
 
+
   const { VarStorage } = await import('./src/varStorage.js');
   const varStorage = new VarStorage(s.nodeFS);
 
@@ -395,14 +396,13 @@ import {Var} from "./src/var.js";
 
   let varRootData = await varStorage.get('root');
   if (varRootData) {
-    if (varRoot.vars) varRoot.vars = varRootData.vars;
+    if (varRootData.vars) varRoot.vars = varRootData.vars;
   } else {
     await varStorage.set(varRoot.id, varRoot);
   }
-
-  //const { VarRegistry } = await import('./core/varRegistry.js');
-  //const varRegistry = new VarRegistry(s.nodeFS);
-  //await varRegistry.load();
+  varRoot.sub(async () => {
+    await varStorage.set(varRoot.id, varRoot);
+  });
 
   let varFactory;
   if (!s.o) {
@@ -414,6 +414,7 @@ import {Var} from "./src/var.js";
     const { VarFactory } = await import('./src/varFactory.js');
     varFactory = new VarFactory(ulid, pathRelationFactory, varRoot, varStorage);
   }
+
 
   const cliArgs = s.parseCliArgs(s.process.argv);
   const map = {
@@ -430,13 +431,10 @@ import {Var} from "./src/var.js";
         //await v.setVar(varName, newV.id);
       }
     },
-
     'set': async () => {
       if (!cliArgs[1]) return;
       const u = await varFactory.create({ path: cliArgs[1] });
-
-      console.log(u);
-      //if (u) await u.setValue(cliArgs[2]);
+      if (u) await u.setData(cliArgs[2]);
     },
     'get': async () => {
       if (!cliArgs[1]) return;
@@ -448,6 +446,7 @@ import {Var} from "./src/var.js";
       const v = await varFactory.create({ path: cliArgs[1] });
       //if (v) await varFactory.delete(v);
     },
+    'getById': () => {},
     'list': () => {
       //s.l(varRoot.list());
     }
@@ -461,7 +460,7 @@ import {Var} from "./src/var.js";
   //s.l(stream.get());
   //s.l(stream.type);
 
-  return;
+   return;
   //if (sys.netId.get() && !s.net[sys.netId]) {
   //s.net[sys.netId] = {};
   //s.defObjectProp(s.net[sys.netId], 'token', sys.getRandStr(27));

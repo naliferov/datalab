@@ -11,49 +11,59 @@ export class VarFactory {
 
     async getVarByPathRelation(pathRelation) {
 
-        let u = this.varRoot;
+        let lastVar = this.varRoot;
         let pathArr = pathRelation.toArr();
+        if (pathArr[0] === 'root') {
+            return this.varRoot;
+        }
+
+        let u = new Var;
 
         for (let i = 0; i < pathArr.length; i++) {
             const name = pathArr[i];
 
-            u = new Var;
-            u.id = u.getVarIdByName(name);
+            u.id = lastVar.get(name);
             u.name = name;
+            u.parent = lastVar;
 
             if (!u.id) {
-                if (i > 0) return; //item not found
+                if (i > 0) return;
                 continue;
             }
 
-            const object = await this.varStorage.get(u.id);
-            if (object) {
-                for (const prop in object) u[prop] = object[prop];
+            const data = await this.varStorage.get(u.id);
+            if (data) {
+                for (const prop in data) u[prop] = data[prop];
             } else {
-                if (i > 0) return; //item not found
+                if (i > 0) return;
                 continue;
             }
+            lastVar = u;
         }
 
         return u;
     }
 
-    async create({ path, type, defaultValue }) {
+    async create({ path }) {
 
         const pathRelation = this.pathRelationFactory(path);
         const u = await this.getVarByPathRelation(pathRelation);
         if (!u) return;
+        if (!u.id) u.id = this.ulid();
 
         u.sub(async () => {
-            //await this.varStorage.set(u.id, u);
-        });
+            const p = u.parent;
+            if (!p) return;
 
-        if (!u.id) u.id = this.ulid();
-        if (!u.value && defaultValue) {
-            u.value = defaultValue;
-            //await registry.setVarToRegistry(u.name, u.id);
-            //await this.save(u);
-        }
+            await this.varStorage.set(u.id, u);
+            if (!p.get(u.name)) {
+                p.set(u.name, u.id);
+            }
+        });
         return u;
+    }
+
+    async save(u) {
+        await this.varStorage.set(u.id, u);
     }
 }

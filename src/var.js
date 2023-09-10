@@ -1,31 +1,28 @@
 export class Var {
 
   constructor() {
-    this.updateCallback = null;
+    this.updateCallback = () => {};
   }
 
-  getVarIdByName(name) {
-    return this.vars ? this.vars[name] : undefined;
+  setParent(parent) {
+    this.parent = parent;
   }
 
   async setData(data) {
     this.data = data;
-    if (this.updateCallback) {
-      await this.updateCallback();
-    }
+    await this.updateCallback();
   }
 
   async set(name, id) {
     if (!this.vars) this.vars = {};
     this.vars[name] = id;
-    if (this.updateCallback) {
-      await this.updateCallback();
-    }
+    await this.updateCallback();
   }
-  get(name) {}
-  del() {
+  get(name) {
+    return this.vars ? this.vars[name] : undefined;
+  }
+  del() {}
 
-  }
   sub(fn) {
     this.updateCallback = fn;
   }
