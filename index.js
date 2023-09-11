@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import {Var} from "./src/var.js";
-
 (async () => {
   globalThis.s ??= {};
   s.sys ??= {};
@@ -415,40 +413,50 @@ import {Var} from "./src/var.js";
 
   const cliArgs = s.parseCliArgs(s.process.argv);
   const map = {
+    'set': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      if (v) await v.setData(arg[2]);
+    },
+    'get': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      if (!v) return;
 
-    'setVar': async () => {
-      const v = await varFactory.create({ path: cliArgs[1] });
-      const varName = cliArgs[2];
-      const varValue = cliArgs[3];
-
-      if (v && varName && varValue) {
-        //const newV = await s.v({ path: varName });
-        //if (newV) await newV.setValue(varValue);
-
-        //await v.setVar(varName, newV.id);
+      const r = {
+        id: v.id,
+        parentId: v.parent.id,
       }
+      if (v.data) r.data = v.data;
+      if (v.vars) r.vars = v.vars;
+
+      return r;
     },
-    'set': async () => {
-      if (!cliArgs[1]) return;
-      const v = await varFactory.create({ path: cliArgs[1] });
-      if (v) await v.setData(cliArgs[2]);
-    },
-    'get': async () => {
-      if (!cliArgs[1]) return;
-      const v = await varFactory.create({ path: cliArgs[1] });
-      s.l(v);
-    },
-    'del': async () => {
-      if (!cliArgs[1]) return;
-      const v = await varFactory.create({ path: cliArgs[1] });
+    'del': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
       if (v) await varFactory.delete(v);
     },
     'getById': () => {},
-    'list': () => {
+    'list': (arg) => {
       //s.l(varRoot.list());
-    }
+    },
+    serverStart: () => {
+
+    },
+    serverStop: () => {}
   }
-  if (map[cliArgs[0]]) await map[cliArgs[0]]();
+  if (map[cliArgs[0]]) {
+    console.log(await map[cliArgs[0]] (cliArgs));
+  }
+
+  return;
+
+
+
+
+
+
 
   //const obj = await s.v({ path: 'blogArticle', dataDefault: 'So i decided to create a blog' });
   //console.log(obj);
@@ -457,7 +465,6 @@ import {Var} from "./src/var.js";
   //s.l(stream.get());
   //s.l(stream.type);
 
-   return;
   //if (sys.netId.get() && !s.net[sys.netId]) {
   //s.net[sys.netId] = {};
   //s.defObjectProp(s.net[sys.netId], 'token', sys.getRandStr(27));
@@ -473,7 +480,8 @@ import {Var} from "./src/var.js";
   //     }
   // }
 
-  if (!sys.netUpdateIds) s.defObjectProp(sys, 'netUpdateIds', new Map);
+  //if (!sys.netUpdateIds) s.defObjectProp(sys, 'netUpdateIds', new Map);
+
 
   //LOOP
   if (!s.loop) {
@@ -642,6 +650,16 @@ import {Var} from "./src/var.js";
     const netToken = sys.getNetToken();
     return token && netToken && token === netToken;
   }
+  sys.rqResponse = (rs, v, contentType) => {
+    const s = (value, type) => rs.writeHead(200, { 'Content-Type': type }).end(value);
+
+    if (!v) s('empty val', 'text/plain; charset=utf-8');
+    else if (v instanceof Buffer) s(v, '');
+    else if (typeof v === 'object') s(JSON.stringify(v), 'application/json');
+    else if (typeof v === 'string' || typeof v === 'number') s(v, contentType ?? 'text/plain; charset=utf-8');
+    else s('', 'text/plain');
+  }
+
   sys.httpRqHandler = async (rq, rs) => {
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
@@ -652,16 +670,30 @@ import {Var} from "./src/var.js";
     rq.mp = `${rq.method}:${url.pathname}`;
     s.l(ip, rq.mp);
 
-    rs.s = (v, contentType) => {
-      const s = (value, type) => rs.writeHead(200, { 'Content-Type': type }).end(value);
+    //execute cmd and send result in json;
+    const query = sys.rqParseQuery(rq);
+    const body = rqParseBody(rq);
+    //const query = sys.pa(rq);
 
-      if (!v) s('empty val', 'text/plain; charset=utf-8');
-      else if (v instanceof Buffer) s(v, '');
-      else if (typeof v === 'object') s(JSON.stringify(v), 'application/json');
-      else if (typeof v === 'string' || typeof v === 'number') s(v, contentType ?? 'text/plain; charset=utf-8');
-      else s('', 'text/plain');
+    //const v = await varFactory.create({path: 'frontend.mainDiv'});
+    //console.log(v);
+
+    if (query.cmd === 'getJs') {
+      const js = await s.nodeFS.readFile('./src/front/main.js');
+      sys.rqResponse(rs, js, 'text/javascript');
+      return;
     }
 
+    const html = `
+        <!doctype html>
+        <html lang=xx>
+        <head>
+            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"><title>varcraft</title>
+        </head>
+        <body><script src="/?cmd=getJs"></script></body>
+        </html>
+    `;
+    sys.rqResponse(rs, html, 'text/html; charset=utf-8');
     // if (!rq.isLongRequest && !rs.writableEnded) {
     //   rs.s('Default response.');
     // }
@@ -691,15 +723,14 @@ import {Var} from "./src/var.js";
     console.log('ONCE', new Date);
 
     //await s.subPath('scripts', );
-
     //controll of watchers from declarativeUI
+
     if (s.scriptsSub) {
       //s.def('scriptsSub', await s.subPath('scripts'));
       //s.scriptsWatcher.start();
     }
     if (s.scriptsWatcher) {
-      await s.syncJsScripts(sys, 'sys');
-
+      //await s.syncJsScripts(sys, 'sys');
       s.scriptsWatcher.slicer = async (e) => {
         if (e.eventType !== 'change') return;
 
@@ -726,7 +757,7 @@ import {Var} from "./src/var.js";
       }
     }
 
-    const netId = await s.fsAccess('state/sys/netId.txt');
+    //const netId = await s.fsAccess('state/sys/netId.txt');
     //if (netId && !s.scriptsWatcher && sys.fsChangesSlicer) {
     //s.def('scriptsWatcher', await s.f('sys.fsChangesSlicer', 'scripts'));
     //s.scriptsWatcher.start();
@@ -735,46 +766,46 @@ import {Var} from "./src/var.js";
     if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
   }
   s.def('trigger', async () => await trigger());
-  if (s.once(2)) await trigger();
+
+
+  //if (s.once(2)) await trigger();
   //s.processStop();
 
-  sys.promiseCreate = async (f, timeoutSeconds = 7) => {
+  // sys.promiseCreate = async (f, timeoutSeconds = 7) => {
+  //
+  //   return new Promise((res, rej) => {
+  //
+  //     (async () => {
+  //       let timeout = setTimeout(() => {
+  //         rej({ err: 'promise timeout', f: f.toString() });
+  //       }, timeoutSeconds * 1000);
+  //       await f();
+  //       clearTimeout(timeout);
+  //       res();
+  //     })();
+  //   });
+  // }
 
-    return new Promise((res, rej) => {
+  //const netCmds = s.net[sys.netId].cmds;
+  //if (!netCmds) return;
 
-      (async () => {
-        let timeout = setTimeout(() => {
-          rej({ err: 'promise timeout', f: f.toString() });
-        }, timeoutSeconds * 1000);
-        await f();
-        clearTimeout(timeout);
-        res();
-      })();
-    });
-  }
-
-  const netCmds = s.net[sys.netId].cmds;
-
-  if (!netCmds) return;
-
-  for (let i in netCmds) {
-
-    const conf = netCmds[i];
-    if (conf.cmd && conf.isEnabled) {
-      const f = eval(`async () => { ${conf.cmd} }`);
-
-      if (!conf.promise) {
-        try {
-          conf.promise = sys.promiseCreate(f);
-          await conf.promise;
-        } catch (e) {
-          s.l(e);
-        } finally {
-          delete conf.promise;
-        }
-      }
-
-    }
-  }
-
+  // for (let i in netCmds) {
+  //
+  //   const conf = netCmds[i];
+  //   if (conf.cmd && conf.isEnabled) {
+  //     const f = eval(`async () => { ${conf.cmd} }`);
+  //
+  //     if (!conf.promise) {
+  //       try {
+  //         conf.promise = sys.promiseCreate(f);
+  //         await conf.promise;
+  //       } catch (e) {
+  //         s.l(e);
+  //       } finally {
+  //         delete conf.promise;
+  //       }
+  //     }
+  //
+  //   }
+  // }
 })();

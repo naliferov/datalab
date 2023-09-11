@@ -1,5 +1,10 @@
 export class Var {
 
+  id;
+  data;
+  vars;
+  rels;
+
   constructor() {
     this.updateCallback = () => {};
   }
