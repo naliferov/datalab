@@ -23,14 +23,17 @@ export class Var {
     this.vars[name] = id;
     await this.updateCallback();
   }
+
   get(name) {
     return this.vars ? this.vars[name] : undefined;
   }
+
   async del(name) {
     if (!this.vars) return;
     delete this.vars[name];
     await this.updateCallback();
   }
+
   sub(fn) {
     this.updateCallback = fn;
   }

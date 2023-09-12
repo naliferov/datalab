@@ -10,7 +10,6 @@ export class VarFactory {
     }
 
     async getVarByPathRelation(pathRelation) {
-
         let lastVar = this.varRoot;
         let pathArr = pathRelation.toArr();
         if (pathArr[0] === 'root') return this.varRoot;
@@ -44,7 +43,6 @@ export class VarFactory {
     }
 
     async create({ path }) {
-
         const pathRelation = this.pathRelationFactory(path);
         const name = pathRelation.toArr().at(-1);
 
@@ -65,7 +63,7 @@ export class VarFactory {
         return u;
     }
 
-    async delete(name, v) {
+    async delete(v, name) {
         const p = v.parent;
         if (!p || !name) return;
         p.del(name);

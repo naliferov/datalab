@@ -410,61 +410,6 @@
     varFactory = new VarFactory(ulid, pathRelationFactory, varRoot, varStorage);
   }
 
-
-  const cliArgs = s.parseCliArgs(s.process.argv);
-  const map = {
-    'set': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      if (v) await v.setData(arg[2]);
-    },
-    'get': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      if (!v) return;
-
-      const r = {
-        id: v.id,
-        parentId: v.parent.id,
-      }
-      if (v.data) r.data = v.data;
-      if (v.vars) r.vars = v.vars;
-
-      return r;
-    },
-    'del': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      if (v) await varFactory.delete(v);
-    },
-    'getById': () => {},
-    'list': (arg) => {
-      //s.l(varRoot.list());
-    },
-    serverStart: () => {
-
-    },
-    serverStop: () => {}
-  }
-  if (map[cliArgs[0]]) {
-    console.log(await map[cliArgs[0]] (cliArgs));
-  }
-
-  return;
-
-
-
-
-
-
-
-  //const obj = await s.v({ path: 'blogArticle', dataDefault: 'So i decided to create a blog' });
-  //console.log(obj);
-
-  //const stream = await s.u({ path: 'sys.isObject', type: 'js', conf: { useFS: true, createFileWithExtention: true } });
-  //s.l(stream.get());
-  //s.l(stream.type);
-
   //if (sys.netId.get() && !s.net[sys.netId]) {
   //s.net[sys.netId] = {};
   //s.defObjectProp(s.net[sys.netId], 'token', sys.getRandStr(27));
@@ -482,8 +427,6 @@
 
   //if (!sys.netUpdateIds) s.defObjectProp(sys, 'netUpdateIds', new Map);
 
-
-  //LOOP
   if (!s.loop) {
     s.def('loop', {
       file: 'index.js',
@@ -506,7 +449,7 @@
     });
     s.process.on('uncaughtException', e => console.log('[[uncaughtException]]', e.stack));
   }
-  if (!s.loop.isWorking) s.loop.start();
+  //if (!s.loop.isWorking) s.loop.start();
 
   if (sys.logger) {
     s.def('http', new (await s.f('sys.httpClient')));
@@ -785,6 +728,45 @@
   //     })();
   //   });
   // }
+
+  const cliArgs = s.parseCliArgs(s.process.argv);
+  const map = {
+    'set': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      if (v) await v.setData(arg[2]);
+    },
+    'get': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      if (!v) return;
+
+      const r = {
+        id: v.id,
+        parentId: v.parent.id,
+      }
+      if (v.data) r.data = v.data;
+      if (v.vars) r.vars = v.vars;
+
+      return r;
+    },
+    'del': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      const name = arg[1].split('.').at(-1);
+
+      if (v && name) await varFactory.delete(v, name);
+    },
+    'getById': () => {},
+    'list': (arg) => {
+      //s.l(varRoot.list());
+    },
+    serverStart: () => {},
+    serverStop: () => {}
+  }
+  if (map[cliArgs[0]]) {
+    console.log(await map[cliArgs[0]] (cliArgs));
+  }
 
   //const netCmds = s.net[sys.netId].cmds;
   //if (!netCmds) return;
