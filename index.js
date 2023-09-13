@@ -385,7 +385,7 @@
   });
 
 
-  const { VarStorage } = await import('./src/varStorage.js');
+  const { VarStorage } = await import('./src/storage/varStorage.js');
   const varStorage = new VarStorage(s.nodeFS);
 
   const { Var } = await import('./src/var.js');
@@ -417,7 +417,6 @@
   //}
   // if (s.f('sys.isEmptyObject', s.users) && await sys.isEmptyDir('state/users', ['.gitignore'])) {
   //     await s.cpFromDisc('users.root', 'json', { one: '_sys_.password' });
-
   //     if (!s.users.root) {
   //         s.users.root = { _sys_: {} };
   //         s.defObjectProp(s.users.root._sys_, 'password', sys.getRandStr(25));
@@ -509,6 +508,67 @@
     //s.l('syncPath', path, Object.keys(state).length);
   }
   if (!s.connectedSSERequests) s.def('connectedSSERequests', new Map);
+
+  const cliArgs = s.parseCliArgs(s.process.argv);
+  const cmdMap = {
+    'set': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      if (v) await v.setData(arg[2]);
+      console.log('...');
+    },
+    'get': async (arg) => {
+      const path = arg[1];
+      if (!path) return;
+      const v = await varFactory.create({ path });
+      if (!v) return;
+
+      const r = {id: v.id}
+      if (v.data) r.data = v.data;
+      if (v.vars) {
+        const getVars = async (vars) => {
+          const vData = {};
+
+          for (let prop in vars) {
+            if (!vData[prop]) vData[prop] = {};
+
+            const rawData = await varStorage.get(vars[prop]);
+
+            if (rawData.data && rawData.vars) {
+              vData[prop].data = rawData.data;
+              vData[prop].vars = await getVars(rawData.vars);
+
+            } else if (rawData.data) {
+              vData[prop] = rawData.data;
+            } else if (rawData.vars) {
+              vData[prop] = await getVars(rawData.vars);
+            }
+          }
+          return vData;
+        }
+
+        r.vars = await getVars(v.vars);
+      }
+      return r;
+    },
+    'del': async (arg) => {
+      if (!arg[1]) return;
+      const v = await varFactory.create({ path: arg[1] });
+      const name = arg[1].split('.').at(-1);
+
+      if (v && name) await varFactory.delete(v, name);
+    },
+    'getById': () => {},
+    'list': (arg) => {
+      //s.l(varRoot.list());
+    },
+    serverStart: () => {
+      if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
+    },
+    serverStop: () => {}
+  }
+
+
 
   const rqParseBody = async (rq, limitMb = 12) => {
 
@@ -602,7 +662,6 @@
     else if (typeof v === 'string' || typeof v === 'number') s(v, contentType ?? 'text/plain; charset=utf-8');
     else s('', 'text/plain');
   }
-
   sys.httpRqHandler = async (rq, rs) => {
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
@@ -613,20 +672,22 @@
     rq.mp = `${rq.method}:${url.pathname}`;
     s.l(ip, rq.mp);
 
-    //execute cmd and send result in json;
     const query = sys.rqParseQuery(rq);
-    const body = rqParseBody(rq);
-    //const query = sys.pa(rq);
+    const body = await rqParseBody(rq);
 
-    //const v = await varFactory.create({path: 'frontend.mainDiv'});
-    //console.log(v);
-
+    if (body.cmd === 'var.get') {
+      sys.rqResponse(rs, await cmdMap.get(['', body.path]));
+      return;
+    }
+    if (body.cmd === 'var.set') {
+      sys.rqResponse(rs, {iAnswerFromServer: 'Hello, how are you?'}, );
+      return;
+    }
     if (query.cmd === 'getJs') {
-      const js = await s.nodeFS.readFile('./src/front/main.js');
+      const js = (await s.nodeFS.readFile('./src/frontend/main.js')).toString();
       sys.rqResponse(rs, js, 'text/javascript');
       return;
     }
-
     const html = `
         <!doctype html>
         <html lang=xx>
@@ -662,58 +723,6 @@
     });
   }
 
-  const trigger = async () => {
-    console.log('ONCE', new Date);
-
-    //await s.subPath('scripts', );
-    //controll of watchers from declarativeUI
-
-    if (s.scriptsSub) {
-      //s.def('scriptsSub', await s.subPath('scripts'));
-      //s.scriptsWatcher.start();
-    }
-    if (s.scriptsWatcher) {
-      //await s.syncJsScripts(sys, 'sys');
-      s.scriptsWatcher.slicer = async (e) => {
-        if (e.eventType !== 'change') return;
-
-        const id = e.filename.slice(0, -3);
-        const node = s.find(id);
-        if (!node) return;
-
-        const tNode = typeof node;
-        console.log('updateFromFS', e.filename);
-        const js = await s.nodeFS.readFile('scripts/' + e.filename, 'utf8');
-        if (js === node.js) {
-          console.log('js already updated');
-          return;
-        }
-        try {
-          eval(js);
-          if (tNode === 'object') node.js = js;
-          delete node[sys.sym.FN];
-
-          //for detect path use scriptsDirExists
-          await s.cpToDisc('sys');
-
-        } catch (e) { s.log.error(e.toString(), e.stack); }
-      }
-    }
-
-    //const netId = await s.fsAccess('state/sys/netId.txt');
-    //if (netId && !s.scriptsWatcher && sys.fsChangesSlicer) {
-    //s.def('scriptsWatcher', await s.f('sys.fsChangesSlicer', 'scripts'));
-    //s.scriptsWatcher.start();
-    //}
-
-    if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
-  }
-  s.def('trigger', async () => await trigger());
-
-
-  //if (s.once(2)) await trigger();
-  //s.processStop();
-
   // sys.promiseCreate = async (f, timeoutSeconds = 7) => {
   //
   //   return new Promise((res, rej) => {
@@ -729,65 +738,10 @@
   //   });
   // }
 
-  const cliArgs = s.parseCliArgs(s.process.argv);
-  const map = {
-    'set': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      if (v) await v.setData(arg[2]);
-    },
-    'get': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      if (!v) return;
-
-      const r = {
-        id: v.id,
-        parentId: v.parent.id,
-      }
-      if (v.data) r.data = v.data;
-      if (v.vars) r.vars = v.vars;
-
-      return r;
-    },
-    'del': async (arg) => {
-      if (!arg[1]) return;
-      const v = await varFactory.create({ path: arg[1] });
-      const name = arg[1].split('.').at(-1);
-
-      if (v && name) await varFactory.delete(v, name);
-    },
-    'getById': () => {},
-    'list': (arg) => {
-      //s.l(varRoot.list());
-    },
-    serverStart: () => {},
-    serverStop: () => {}
+  if (cmdMap[cliArgs[0]]) {
+    const response = await cmdMap[cliArgs[0]] (cliArgs);
+    if (response) {
+      console.log(response);
+    }
   }
-  if (map[cliArgs[0]]) {
-    console.log(await map[cliArgs[0]] (cliArgs));
-  }
-
-  //const netCmds = s.net[sys.netId].cmds;
-  //if (!netCmds) return;
-
-  // for (let i in netCmds) {
-  //
-  //   const conf = netCmds[i];
-  //   if (conf.cmd && conf.isEnabled) {
-  //     const f = eval(`async () => { ${conf.cmd} }`);
-  //
-  //     if (!conf.promise) {
-  //       try {
-  //         conf.promise = sys.promiseCreate(f);
-  //         await conf.promise;
-  //       } catch (e) {
-  //         s.l(e);
-  //       } finally {
-  //         delete conf.promise;
-  //       }
-  //     }
-  //
-  //   }
-  // }
 })();

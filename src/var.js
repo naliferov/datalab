@@ -1,6 +1,7 @@
 export class Var {
 
   id;
+  name;
   data;
   vars;
   rels;
