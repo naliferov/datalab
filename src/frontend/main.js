@@ -1,3 +1,7 @@
+import {View} from "./UI/view.js";
+import {CodeJar} from 'https://cdn.jsdelivr.net/npm/codejar@4.2.0/dist/codejar.min.js';
+//console.log(CodeJar);
+
 const rq = async (data) => {
     const r = await fetch('/', {
         headers: {'content-type': 'application/json'},
@@ -7,35 +11,40 @@ const rq = async (data) => {
     return await r.json();
 }
 
-const app = document.createElement('div');
-app.id = 'app';
-document.body.appendChild(app);
-
-//script editor in reactangle
-//modifier
+const app = new View({id: 'app'});
+document.body.appendChild(app.getDOM());
 
 (async () => {
     const r = await rq({cmd: 'var.get', path: 'frontend'});
     for (let blockName in r.vars) {
         const block = r.vars[blockName];
 
-        const newDiv = document.createElement('div');
-        newDiv.contentEditable = true;
+        const div = new View;
+        app.insert(div);
+        const divTxt = new View;
+        divTxt.toggleEdit();
+
         for (let prop in block) {
             if (prop === 'txt') {
-                newDiv.innerText = block[prop];
-            } else {
-                newDiv.style[prop] = block[prop];
+                div.insert(divTxt);
+                divTxt.setTxt(block[prop]);
+
+                try { eval(block[prop]); }
+                catch (e) { console.error(e); }
+                continue;
             }
+            div.setStyles({[prop]: block[prop]});
         }
-        newDiv.addEventListener('keyup', async (e) => {
-            const path = `frontend.${blockName}.txt`;
-            const value = newDiv.innerText;
-            await rq({cmd: 'var.set', path, value});
+
+        let txt = divTxt.getTxt();
+        divTxt.on('keyup', async () => {
+            if (divTxt.getTxt() === txt) return;
+            txt = divTxt.getTxt();
+            await rq({
+                cmd: 'var.set',
+                path: `frontend.${blockName}.txt`,
+                value: txt
+            });
         });
-        app.appendChild(newDiv);
     }
-    // for (let prop in r.vars) {
-    //     div.style[prop] = r.vars[prop];
-    // }
 })();

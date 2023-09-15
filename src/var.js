@@ -1,13 +1,15 @@
 export class Var {
-
   id;
   name;
   data;
   vars;
   rels;
 
+  parentId;
+  parentVar;
+
   constructor() {
-    this.updateCallback = () => {};
+    //this.updateCallback = () => {};
   }
 
   setParent(parent) {

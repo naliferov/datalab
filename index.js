@@ -533,7 +533,6 @@
             if (!vData[prop]) vData[prop] = {};
 
             const rawData = await varStorage.get(vars[prop]);
-
             if (rawData.data && rawData.vars) {
               vData[prop].data = rawData.data;
               vData[prop].vars = await getVars(rawData.vars);
@@ -551,6 +550,9 @@
       }
       return r;
     },
+    'getRaw': async (arg) => {
+      console.info(await varFactory.create({ path: arg[1] }));
+    },
     'del': async (arg) => {
       if (!arg[1]) return;
       const v = await varFactory.create({ path: arg[1] });
@@ -558,7 +560,6 @@
 
       if (v && name) await varFactory.delete(v, name);
     },
-    'getById': () => {},
     'list': (arg) => {
       //s.l(varRoot.list());
     },
@@ -567,8 +568,6 @@
     },
     serverStop: () => {}
   }
-
-
 
   const rqParseBody = async (rq, limitMb = 12) => {
 
@@ -598,7 +597,7 @@
       });
     });
   }
-  sys.rqParseQuery = (rq) => {
+  const rqParseQuery = (rq) => {
     const query = {};
     const url = new URL('http://t.c' + rq.url);
     url.searchParams.forEach((v, k) => {
@@ -606,7 +605,7 @@
     });
     return query;
   }
-  sys.rqResolveStatic = async (rq, rs) => {
+  const rqResolveStatic = async (rq, rs) => {
 
     const lastPart = rq.pathname.split('/').pop();
     const split = lastPart.split('.');
@@ -662,39 +661,43 @@
     else if (typeof v === 'string' || typeof v === 'number') s(v, contentType ?? 'text/plain; charset=utf-8');
     else s('', 'text/plain');
   }
-  sys.httpRqHandler = async (rq, rs) => {
+
+  const rqHandler = async (rq, rs) => {
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
-    rq.isLocal = isLocal;
-
     const url = new URL('http://t.c' + rq.url);
+
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
     s.l(ip, rq.mp);
 
-    const query = sys.rqParseQuery(rq);
-    const body = await rqParseBody(rq);
+    if (await rqResolveStatic(rq, rs)) return;
 
+    const body = await rqParseBody(rq);
     if (body.cmd === 'var.get') {
       sys.rqResponse(rs, await cmdMap.get(['', body.path]));
       return;
     }
     if (body.cmd === 'var.set') {
-      sys.rqResponse(rs, {iAnswerFromServer: 'Hello, how are you?'}, );
-      return;
-    }
-    if (query.cmd === 'getJs') {
-      const js = (await s.nodeFS.readFile('./src/frontend/main.js')).toString();
-      sys.rqResponse(rs, js, 'text/javascript');
+      await cmdMap.set(['', body.path, body.value]);
+      sys.rqResponse(rs, {ok: 1}, );
       return;
     }
     const html = `
         <!doctype html>
         <html lang=xx>
         <head>
-            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"><title>varcraft</title>
+            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+            <title>varcraft</title>
+            <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
         </head>
-        <body><script src="/?cmd=getJs"></script></body>
+        <body>
+        <style>body { margin: 0; background: whitesmoke; }</style>
+        <script type="module" src="/src/frontend/main.js"></script>
+        </body>
         </html>
     `;
     sys.rqResponse(rs, html, 'text/html; charset=utf-8');
@@ -705,9 +708,7 @@
 
   if (!s.server) {
     s.nodeHttp = await import('node:http');
-    s.def('server', s.nodeHttp.createServer((rq, rs) => {
-      sys.httpRqHandler(rq, rs)
-    }));
+    s.def('server', s.nodeHttp.createServer((rq, rs) => rqHandler(rq, rs)));
     s.def('serverStop', () => {
       s.server.closeAllConnections();
       s.server.close(() => s.server.closeAllConnections());
