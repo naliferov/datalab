@@ -1,7 +1,7 @@
-export class ServerStorage {
+export class FsStorage {
 
-    constructor(serverUrl) {
-        this.url = serverUrl;
+    constructor(fs) {
+        this.fs = fs;
     }
     serialize(u) {
         const o = {}
@@ -10,18 +10,17 @@ export class ServerStorage {
         return o;
     }
     async set(id, u) {
-        //ajax send
-        //await this.fs.writeFile(`./var/${id}`, JSON.stringify(this.serialize(u)));
+        await this.fs.writeFile(`./var/${id}`, JSON.stringify(this.serialize(u)));
     }
     async get(id) {
-        // try {
-        //     const data = await this.fs.readFile(`./var/${id}`);
-        //     return JSON.parse(data);
-        // } catch (e) {
-        //     console.log(e.message);
-        // }
+        try {
+            const data = await this.fs.readFile(`./var/${id}`);
+            return JSON.parse(data);
+        } catch (e) {
+            console.log(e.message);
+        }
     }
     async del(id) {
-        //await this.fs.unlink(`./var/${id}`);
+        await this.fs.unlink(`./var/${id}`);
     }
 }

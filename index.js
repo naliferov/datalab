@@ -625,7 +625,7 @@
       return false;
     }
   }
-  sys.rqGetCookies = rq => {
+  const rqGetCookies = rq => {
     const header = rq.headers.cookie;
     if (!header || header.length < 1) {
       return {};
@@ -647,12 +647,12 @@
     }
     return result;
   }
-  sys.rqAuthenticate = (rq) => {
+  const rqAuthenticate = (rq) => {
     let { token } = sys.rqGetCookies(rq);
     const netToken = sys.getNetToken();
     return token && netToken && token === netToken;
   }
-  sys.rqResponse = (rs, v, contentType) => {
+  const rqResponse = (rs, v, contentType) => {
     const s = (value, type) => rs.writeHead(200, { 'Content-Type': type }).end(value);
 
     if (!v) s('empty val', 'text/plain; charset=utf-8');
@@ -675,12 +675,12 @@
 
     const body = await rqParseBody(rq);
     if (body.cmd === 'var.get') {
-      sys.rqResponse(rs, await cmdMap.get(['', body.path]));
+      rqResponse(rs, await cmdMap.get(['', body.path]));
       return;
     }
     if (body.cmd === 'var.set') {
       await cmdMap.set(['', body.path, body.value]);
-      sys.rqResponse(rs, {ok: 1}, );
+      rqResponse(rs, {ok: 1}, );
       return;
     }
     const html = `
