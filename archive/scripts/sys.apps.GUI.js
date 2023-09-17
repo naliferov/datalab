@@ -149,7 +149,7 @@
 
             //console.log(await s.f('sys.apps.fileUploader'));
 
-            //BUILDING UI
+            //BUILDING elements
             const app = new this.v;
             app.setDOM(document.getElementById('app'));
 

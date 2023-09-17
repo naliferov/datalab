@@ -133,7 +133,7 @@ const rqHandler = async (rq, rs) => {
         </head>
         <body>
         <style>body { margin: 0; background: whitesmoke; }</style>
-        <script type="module" src="/src/frontend/main.js"></script>
+        <script type="module" src="/src/ui/gui.js"></script>
         </body>
         </html>
     `;

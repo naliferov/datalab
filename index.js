@@ -1,29 +1,7 @@
+
 const isObject = d => typeof d === 'object' && !Array.isArray(d) && d !== null;
 const isStr = str => typeof str === 'string';
 const pathToArr = path => Array.isArray(path) ? path : path.split('.');
-const parseCliArgs = cliArgs => {
-  const args = {};
-  let num = 0;
-
-  for (let i = 0; i < cliArgs.length; i++) {
-    if (i < 2) continue; //skip node and scriptName args
-
-    let arg = cliArgs[i];
-    args[num++] = arg;
-
-    if (arg.includes('=')) {
-      let [k, v] = arg.split('=');
-      if (!v) {
-        args[num] = arg; //start write args from main 0
-        continue;
-      }
-      args[k.trim()] = v.trim();
-    } else {
-      args['cmd'] = arg;
-    }
-  }
-  return args;
-};
 
 
 const { VarStorage } = await import('./src/storage/varStorage.js');
@@ -51,8 +29,8 @@ varRepository = new VarRepository(ulid, varRoot, varStorage);
 const cmdMap = {
   'var.set': async (arg) => {
     if (!arg[1]) return;
-    const v = await varRepository.find({ path: arg[1] });
-    if (v) await v.setData(arg[2]);
+    //const v = await varRepository.find({ path: arg[1] });
+    //if (v) await v.setData(arg[2]);
 
     //await this.varStorage.set(v.id, v);
 
@@ -63,8 +41,8 @@ const cmdMap = {
 
     console.log('...');
   },
-  'var.get': async (path) => {
-    const v = await varRepository.find(path);
+  'var.get': async (repository, path) => {
+    const v = await repository.get(path);
     if (!v) return;
 
     const r = {id: v.id}
@@ -94,9 +72,7 @@ const cmdMap = {
     }
     return r;
   },
-  'getRaw': async (arg) => {
-    console.info(await varRepository.find({ path: arg[1] }));
-  },
+  'getRaw': async (path) => await varRepository.find(path),
   'del': async (arg) => {
     if (!arg[1]) return;
     const v = await varRepository.find({ path: arg[1] });
@@ -118,6 +94,7 @@ const cmdMap = {
   },
   serverStop: () => {}
 }
+
 
 const cliCmdMap = {
   'var.get': async (arg) => {

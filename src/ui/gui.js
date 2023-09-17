@@ -1,4 +1,4 @@
-import {View} from "./UI/view.js";
+import {View} from "./elements/view.js";
 import {CodeJar} from 'https://cdn.jsdelivr.net/npm/codejar@4.2.0/dist/codejar.min.js';
 //console.log(CodeJar);
 
@@ -15,7 +15,7 @@ const app = new View({id: 'app'});
 document.body.appendChild(app.getDOM());
 
 (async () => {
-    const r = await rq({cmd: 'var.get', path: 'frontend'});
+    const r = await rq({cmd: 'var.get', path: 'elements'});
     for (let blockName in r.vars) {
         const block = r.vars[blockName];
 
