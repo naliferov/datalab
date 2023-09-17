@@ -1,6 +1,6 @@
 export class VarStorage {
 
-    constructor(fs) {
+    constructor(fs, storage) {
         this.fs = fs;
     }
     serialize(u) {
