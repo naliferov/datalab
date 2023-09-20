@@ -1,26 +1,20 @@
 export class VarStorage {
 
-    constructor(fs, storage) {
+    constructor(fs) {
         this.fs = fs;
     }
-    serialize(u) {
-        const o = {}
-        if (u.data) o.data = u.data;
-        if (u.vars) o.vars = u.vars;
-        return o;
-    }
     async set(id, u) {
-        await this.fs.writeFile(`./var/${id}`, JSON.stringify(this.serialize(u)));
+        await this.fs.writeFile(`./state/var/${id}`, u);
     }
     async get(id) {
         try {
-            const data = await this.fs.readFile(`./var/${id}`);
+            const data = await this.fs.readFile(`./state/var/${id}`);
             return JSON.parse(data);
         } catch (e) {
             console.log(e.message);
         }
     }
     async del(id) {
-        await this.fs.unlink(`./var/${id}`);
+        await this.fs.unlink(`./state/var/${id}`);
     }
 }

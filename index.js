@@ -1,32 +1,12 @@
+//import { Var, VarMeta, VarRelation } from "./src/domain/var.js";
+import { varcraftData } from "./src/domain/varcraft.js";
+import { promises as fs } from "node:fs";
+import { parseCliArgs } from "./src/transport/cli.js";
 
-const isObject = d => typeof d === 'object' && !Array.isArray(d) && d !== null;
-const isStr = str => typeof str === 'string';
-const pathToArr = path => Array.isArray(path) ? path : path.split('.');
+let root = await fs.readFile('./state/var/root');
+root = root.toString();
 
-
-const { VarStorage } = await import('./src/storage/varStorage.js');
-const varStorage = new VarStorage((await import('node:fs')).promises);
-
-const { Var } = await import('./src/var.js');
-const varRoot = new Var;
-varRoot.id = 'root';
-
-let varRootData = await varStorage.get('root');
-if (varRootData) {
-  if (varRootData.vars) varRoot.vars = varRootData.vars;
-} else {
-  await varStorage.set(varRoot.id, varRoot);
-}
-
-let varRepository;
-const {ulid} = await import('ulid');
-
-const { VarRepository } = await import('./src/varRepository.js');
-varRepository = new VarRepository(ulid, varRoot, varStorage);
-
-//if (!s.connectedSSERequests) s.def('connectedSSERequests', new Map);
-
-const cmdMap = {
+const varcraftConcrete = {
   'var.set': async (arg) => {
     if (!arg[1]) return;
     //const v = await varRepository.find({ path: arg[1] });
@@ -42,34 +22,41 @@ const cmdMap = {
     console.log('...');
   },
   'var.get': async (repository, path) => {
-    const v = await repository.get(path);
-    if (!v) return;
+    const vData = await repository.get(path);
+    if (!vData) return;
 
-    const r = {id: v.id}
-    if (v.data) r.data = v.data;
-    if (v.vars) {
-      const getVars = async (vars) => {
-        const vData = {};
+    const v = new Var;
+    v.id = vData.id;
+    //v.meta = vData.id;
 
-        for (let prop in vars) {
-          if (!vData[prop]) vData[prop] = {};
+    //search for var relations
 
-          const rawData = await varStorage.get(vars[prop]);
-          if (rawData.data && rawData.vars) {
-            vData[prop].data = rawData.data;
-            vData[prop].vars = await getVars(rawData.vars);
 
-          } else if (rawData.data) {
-            vData[prop] = rawData.data;
-          } else if (rawData.vars) {
-            vData[prop] = await getVars(rawData.vars);
-          }
-        }
-        return vData;
-      }
-
-      r.vars = await getVars(v.vars);
-    }
+    // const r = {id: v.id}
+    // if (v.data) r.data = v.data;
+    // if (v.vars) {
+    //   const getVars = async (vars) => {
+    //     const vData = {};
+    //
+    //     for (let prop in vars) {
+    //       if (!vData[prop]) vData[prop] = {};
+    //
+    //       const rawData = await varStorage.get(vars[prop]);
+    //       if (rawData.data && rawData.vars) {
+    //         vData[prop].data = rawData.data;
+    //         vData[prop].vars = await getVars(rawData.vars);
+    //
+    //       } else if (rawData.data) {
+    //         vData[prop] = rawData.data;
+    //       } else if (rawData.vars) {
+    //         vData[prop] = await getVars(rawData.vars);
+    //       }
+    //     }
+    //     return vData;
+    //   }
+    //
+    //   r.vars = await getVars(v.vars);
+    // }
     return r;
   },
   'getRaw': async (path) => await varRepository.find(path),
@@ -86,15 +73,40 @@ const cmdMap = {
 
     //if (v && name) await varRepository.delete(v, name);
   },
-  'list': (arg) => {
-    //s.l(varRoot.list());
+  serverStart: (server) => {
+    //if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
   },
-  serverStart: () => {
-    if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
-  },
-  serverStop: () => {}
 }
 
+const cmd = {};
+for (const method in varcraftData.methods) {
+  if (!varcraftConcrete[method]) continue;
+  cmd[method] = varcraftConcrete[method];
+}
+
+const pathToArr = path => Array.isArray(path) ? path : path.split('.');
+
+const { VarStorage } = await import('./src/storage/varStorage.js');
+const varStorage = new VarStorage(fs);
+
+const { Var } = await import('./src/domain/var.js');
+const varRoot = Object.create(Var);
+varRoot.id = 'root';
+
+// let varRootData = await varStorage.get('root');
+// if (varRootData) {
+//   if (varRootData.vars) varRoot.vars = varRootData.vars;
+// } else {
+//   await varStorage.set(varRoot.id, varRoot);
+// }
+
+let varRepository;
+const {ulid} = await import('ulid');
+
+const { VarRepository } = await import('./src/varRepository.js');
+varRepository = new VarRepository(ulid, varRoot, varStorage);
+
+//if (!s.connectedSSERequests) s.def('connectedSSERequests', new Map);
 
 const cliCmdMap = {
   'var.get': async (arg) => {

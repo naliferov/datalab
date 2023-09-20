@@ -1,5 +1,3 @@
-import { Var } from './var.js';
-
 export class VarRepository {
 
     constructor(ulid, varRoot, varStorage) {
