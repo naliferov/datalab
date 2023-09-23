@@ -2,14 +2,17 @@
 import { varcraftData } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
-
-let root = await fs.readFile('./state/var/root');
-root = root.toString();
+import { pathToArr } from "./src/util/util.js";
 
 const varcraftConcrete = {
-  'var.set': async (arg) => {
-    if (!arg[1]) return;
-    //const v = await varRepository.find({ path: arg[1] });
+  'var.set': async (repository, path) => {
+    if (!repository[1]) return;
+
+    const resp= await repository.getByPath(path);
+    if (resp.var && resp.relation) {
+      return resp.var;
+    }
+
     //if (v) await v.setData(arg[2]);
 
     //await this.varStorage.set(v.id, v);
@@ -21,49 +24,42 @@ const varcraftConcrete = {
 
     console.log('...');
   },
-  'var.get': async (repository, path) => {
-    const vData = await repository.get(path);
-    if (!vData) return;
+  'var.get': async (varRepository, path) => {
+    const resp = await varRepository.getByPath(path);
+    if (!resp) return;
 
-    const v = new Var;
-    v.id = vData.id;
-    //v.meta = vData.id;
+    if (resp.var) return resp.var;
+    if (resp.relation) {
 
-    //search for var relations
+      const getData = async (relation, depth = 0) => {
+        const data = {};
+        const assoc = relation.assoc;
+        if (!assoc) return data;
 
+        for (let prop in assoc) {
 
-    // const r = {id: v.id}
-    // if (v.data) r.data = v.data;
-    // if (v.vars) {
-    //   const getVars = async (vars) => {
-    //     const vData = {};
-    //
-    //     for (let prop in vars) {
-    //       if (!vData[prop]) vData[prop] = {};
-    //
-    //       const rawData = await varStorage.get(vars[prop]);
-    //       if (rawData.data && rawData.vars) {
-    //         vData[prop].data = rawData.data;
-    //         vData[prop].vars = await getVars(rawData.vars);
-    //
-    //       } else if (rawData.data) {
-    //         vData[prop] = rawData.data;
-    //       } else if (rawData.vars) {
-    //         vData[prop] = await getVars(rawData.vars);
-    //       }
-    //     }
-    //     return vData;
-    //   }
-    //
-    //   r.vars = await getVars(v.vars);
-    // }
-    return r;
+          const id = assoc[prop];
+          const relation = await varRelationRepository.getById(id);
+          if (!relation) {
+            data[prop] = await varRepository.getById(id);
+            continue;
+          }
+          return data[prop] = await getData(relation, ++depth)
+        }
+
+        return data;
+      }
+
+      return await getData(resp.relation);
+    }
   },
-  'getRaw': async (path) => await varRepository.find(path),
+  'var.getRaw': async (repository, path) => {
+    return await repository.getByPath(path);
+  },
   'del': async (arg) => {
-    if (!arg[1]) return;
-    const v = await varRepository.find({ path: arg[1] });
-    const name = arg[1].split('.').at(-1);
+    // if (!arg[1]) return;
+    // const v = await varRepository.find({ path: arg[1] });
+    // const name = arg[1].split('.').at(-1);
 
     //todo if not found create var with varFactory
 
@@ -84,33 +80,34 @@ for (const method in varcraftData.methods) {
   cmd[method] = varcraftConcrete[method];
 }
 
-const pathToArr = path => Array.isArray(path) ? path : path.split('.');
+const { FsStorage } = await import('./src/storage/fsStorage.js');
+const varStorage = new FsStorage('./state', fs);
+const varRelationStorage = new FsStorage('./state', fs);
 
-const { VarStorage } = await import('./src/storage/varStorage.js');
-const varStorage = new VarStorage(fs);
-
-const { Var } = await import('./src/domain/var.js');
-const varRoot = Object.create(Var);
-varRoot.id = 'root';
-
-// let varRootData = await varStorage.get('root');
-// if (varRootData) {
-//   if (varRootData.vars) varRoot.vars = varRootData.vars;
-// } else {
-//   await varStorage.set(varRoot.id, varRoot);
+// const varRootData = await varStorage.get('root');
+// if (!varRootData) {
+//   await varStorage.set('root', JSON.stringify({}));
 // }
-
-let varRepository;
-const {ulid} = await import('ulid');
+//todo create varRelation if not exists
 
 const { VarRepository } = await import('./src/varRepository.js');
-varRepository = new VarRepository(ulid, varRoot, varStorage);
+let varRepository = new VarRepository(varStorage);
 
-//if (!s.connectedSSERequests) s.def('connectedSSERequests', new Map);
 
 const cliCmdMap = {
   'var.get': async (arg) => {
-    return cmdMap['var.get'](pathToArr(arg[1]));
+    if (!arg[1]) {
+      console.error('path is empty');
+      return;
+    }
+    return cmd['var.get'](varRepository, pathToArr(arg[1]));
+  },
+  'var.getRaw': async (arg) => {
+    if (!arg[1]) {
+      console.error('path is empty');
+      return;
+    }
+    return cmd['var.getRaw'](varRepository, pathToArr(arg[1]));
   },
   'var.set': (arg) => {
     return 'cmd test';

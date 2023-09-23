@@ -1,19 +1,21 @@
-export const Var = {
-    //id
-    //meta
-}
+export const Var = {} //var have own id
 export const VarMeta = {}
-export const VarRelation = {
+export const VarRelation = { //var relation has id of var
+    meta: {}, //info for description and etc
     direct: {
-        varId1: 1,
+        varId1: {
+            id: 'varId',
+            type: 'var | rel'
+        },
         varId2: 1
     },
     assoc: {
-        name: 'varId',
+        name1: 'varId',
         name2: {
+            id: 'varId',
             netNodeName: 'amsterdamSmallServer',
-            id: 'varId'
-        }
+            type: 'var | rel'
+        },
     }
 }
 

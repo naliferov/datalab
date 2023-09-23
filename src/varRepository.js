@@ -1,53 +1,35 @@
-
 export class VarRepository {
 
-    constructor(ulid, varRoot, varStorage) {
-        this.ulid = ulid;
-        this.varRoot = varRoot;
+    constructor(varStorage, varRelationRepository) {
         this.varStorage = varStorage;
+        this.varRelationRepository = varRelationRepository;
     }
 
-    async getVarByPath(path) {
-        let lastVar = this.varRoot;
-        if (path[0] === 'root') return this.varRoot;
+    async getByPath(path) {
+        if (path[0] === 'root') return {};
 
-        let u;
-        let notFoundCount = 0;
-
+        let relation = await this.getById('root');
+        let entity;
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];
             if (!name) return;
+            if (!relation.assoc) return;
 
-            u = new Var;
-            u.id = lastVar.get(name);
-            u.parentId = lastVar.id;
+            const id = relation.assoc[name];
+            if (!id) return;
+            entity = await this.getById(id);
+            if (!entity) return;
 
-            if (!u.id) {
-                if (++notFoundCount > 1) return;
-                continue;
+            if (i !== path.length - 1) {
+                relation = entity;
             }
-
-            const data = await this.varStorage.get(u.id);
-            if (data) {
-                for (const prop in data) u[prop] = data[prop];
-            } else {
-                if (i > 0) return;
-                continue;
-            }
-            lastVar = u;
         }
 
-        return u;
+        return { relation, entity };
     }
 
-    async get(path) {
-        const u = await this.getVarByPath(path);
-        if (!u) return;
-
-        u.relativeVarName = path.at(-1);
-        if (!u.id) u.id = this.ulid();
-
-        return u;
+    async getById(id) {
+        return await this.varStorage.get(id);
     }
 }

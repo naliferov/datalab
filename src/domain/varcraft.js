@@ -6,6 +6,7 @@ export const varcraftData =  {
             params: {path: 'array', data: 'object'}
         },
         'var.get': {},
+        'var.getRaw': {},
         'var.del': {},
         'var.addRelation': {}, //direct or assoc
         'var.delRelation': {},
