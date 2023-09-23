@@ -3,6 +3,7 @@ import { varcraftData } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
+import {ulid} from "ulid";
 
 const varcraftConcrete = {
   'var.set': async (repository, path) => {
@@ -27,31 +28,36 @@ const varcraftConcrete = {
   'var.get': async (varRepository, path) => {
     const resp = await varRepository.getByPath(path);
     if (!resp) return;
+    if (!resp.entity) return;
 
-    if (resp.var) return resp.var;
-    if (resp.relation) {
+    if (resp.entity.data) {
+      return resp.entity;
+    }
 
-      const getData = async (relation, depth = 0) => {
-        const data = {};
-        const assoc = relation.assoc;
-        if (!assoc) return data;
+    const getData = async (relation) => {
+      const data = {};
 
-        for (let prop in assoc) {
+      const assoc = relation.assoc;
+      if (!assoc) return data;
 
-          const id = assoc[prop];
-          const relation = await varRelationRepository.getById(id);
-          if (!relation) {
-            data[prop] = await varRepository.getById(id);
-            continue;
-          }
-          return data[prop] = await getData(relation, ++depth)
+      for (let prop in assoc) {
+        const id = assoc[prop];
+        if (!id) return;
+
+        const entity = await varRepository.getById(id);
+        if (entity.assoc) {
+          data[prop] = await getData(entity)
+        } else if (entity.data) {
+          data[prop] = entity;
+        } else {
+          data[prop] = null;
         }
-
-        return data;
       }
 
-      return await getData(resp.relation);
+      return data;
     }
+
+    return await getData(resp.entity);
   },
   'var.getRaw': async (repository, path) => {
     return await repository.getByPath(path);

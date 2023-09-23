@@ -1,8 +1,7 @@
 export class VarRepository {
 
-    constructor(varStorage, varRelationRepository) {
+    constructor(varStorage) {
         this.varStorage = varStorage;
-        this.varRelationRepository = varRelationRepository;
     }
 
     async getByPath(path) {
