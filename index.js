@@ -1,54 +1,60 @@
-//import { Var, VarMeta, VarRelation } from "./src/domain/var.js";
 import { varcraftData } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
-import {ulid} from "ulid";
+import { ulid } from "ulid";
 
 const varcraftConcrete = {
-  'var.set': async (repository, path) => {
-    if (!repository[1]) return;
+  'var.set': async (repository, path, data) => {
 
     const resp= await repository.getByPath(path);
-    if (resp.var && resp.relation) {
-      return resp.var;
+    if (resp && resp.assoc) {
+      return;
     }
 
-    //if (v) await v.setData(arg[2]);
+    if (!resp) {
+      const resp = await varFactory.createByPath(path);
+      if (resp.varB) {
+        resp.varB.data = data;
+        //await repository.save(varB.id, varSerializer.serialize(varB));
+      }
+      if (resp.varB.new) {
+        //await repository.save(varA.id, varSerializer.serialize(varA));
+      }
+      console.log('created', resp);
+      return;
+    }
 
-    //await this.varStorage.set(v.id, v);
-
-    //v.relativeVarName
-    //     if (!p.get(name)) {
-    //         p.set(name, u.id);
-    //     }
-
-    console.log('...');
+    const varB = resp.varB;
+    if (varB && !varB.assoc) {
+      varB.data = data;
+      await repository.save(varB.id, varSerializer.serialize(varB));
+    }
   },
   'var.get': async (varRepository, path) => {
     const resp = await varRepository.getByPath(path);
     if (!resp) return;
-    if (!resp.entity) return;
+    if (!resp.varB) return;
 
-    if (resp.entity.data) {
-      return resp.entity;
+    if (resp.varB.data) {
+      return resp.varB;
     }
 
-    const getData = async (relation) => {
+    const getData = async (varA) => {
       const data = {};
 
-      const assoc = relation.assoc;
+      const assoc = varA.assoc;
       if (!assoc) return data;
 
       for (let prop in assoc) {
         const id = assoc[prop];
         if (!id) return;
 
-        const entity = await varRepository.getById(id);
-        if (entity.assoc) {
-          data[prop] = await getData(entity)
-        } else if (entity.data) {
-          data[prop] = entity;
+        const varB = await varRepository.getById(id);
+        if (varB.assoc) {
+          data[prop] = await getData(varB)
+        } else if (varB.data) {
+          data[prop] = varB;
         } else {
           data[prop] = null;
         }
@@ -57,7 +63,7 @@ const varcraftConcrete = {
       return data;
     }
 
-    return await getData(resp.entity);
+    return await getData(resp.varB);
   },
   'var.getRaw': async (repository, path) => {
     return await repository.getByPath(path);
@@ -88,7 +94,9 @@ for (const method in varcraftData.methods) {
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const varStorage = new FsStorage('./state', fs);
-const varRelationStorage = new FsStorage('./state', fs);
+
+const { VarSerializer } = await import('./src/varSerializer.js');
+const varSerializer = new VarSerializer;
 
 // const varRootData = await varStorage.get('root');
 // if (!varRootData) {
@@ -99,6 +107,8 @@ const varRelationStorage = new FsStorage('./state', fs);
 const { VarRepository } = await import('./src/varRepository.js');
 let varRepository = new VarRepository(varStorage);
 
+const { VarFactory } = await import('./src/varFactory.js');
+const varFactory = new VarFactory(ulid, varRepository);
 
 const cliCmdMap = {
   'var.get': async (arg) => {
@@ -116,7 +126,15 @@ const cliCmdMap = {
     return cmd['var.getRaw'](varRepository, pathToArr(arg[1]));
   },
   'var.set': (arg) => {
-    return 'cmd test';
+    if (!arg[1]) {
+      console.error('path is empty');
+      return;
+    }
+    if (!arg[2]) {
+      console.error('data is empty');
+      return;
+    }
+    return cmd['var.set'](varRepository, pathToArr(arg[1]), arg[2]);
   },
   'var.del': (arg) => {
     return 'cmd test';

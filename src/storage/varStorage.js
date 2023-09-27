@@ -3,8 +3,8 @@ export class VarStorage {
     constructor(fs) {
         this.fs = fs;
     }
-    async set(id, u) {
-        await this.fs.writeFile(`./state/var/${id}`, u);
+    async set(id, v) {
+        await this.fs.writeFile(`./state/var/${id}`, JSON.stringify(v));
     }
     async get(id) {
         try {

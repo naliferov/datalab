@@ -5,30 +5,34 @@ export class VarRepository {
     }
 
     async getByPath(path) {
-        if (path[0] === 'root') return {};
 
-        let relation = await this.getById('root');
-        let entity;
+        let varA = await this.getById('root');
+        let varB;
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];
             if (!name) return;
-            if (!relation.assoc) return;
+            if (!varA.assoc) return;
 
-            const id = relation.assoc[name];
+            const id = varA.assoc[name];
             if (!id) return;
-            entity = await this.getById(id);
-            if (!entity) return;
+            varB = await this.getById(id);
+            if (!varB) return;
+            varB.id = id;
 
             if (i !== path.length - 1) {
-                relation = entity;
+                varA = varB;
             }
         }
 
-        return { relation, entity };
+        return { varA, varB };
     }
 
     async getById(id) {
         return await this.varStorage.get(id);
+    }
+
+    async save(id, v) {
+        await this.varStorage.set(id, v);
     }
 }

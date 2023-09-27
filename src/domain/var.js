@@ -1,4 +1,8 @@
-export const Var = {} //var have own id
+//every entity has ID
+
+export const Var = {
+    calc: (dependencies) => {}
+}
 export const VarMeta = {}
 export const VarRelation = { //var relation has id of var
     meta: {}, //info for description and etc
