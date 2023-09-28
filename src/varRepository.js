@@ -19,6 +19,7 @@ export class VarRepository {
             varB = await this.getById(id);
             if (!varB) return;
             varB.id = id;
+            varB.name = name;
 
             if (i !== path.length - 1) {
                 varA = varB;
@@ -31,8 +32,10 @@ export class VarRepository {
     async getById(id) {
         return await this.varStorage.get(id);
     }
-
-    async save(id, v) {
+    async set(id, v) {
         await this.varStorage.set(id, v);
+    }
+    async del(id) {
+        await this.varStorage.del(id);
     }
 }

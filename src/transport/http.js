@@ -99,14 +99,14 @@ const rqResponse = (rs, v, contentType) => {
         send('', 'text/plain');
     }
 }
-const rqHandler = async (rq, rs) => {
+const rqHandler = async (rq, rs, cmdMap) => {
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
     const url = new URL('http://t.c' + rq.url);
 
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
-    s.l(ip, rq.mp);
+    console.log(ip, rq.mp);
 
     if (await rqResolveStatic(rq, rs)) return;
 

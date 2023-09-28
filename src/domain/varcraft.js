@@ -11,6 +11,8 @@ export const varcraftData =  {
         'var.addRelation': {}, //direct or assoc
         'var.delRelation': {},
         'var.findRelations': {},
+        'server.start': {},
+        'server.stop': {},
     },
     //binlog
 };

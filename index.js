@@ -4,35 +4,36 @@ import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
 import { ulid } from "ulid";
 
-const varcraftConcrete = {
-  'var.set': async (repository, path, data) => {
+const varcraft = {
+  'var.set': async (repo, serializer, path, data) => {
 
-    const resp= await repository.getByPath(path);
-    if (resp && resp.assoc) {
-      return;
-    }
-
+    const resp= await repo.getByPath(path);
     if (!resp) {
       const resp = await varFactory.createByPath(path);
+
       if (resp.varB) {
-        resp.varB.data = data;
-        //await repository.save(varB.id, varSerializer.serialize(varB));
+        const { varA, varB } = resp;
+        varB.data = data;
+        await repo.set(varB.id, serializer.serialize(varB));
+
+        if (varB.new) {
+          await repo.set(varA.id, serializer.serialize(varA));
+        }
+
+        return { varA, varB };
       }
-      if (resp.varB.new) {
-        //await repository.save(varA.id, varSerializer.serialize(varA));
-      }
-      console.log('created', resp);
-      return;
     }
 
     const varB = resp.varB;
     if (varB && !varB.assoc) {
       varB.data = data;
-      await repository.save(varB.id, varSerializer.serialize(varB));
+      await repo.set(varB.id, serializer.serialize(varB));
+
+      return varB;
     }
   },
-  'var.get': async (varRepository, path) => {
-    const resp = await varRepository.getByPath(path);
+  'var.get': async (repo, path) => {
+    const resp = await repo.getByPath(path);
     if (!resp) return;
     if (!resp.varB) return;
 
@@ -50,7 +51,7 @@ const varcraftConcrete = {
         const id = assoc[prop];
         if (!id) return;
 
-        const varB = await varRepository.getById(id);
+        const varB = await repo.getById(id);
         if (varB.assoc) {
           data[prop] = await getData(varB)
         } else if (varB.data) {
@@ -65,31 +66,28 @@ const varcraftConcrete = {
 
     return await getData(resp.varB);
   },
-  'var.getRaw': async (repository, path) => {
-    return await repository.getByPath(path);
+  'var.getRaw': async (repo, path) => {
+    return await repo.getByPath(path);
   },
-  'del': async (arg) => {
-    // if (!arg[1]) return;
-    // const v = await varRepository.find({ path: arg[1] });
-    // const name = arg[1].split('.').at(-1);
+  'var.del': async (repo, serializer, path) => {
+    const resp = await repo.getByPath(path);
+    if (!resp) return;
+    const { varA, varB } = resp;
 
-    //todo if not found create var with varFactory
-
-    //if (!v.relativeVarName || !v.relativeVarName) return;
-    //p.del(name);
-    //await this.varStorage.del(v.id);
-
-    //if (v && name) await varRepository.delete(v, name);
+    repo.del(varB.id);
+    delete varA.assoc[varB.name];
+    repo.set(varA.id, serializer.serialize(varA));
   },
-  serverStart: (server) => {
-    //if (s.server) s.server.listen(8080, () => console.log(`httpServer start port: 8080`));
+  'server.start': (server, conf) => {
+    server.listen(conf.port, () => console.log(`Server start on port: [${conf.port}].`));
   },
+  'server.stop': () => {}
 }
 
 const cmd = {};
 for (const method in varcraftData.methods) {
-  if (!varcraftConcrete[method]) continue;
-  cmd[method] = varcraftConcrete[method];
+  if (!varcraft[method]) continue;
+  cmd[method] = varcraft[method];
 }
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
@@ -97,12 +95,6 @@ const varStorage = new FsStorage('./state', fs);
 
 const { VarSerializer } = await import('./src/varSerializer.js');
 const varSerializer = new VarSerializer;
-
-// const varRootData = await varStorage.get('root');
-// if (!varRootData) {
-//   await varStorage.set('root', JSON.stringify({}));
-// }
-//todo create varRelation if not exists
 
 const { VarRepository } = await import('./src/varRepository.js');
 let varRepository = new VarRepository(varStorage);
@@ -134,10 +126,24 @@ const cliCmdMap = {
       console.error('data is empty');
       return;
     }
-    return cmd['var.set'](varRepository, pathToArr(arg[1]), arg[2]);
+    return cmd['var.set'](varRepository, varSerializer, pathToArr(arg[1]), arg[2]);
   },
   'var.del': (arg) => {
-    return 'cmd test';
+    if (!arg[1]) {
+      console.error('path is empty');
+      return;
+    }
+    return cmd['var.del'](varRepository, varSerializer, pathToArr(arg[1]));
+  },
+  'server.start': async (arg) => {
+    const config = {
+      port: arg[1] || 8080,
+      handler: async (rq, rs) => rs.end('Default server response.')
+    }
+    const server = (await import('node:http')).createServer(async (rq, rs) => {
+      await config.handler(rq, rs);
+    });
+    return cmd['server.start'](server, config);
   }
 }
 
