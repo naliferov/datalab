@@ -17,7 +17,7 @@ const rqParseBody = async (rq, limitMb = 12) => {
             len += chunk.length;
             if (len > limit) {
                 rq.destroy();
-                resolve({ err: `limit reached [${limitMb}mb]` });
+                resolve({ err: `limit reached [${limitMb} mb]` });
                 return;
             }
             b.push(chunk);
@@ -34,7 +34,7 @@ const rqParseBody = async (rq, limitMb = 12) => {
         });
     });
 }
-const rqResolveStatic = async (rq, rs) => {
+const rqResolveStatic = async (rq, rs, fs) => {
 
     const lastPart = rq.pathname.split('/').pop();
     const split = lastPart.split('.');
@@ -42,15 +42,13 @@ const rqResolveStatic = async (rq, rs) => {
 
     const extension = split[split.length - 1]; if (!extension) return;
     try {
-        const file = await s.nodeFS.readFile('.' + rq.pathname);
         const m = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf' };
         if (m[extension]) rs.setHeader('Content-Type', m[extension]);
 
-        rs.end(file);
+        rs.end(await fs.readFile('.' + rq.pathname));
         return true;
     } catch (e) {
-        if (s.log) s.log.info(e.toString(), { path: e.path, syscall: e.syscall });
-        else console.log(e);
+        console.log(e);
         return false;
     }
 }
@@ -82,7 +80,9 @@ const rqAuthenticate = (rq) => {
     return token && netToken && token === netToken;
 }
 const rqResponse = (rs, v, contentType) => {
-    const send = (value, type) => rs.writeHead(200, { 'Content-Type': type }).end(value);
+    const send = (value, type) => {
+        rs.writeHead(200, { 'Content-Type': type }).end(value);
+    }
 
     if (!v) {
         send('empty val', 'text/plain; charset=utf-8');
@@ -99,46 +99,32 @@ const rqResponse = (rs, v, contentType) => {
         send('', 'text/plain');
     }
 }
-const rqHandler = async (rq, rs, cmdMap) => {
-    const ip = rq.socket.remoteAddress;
-    const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
-    const url = new URL('http://t.c' + rq.url);
+export const rqHandler = async (rq, rs, conf) => {
 
+    //const ip = rq.socket.remoteAddress;
+    //const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+    const url = new URL('http://t.c' + rq.url);
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
-    console.log(ip, rq.mp);
 
-    if (await rqResolveStatic(rq, rs)) return;
+    if (conf.resolveStatic && await rqResolveStatic(rq, rs, conf.fs)) {
+        return;
+    }
 
+    const query = rqParseQuery(rq);
     const body = await rqParseBody(rq);
-    if (body.cmd === 'var.get') {
-        rqResponse(rs, await cmdMap.get(['', body.path]));
+    const msg = body ?? query;
+
+    const cmd = body.cmd;
+    const fn = conf.cmdMap[cmd] || conf.cmdMap['default'];
+
+    const out = await fn({ msg });
+    if (!out) return;
+
+    if (typeof out === 'object' && out.msg && out.type) {
+        const { msg, type } = out;
+        rqResponse(rs, msg, type);
         return;
     }
-    if (body.cmd === 'var.set') {
-        await cmdMap.set(['', body.path, body.value]);
-        rqResponse(rs, {ok: 1}, );
-        return;
-    }
-    const html = `
-        <!doctype html>
-        <html lang=xx>
-        <head>
-            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-            <title>varcraft</title>
-            <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-        </head>
-        <body>
-        <style>body { margin: 0; background: whitesmoke; }</style>
-        <script type="module" src="/src/ui/gui.js"></script>
-        </body>
-        </html>
-    `;
-    rqResponse(rs, html, 'text/html; charset=utf-8');
-    // if (!rq.isLongRequest && !rs.writableEnded) {
-    //   rs.s('Default response.');
-    // }
+    rqResponse(rs, out);
 };

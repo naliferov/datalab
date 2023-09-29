@@ -6,8 +6,11 @@ export class VarRepository {
 
     async getByPath(path) {
 
-        let varA = await this.getById('root');
-        let varB;
+        let relation = [ await this.getById('root') ];
+        let last = relation.at(-1);
+
+        console.log(last);
+        return;
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];

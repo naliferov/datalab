@@ -348,7 +348,7 @@ if (!s.loop) {
                 catch (e) { console.log(e); }
             }
         },
-        stop: function () { } //connect this to elements btn and API
+        stop: function () { } //connect this to frame btn and API
     });
     s.process.on('uncaughtException', e => console.log('[[uncaughtException]]', e.stack));
 }

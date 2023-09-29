@@ -1,5 +1,5 @@
-import {View} from "./elements/view.js";
-import {CodeJar} from 'https://cdn.jsdelivr.net/npm/codejar@4.2.0/dist/codejar.min.js';
+import { View } from "./frame/view.js";
+//import {CodeJar} from 'https://cdn.jsdelivr.net/npm/codejar@4.2.0/dist/codejar.min.js';
 //console.log(CodeJar);
 
 const rq = async (data) => {
@@ -15,7 +15,7 @@ const app = new View({id: 'app'});
 document.body.appendChild(app.getDOM());
 
 (async () => {
-    const r = await rq({cmd: 'var.get', path: 'frontend'});
+    const r = await rq({ cmd: 'var.get', path: 'frontend', depth: 1 });
 
     console.log(r);
     return;

@@ -3,11 +3,15 @@ export const varcraftData =  {
     deps: 'varRepository',
     methods: {
         'var.set': {
-            params: {path: 'array', data: 'object'}
+            params: { path: 'array', data: 'object' }
         },
-        'var.get': {},
-        'var.getRaw': {},
+        'var.get': {
+            params: { path: 'array', depth: 'integer' }
+        },
         'var.del': {},
+        'var.mv': {
+            params: { pathA: 'array', pathB: 'array' }
+        },
         'var.addRelation': {}, //direct or assoc
         'var.delRelation': {},
         'var.findRelations': {},

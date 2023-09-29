@@ -24,7 +24,7 @@ export class View {
         this.dom = document.createElement(this.data.tagName || 'div');
 
         if (this.data.style) {
-            for (let key in this.data.style) this.dom.style[key] = this.data.style[key];
+            for (let k in this.data.style) this.dom.style[k] = this.data.style[k];
         }
 
         if (this.data.id) this.dom.id = this.data.id;

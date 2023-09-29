@@ -15,8 +15,11 @@ export class VarFactory {
 
     async createByPath(path) {
 
-        let varA = await this.repository.getById('root');
-        let varB;
+        let relation = [ await this.repository.getById('root') ];
+        let last = relation.at(-1);
+
+        //console.log()
+        return;
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];

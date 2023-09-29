@@ -4,6 +4,8 @@ import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
 import { ulid } from "ulid";
 
+const cmd = {};
+
 const varcraft = {
   'var.set': async (repo, serializer, path, data) => {
 
@@ -13,11 +15,11 @@ const varcraft = {
 
       if (resp.varB) {
         const { varA, varB } = resp;
-        varB.data = data;
-        await repo.set(varB.id, serializer.serialize(varB));
+        //varB.data = data;
+        //await repo.set(varB.id, serializer.serialize(varB));
 
         if (varB.new) {
-          await repo.set(varA.id, serializer.serialize(varA));
+          //await repo.set(varA.id, serializer.serialize(varA));
         }
 
         return { varA, varB };
@@ -26,8 +28,8 @@ const varcraft = {
 
     const varB = resp.varB;
     if (varB && !varB.assoc) {
-      varB.data = data;
-      await repo.set(varB.id, serializer.serialize(varB));
+      //varB.data = data;
+      //await repo.set(varB.id, serializer.serialize(varB));
 
       return varB;
     }
@@ -78,13 +80,44 @@ const varcraft = {
     delete varA.assoc[varB.name];
     repo.set(varA.id, serializer.serialize(varA));
   },
-  'server.start': (server, conf) => {
+  'server.start': (conf) => {
+    const {fs, server, port, rqHandler} = conf;
+    //server start должен выполняться, останавливаться в зависимости от настроек конфига.
+    //например файл какой-то вотчиться который отвечает за нужные данные
+    const clients = {};
+      // const body = await rqParseBody(rq);
+      // if (body.cmd === 'var.get') {
+      //   rqResponse(rs, await cmdMap.get(['', body.path]));
+      //   return;
+      // }
+      // else if (body.cmd === 'var.set') {
+      //   //await cmdMap.set(['', body.path, body.value]);
+      //   //rqResponse(rs, {ok: 1}, );
+      //   //return;
+      // }
+    //}
+
+    conf.resolveStatic = true;
+    conf.cmdMap = {
+      'default': async () => {
+        return {
+          msg: await fs.readFile('./src/ui/index.html', 'utf8'),
+          type: 'text/html',
+        }
+      },
+      'var.get': async ({args}) => {
+        return { field22: 'okokok p' };
+        //return await cmd['var.get']()
+      }
+    }
+    server.on('request', async (rq, rs) => {
+      await rqHandler(rq, rs, conf);
+    });
     server.listen(conf.port, () => console.log(`Server start on port: [${conf.port}].`));
   },
   'server.stop': () => {}
 }
 
-const cmd = {};
 for (const method in varcraftData.methods) {
   if (!varcraft[method]) continue;
   cmd[method] = varcraft[method];
@@ -136,14 +169,16 @@ const cliCmdMap = {
     return cmd['var.del'](varRepository, varSerializer, pathToArr(arg[1]));
   },
   'server.start': async (arg) => {
-    const config = {
+
+    const conf = {
+      server: (await import('node:http')).createServer(),
       port: arg[1] || 8080,
-      handler: async (rq, rs) => rs.end('Default server response.')
+      fs,
     }
-    const server = (await import('node:http')).createServer(async (rq, rs) => {
-      await config.handler(rq, rs);
-    });
-    return cmd['server.start'](server, config);
+    const { rqHandler } = await import('./src/transport/http.js');
+    conf.rqHandler = rqHandler;
+
+    return cmd['server.start'](conf);
   }
 }
 

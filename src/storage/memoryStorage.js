@@ -1,7 +1,7 @@
 export class MemoryStorage {
 
-    constructor(storageObject) {
-        this.storage = storageObject;
+    constructor(storage) {
+        this.storage = storage;
     }
     async set(id, u) {
         this.storage[id] = u;
