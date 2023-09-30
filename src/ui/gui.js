@@ -14,41 +14,39 @@ const rq = async (data) => {
 const app = new View({id: 'app'});
 document.body.appendChild(app.getDOM());
 
-(async () => {
-    const r = await rq({ cmd: 'var.get', path: 'frontend', depth: 1 });
+const frontend = await rq({ cmd: 'var.get', path: ['frontend'], depth: 2 });
+console.log(frontend);
 
-    console.log(r);
-    return;
+for (let name in frontend) {
+    const v = frontend[name];
 
-    for (let blockName in r.vars) {
-        const block = r.vars[blockName];
+    const div = new View;
+    app.insert(div);
+    const divTxt = new View;
+    divTxt.toggleEdit();
 
-        const div = new View;
-        app.insert(div);
-        const divTxt = new View;
-        divTxt.toggleEdit();
+    console.log(v);
 
-        for (let prop in block) {
-            if (prop === 'txt') {
-                div.insert(divTxt);
-                divTxt.setTxt(block[prop]);
-
-                try { eval(block[prop]); }
-                catch (e) { console.error(e); }
-                continue;
-            }
-            div.setStyles({[prop]: block[prop]});
-        }
-
-        let txt = divTxt.getTxt();
-        divTxt.on('keyup', async () => {
-            if (divTxt.getTxt() === txt) return;
-            txt = divTxt.getTxt();
-            await rq({
-                cmd: 'var.set',
-                path: `frontend.${blockName}.txt`,
-                value: txt
-            });
-        });
+    for (let prop in v) {
+        // if (prop === 'txt') {
+        //     div.insert(divTxt);
+        //     divTxt.setTxt(block[prop]);
+        //
+        //     try { eval(block[prop]); }
+        //     catch (e) { console.error(e); }
+        //     continue;
+        // }
+        div.setStyles({[prop]: v[prop].data});
     }
-})();
+
+    // let txt = divTxt.getTxt();
+    // divTxt.on('keyup', async () => {
+    //     if (divTxt.getTxt() === txt) return;
+    //     txt = divTxt.getTxt();
+    //     await rq({
+    //         cmd: 'var.set',
+    //         path: `frontend.${blockName}.txt`,
+    //         value: txt
+    //     });
+    // });
+}

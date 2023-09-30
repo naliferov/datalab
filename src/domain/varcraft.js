@@ -17,6 +17,7 @@ export const varcraftData =  {
         'var.findRelations': {},
         'server.start': {},
         'server.stop': {},
+        'state.bundle': {},
     },
     //binlog
 };

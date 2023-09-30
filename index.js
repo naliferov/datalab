@@ -5,7 +5,6 @@ import { pathToArr } from "./src/util/util.js";
 import { ulid } from "ulid";
 
 const cmd = {};
-
 const varcraft = {
   'var.set': async (repo, serializer, path, data) => {
 
@@ -34,42 +33,36 @@ const varcraft = {
       return varB;
     }
   },
-  'var.get': async (repo, path) => {
-    const resp = await repo.getByPath(path);
-    if (!resp) return;
-    if (!resp.varB) return;
+  'var.get': async (repo, path = [], depth) => {
 
-    if (resp.varB.data) {
-      return resp.varB;
-    }
-
-    const getData = async (varA) => {
+    const getData = async (v, depth) => {
       const data = {};
 
-      const assoc = varA.assoc;
-      if (!assoc) return data;
+      if (v.data) return v;
+      if (!v.assoc) return data;
 
-      for (let prop in assoc) {
-        const id = assoc[prop];
+      for (let prop in v.assoc) {
+        const id = v.assoc[prop];
         if (!id) return;
 
-        const varB = await repo.getById(id);
-        if (varB.assoc) {
-          data[prop] = await getData(varB)
-        } else if (varB.data) {
-          data[prop] = varB;
-        } else {
-          data[prop] = null;
+        if (depth === 0) {
+          data[prop] = id;
+          continue;
+        }
+
+        const v2 = await repo.getById(id);
+        if (v2.assoc) {
+          data[prop] = await getData(v2, --depth);
+        } else if (v2.data) {
+          data[prop] = v2;
         }
       }
-
       return data;
     }
 
-    return await getData(resp.varB);
-  },
-  'var.getRaw': async (repo, path) => {
-    return await repo.getByPath(path);
+    const set = await repo.getByPath(path);
+
+    return await getData(set.at(-1), depth);
   },
   'var.del': async (repo, serializer, path) => {
     const resp = await repo.getByPath(path);
@@ -81,23 +74,10 @@ const varcraft = {
     repo.set(varA.id, serializer.serialize(varA));
   },
   'server.start': (conf) => {
-    const {fs, server, port, rqHandler} = conf;
-    //server start должен выполняться, останавливаться в зависимости от настроек конфига.
-    //например файл какой-то вотчиться который отвечает за нужные данные
-    const clients = {};
-      // const body = await rqParseBody(rq);
-      // if (body.cmd === 'var.get') {
-      //   rqResponse(rs, await cmdMap.get(['', body.path]));
-      //   return;
-      // }
-      // else if (body.cmd === 'var.set') {
-      //   //await cmdMap.set(['', body.path, body.value]);
-      //   //rqResponse(rs, {ok: 1}, );
-      //   //return;
-      // }
-    //}
 
-    conf.resolveStatic = true;
+    const { fs, server, port, rqHandler, repo } = conf;
+
+    conf.serveFiles = true;
     conf.cmdMap = {
       'default': async () => {
         return {
@@ -105,15 +85,17 @@ const varcraft = {
           type: 'text/html',
         }
       },
-      'var.get': async ({args}) => {
-        return { field22: 'okokok p' };
-        //return await cmd['var.get']()
+      'var.get': async ({msg}) => {
+        let { path, depth } = msg;
+        depth = Number(depth) || 1;
+
+        return await cmd['var.get'](repo, path, depth);
       }
     }
     server.on('request', async (rq, rs) => {
       await rqHandler(rq, rs, conf);
     });
-    server.listen(conf.port, () => console.log(`Server start on port: [${conf.port}].`));
+    server.listen(port, () => console.log(`Server start on port: [${port}].`));
   },
   'server.stop': () => {}
 }
@@ -137,18 +119,10 @@ const varFactory = new VarFactory(ulid, varRepository);
 
 const cliCmdMap = {
   'var.get': async (arg) => {
-    if (!arg[1]) {
-      console.error('path is empty');
-      return;
-    }
-    return cmd['var.get'](varRepository, pathToArr(arg[1]));
-  },
-  'var.getRaw': async (arg) => {
-    if (!arg[1]) {
-      console.error('path is empty');
-      return;
-    }
-    return cmd['var.getRaw'](varRepository, pathToArr(arg[1]));
+    const path = arg[1] ? pathToArr(arg[1]) : [];
+    const depth = Number(arg[2]) || 0;
+
+    return cmd['var.get'](varRepository, path, depth);
   },
   'var.set': (arg) => {
     if (!arg[1]) {
@@ -174,6 +148,7 @@ const cliCmdMap = {
       server: (await import('node:http')).createServer(),
       port: arg[1] || 8080,
       fs,
+      repo: varRepository
     }
     const { rqHandler } = await import('./src/transport/http.js');
     conf.rqHandler = rqHandler;

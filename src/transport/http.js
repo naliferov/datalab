@@ -34,7 +34,7 @@ const rqParseBody = async (rq, limitMb = 12) => {
         });
     });
 }
-const rqResolveStatic = async (rq, rs, fs) => {
+const rqResolveFile = async (rq, rs, fs) => {
 
     const lastPart = rq.pathname.split('/').pop();
     const split = lastPart.split('.');
@@ -101,13 +101,13 @@ const rqResponse = (rs, v, contentType) => {
 }
 export const rqHandler = async (rq, rs, conf) => {
 
-    //const ip = rq.socket.remoteAddress;
-    //const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+    const ip = rq.socket.remoteAddress;
+    const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
     const url = new URL('http://t.c' + rq.url);
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
 
-    if (conf.resolveStatic && await rqResolveStatic(rq, rs, conf.fs)) {
+    if (conf.serveFiles && await rqResolveFile(rq, rs, conf.fs)) {
         return;
     }
 
@@ -117,6 +117,11 @@ export const rqHandler = async (rq, rs, conf) => {
 
     const cmd = body.cmd;
     const fn = conf.cmdMap[cmd] || conf.cmdMap['default'];
+
+    if (!isLocal && cmd !== 'var.get') {
+        rqResponse(rs,'Forbidden.');
+        return;
+    }
 
     const out = await fn({ msg });
     if (!out) return;

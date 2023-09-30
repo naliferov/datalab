@@ -6,30 +6,29 @@ export class VarRepository {
 
     async getByPath(path) {
 
-        let relation = [ await this.getById('root') ];
-        let last = relation.at(-1);
-
-        console.log(last);
-        return;
+        let set = [ await this.getById('root') ];
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];
             if (!name) return;
-            if (!varA.assoc) return;
 
-            const id = varA.assoc[name];
+            const v = set.at(-1);
+            if (!v.assoc) return;
+
+            const id = v.assoc[name];
             if (!id) return;
-            varB = await this.getById(id);
-            if (!varB) return;
-            varB.id = id;
-            varB.name = name;
 
-            if (i !== path.length - 1) {
-                varA = varB;
-            }
+            const v2 = await this.getById(id);
+            if (!v2) return;
+            // v2.__verbose = {
+            //     id,
+            //     pathName: name
+            // }
+
+            set.push(v2);
         }
 
-        return { varA, varB };
+        return set;
     }
 
     async getById(id) {
