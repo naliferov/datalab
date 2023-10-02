@@ -12,6 +12,12 @@ export const varcraftData =  {
         'var.mv': {
             params: { pathA: 'array', pathB: 'array' }
         },
+
+        'var.scan': {},
+        'var.gatherSubVars': {},
+        'var.getByPath': {},
+        'var.createByPath': {},
+
         'var.addRelation': {}, //direct or assoc
         'var.delRelation': {},
         'var.findRelations': {},

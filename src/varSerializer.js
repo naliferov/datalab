@@ -4,10 +4,12 @@ export class VarSerializer {
         if (v.data) {
             return { data: v.data };
         }
-        if (!v.assoc && !v.direct) return;
+
+        if (!v.map && !v.direct) return;
 
         const result = {};
-        if (v.assoc) result.assoc = v.assoc;
+        if (v.map) result.map = v.map;
+        if (v.list) result.list = v.list;
         return result;
     }
 }

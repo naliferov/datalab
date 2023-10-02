@@ -6,24 +6,28 @@ export class VarRepository {
 
     async getByPath(path) {
 
-        let set = [ await this.getById('root') ];
+        let v1 = await this.getById('root');
+        v1.id = 'root';
+        let set = [ v1 ];
+
+        if (path[0] === 'root') {
+            return set;
+        }
 
         for (let i = 0; i < path.length; i++) {
             const name = path[i];
             if (!name) return;
 
             const v = set.at(-1);
-            if (!v.assoc) return;
+            if (!v.map) return;
 
-            const id = v.assoc[name];
+            const id = v.map[name];
             if (!id) return;
 
             const v2 = await this.getById(id);
             if (!v2) return;
-            // v2.__verbose = {
-            //     id,
-            //     pathName: name
-            // }
+            v2.id = id;
+            v2.name = name;
 
             set.push(v2);
         }

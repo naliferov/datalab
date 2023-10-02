@@ -8,41 +8,31 @@ const cmd = {};
 const varcraft = {
   'var.set': async (repo, serializer, path, data) => {
 
-    const resp= await repo.getByPath(path);
-    if (!resp) {
-      const resp = await varFactory.createByPath(path);
+    const set = await varFactory.createByPath(path);
 
-      if (resp.varB) {
-        const { varA, varB } = resp;
-        //varB.data = data;
-        //await repo.set(varB.id, serializer.serialize(varB));
+    let lastV;
+    for (let i = 0; i < set.length; i++) {
+      const v = set[i];
+      lastV = v;
 
-        if (varB.new) {
-          //await repo.set(varA.id, serializer.serialize(varA));
-        }
-
-        return { varA, varB };
+      if (v.updated && i !== set.length - 1) {
+        repo.set(v.id, serializer.serialize(v));
       }
     }
-
-    const varB = resp.varB;
-    if (varB && !varB.assoc) {
-      //varB.data = data;
-      //await repo.set(varB.id, serializer.serialize(varB));
-
-      return varB;
+    if (lastV && lastV.data) {
+      lastV.data = data;
+      repo.set(lastV.id, serializer.serialize(lastV));
     }
   },
   'var.get': async (repo, path = [], depth) => {
 
     const getData = async (v, depth) => {
+
       const data = {};
+      if (!v.map) return data;
 
-      if (v.data) return v;
-      if (!v.assoc) return data;
-
-      for (let prop in v.assoc) {
-        const id = v.assoc[prop];
+      for (let prop in v.map) {
+        const id = v.map[prop];
         if (!id) return;
 
         if (depth === 0) {
@@ -51,7 +41,7 @@ const varcraft = {
         }
 
         const v2 = await repo.getById(id);
-        if (v2.assoc) {
+        if (v2.map) {
           data[prop] = await getData(v2, --depth);
         } else if (v2.data) {
           data[prop] = v2;
@@ -61,17 +51,59 @@ const varcraft = {
     }
 
     const set = await repo.getByPath(path);
+    const v = set.at(-1);
+    if (v.data) return v;
 
     return await getData(set.at(-1), depth);
   },
   'var.del': async (repo, serializer, path) => {
-    const resp = await repo.getByPath(path);
-    if (!resp) return;
-    const { varA, varB } = resp;
+    const set = await repo.getByPath(path);
+    if (!set || !set.length) {
+      console.log(path, 'Var set not found')
+      return;
+    }
 
+    //const vars = await cmd['var.gatherSubVars'](repo, set.at(0)); console.log(Object.keys(vars).length);
+
+    const varA = set.at(-2);
+    const varB = set.at(-1);
+    console.log(varB);
+
+    const subVars = await cmd['var.gatherSubVars'](repo, varB);
+    const len = Object.keys(subVars).length;
+    if (len > 5) {
+      console.log(`Try to delete ${Object.keys(subVars).length} keys at once`);
+      return;
+    }
+    for (let id in subVars) {
+      console.log(`Delete subVar [${id}]`);
+      repo.del(id);
+    }
+
+    console.log(`Delete var [${varB.id}]`);
     repo.del(varB.id);
-    delete varA.assoc[varB.name];
+    delete varA.map[varB.name];
+
+    console.log(`Update var [${varA.id}]`);
     repo.set(varA.id, serializer.serialize(varA));
+  },
+  'var.gatherSubVars': async (repo, v) => {
+    if (!v.map) return {};
+
+    const subVars = {};
+
+    const getSubVars = async (v) => {
+      for (let prop in v.map) {
+        const id = v.map[prop];
+        const subV = await repo.getById(id);
+        subVars[id] = 1;
+
+        if (subV.map) await getSubVars(subV);
+      }
+    }
+    await getSubVars(v);
+
+    return subVars;
   },
   'server.start': (conf) => {
 
@@ -87,7 +119,7 @@ const varcraft = {
       },
       'var.get': async ({msg}) => {
         let { path, depth } = msg;
-        depth = Number(depth) || 1;
+        depth = Number(depth) || 0;
 
         return await cmd['var.get'](repo, path, depth);
       }

@@ -18,16 +18,13 @@ const frontend = await rq({ cmd: 'var.get', path: ['frontend'], depth: 2 });
 console.log(frontend);
 
 for (let name in frontend) {
-    const v = frontend[name];
+
+    const view = frontend[name];
 
     const div = new View;
     app.insert(div);
-    const divTxt = new View;
-    divTxt.toggleEdit();
 
-    console.log(v);
-
-    for (let prop in v) {
+    for (let prop in view) {
         // if (prop === 'txt') {
         //     div.insert(divTxt);
         //     divTxt.setTxt(block[prop]);
@@ -36,7 +33,7 @@ for (let name in frontend) {
         //     catch (e) { console.error(e); }
         //     continue;
         // }
-        div.setStyles({[prop]: v[prop].data});
+        div.setStyles({ [prop]: view[prop].data });
     }
 
     // let txt = divTxt.getTxt();
