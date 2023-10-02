@@ -115,10 +115,10 @@ export const rqHandler = async (rq, rs, conf) => {
     const body = await rqParseBody(rq);
     const msg = body ?? query;
 
-    const cmd = body.cmd;
-    const fn = conf.cmdMap[cmd] || conf.cmdMap['default'];
+    const cmd = body.cmd ?? 'default';
+    const fn = conf.cmdMap[cmd];
 
-    if (!isLocal && cmd !== 'var.get') {
+    if (!isLocal && cmd !== 'var.get' && cmd !== 'default') {
         rqResponse(rs,'Forbidden.');
         return;
     }
