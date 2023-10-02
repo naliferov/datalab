@@ -75,7 +75,6 @@ const varcraft = {
       console.log(`Try to delete ${Object.keys(subVars).length} keys at once`);
       return;
     }
-
     for (let id in subVars) {
       console.log(`Delete subVar [${id}]`);
       await repo.del(id);

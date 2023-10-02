@@ -13,6 +13,7 @@ export const varcraftInterface =  {
             params: { pathA: 'array', pathB: 'array' }
         },
 
+        'var.search': {},
         'var.scan': {},
         'var.gatherSubVars': {},
         'var.getByPath': {},
@@ -21,18 +22,12 @@ export const varcraftInterface =  {
         'var.addRelation': {}, //direct or assoc
         'var.delRelation': {},
         'var.findRelations': {},
+
+        'storage.import': {},
+        'storage.export': {},
+
         'server.start': {},
         'server.stop': {},
-        'state.bundle': {},
     },
     //binlog
 };
-
-// methods = {
-//     'setData': {},
-//     'set': {},
-//     'get': {},
-//     'del': {},
-//     'setRelation': {},
-//     //'addHorizontalRelation'
-// }
