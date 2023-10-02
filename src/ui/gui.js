@@ -14,9 +14,10 @@ const rq = async (data) => {
 const app = new View({id: 'app'});
 document.body.appendChild(app.getDOM());
 
-const frontend = await rq({ cmd: 'var.get', path: ['frontend'], depth: 2 });
+const frontend = await rq({ cmd: 'var.get', path: ['frontend'], depth: 3 });
 console.log(frontend);
 
+/*
 for (let name in frontend) {
 
     const view = frontend[name];
@@ -46,4 +47,4 @@ for (let name in frontend) {
     //         value: txt
     //     });
     // });
-}
+}*/

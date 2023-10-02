@@ -25,7 +25,10 @@ export class VarRepository {
             if (!id) return;
 
             const v2 = await this.getById(id);
-            if (!v2) return;
+            if (!v2) {
+                console.log(`Warning! Item not found by id ${id}`);
+                return;
+            }
             v2.id = id;
             v2.name = name;
 

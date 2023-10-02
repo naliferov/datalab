@@ -1,4 +1,4 @@
-import { varcraftData } from "./src/domain/varcraft.js";
+import { varcraftInterface } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
@@ -51,10 +51,13 @@ const varcraft = {
     }
 
     const set = await repo.getByPath(path);
+    if (!set) return;
+
     const v = set.at(-1);
+    if (!v) return;
     if (v.data) return v;
 
-    return await getData(set.at(-1), depth);
+    return await getData(v, depth);
   },
   'var.del': async (repo, serializer, path) => {
     const set = await repo.getByPath(path);
@@ -62,12 +65,9 @@ const varcraft = {
       console.log(path, 'Var set not found')
       return;
     }
-
     //const vars = await cmd['var.gatherSubVars'](repo, set.at(0)); console.log(Object.keys(vars).length);
-
     const varA = set.at(-2);
     const varB = set.at(-1);
-    console.log(varB);
 
     const subVars = await cmd['var.gatherSubVars'](repo, varB);
     const len = Object.keys(subVars).length;
@@ -75,17 +75,18 @@ const varcraft = {
       console.log(`Try to delete ${Object.keys(subVars).length} keys at once`);
       return;
     }
+
     for (let id in subVars) {
       console.log(`Delete subVar [${id}]`);
-      repo.del(id);
+      await repo.del(id);
     }
 
     console.log(`Delete var [${varB.id}]`);
-    repo.del(varB.id);
+    await repo.del(varB.id);
     delete varA.map[varB.name];
 
     console.log(`Update var [${varA.id}]`);
-    repo.set(varA.id, serializer.serialize(varA));
+    await repo.set(varA.id, serializer.serialize(varA));
   },
   'var.gatherSubVars': async (repo, v) => {
     if (!v.map) return {};
@@ -132,7 +133,7 @@ const varcraft = {
   'server.stop': () => {}
 }
 
-for (const method in varcraftData.methods) {
+for (const method in varcraftInterface.methods) {
   if (!varcraft[method]) continue;
   cmd[method] = varcraft[method];
 }

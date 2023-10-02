@@ -1,4 +1,4 @@
-export const varcraftData =  {
+export const varcraftInterface =  {
     version: 0,
     deps: 'varRepository',
     methods: {
