@@ -8,7 +8,7 @@ export class VarRepository {
 
         let v1 = await this.getById('root');
         v1.id = 'root';
-        let set = [ v1 ];
+        let set = [v1];
 
         if (path[0] === 'root') {
             return set;

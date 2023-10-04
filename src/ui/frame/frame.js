@@ -1,4 +1,4 @@
-export class View {
+export class Frame {
 
     constructor(data) {
         this.data = data || {};

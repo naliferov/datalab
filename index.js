@@ -1,4 +1,5 @@
 import { varcraftInterface } from "./src/domain/varcraft.js";
+import { transactionInterface } from "./src/domain/transaction.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
@@ -6,27 +7,33 @@ import { ulid } from "ulid";
 
 const cmd = {};
 const varcraft = {
-  'var.set': async (repo, serializer, path, data) => {
+  'var.set': async (meta, path, data) => {
 
-    const set = await varFactory.createByPath(path);
+    const { factory, repo, serializer } = meta;
 
-    let lastV;
+    const set = await factory.createByPath(path);
+
+    //await cmd['transaction.set'](repo)
+
     for (let i = 0; i < set.length; i++) {
       const v = set[i];
-      lastV = v;
+      //const transaction = v.transaction;
+      //if (!transaction) continue;
 
-      if (v.updated && i !== set.length - 1) {
-        repo.set(v.id, serializer.serialize(v));
+      if (v.data) {
+        v.data = data;
+        v.updated = 1;
+      }
+      if (v.updated || v.new) {
+        await repo.set(v.id, serializer.serialize(v));
       }
     }
-    if (lastV && lastV.data) {
-      lastV.data = data;
-      repo.set(lastV.id, serializer.serialize(lastV));
-    }
-  },
-  'var.get': async (repo, path = [], depth) => {
 
-    const getData = async (v, depth) => {
+    return set;
+  },
+  'var.get': async (repo, path = [], depth = 0) => {
+
+    const getData = async (v, localDepth) => {
 
       const data = {};
       if (!v.map) return data;
@@ -35,14 +42,14 @@ const varcraft = {
         const id = v.map[prop];
         if (!id) return;
 
-        if (depth === 0) {
+        if (localDepth === 0) {
           data[prop] = id;
           continue;
         }
 
         const v2 = await repo.getById(id);
         if (v2.map) {
-          data[prop] = await getData(v2, --depth);
+          data[prop] = await getData(v2, localDepth - 1);
         } else if (v2.data) {
           data[prop] = v2;
         }
@@ -65,7 +72,7 @@ const varcraft = {
       console.log(path, 'Var set not found')
       return;
     }
-    //const vars = await cmd['var.gatherSubVars'](repo, set.at(0)); console.log(Object.keys(vars).length);
+    //const vars = await cmd['var.gatherSubVars'](repo, set.at(0)); console.log(Object.keys(vars).length); return;
     const varA = set.at(-2);
     const varB = set.at(-1);
 
@@ -105,12 +112,12 @@ const varcraft = {
 
     return subVars;
   },
-  'server.start': (conf) => {
+  'server.start': (meta) => {
 
-    const { fs, server, port, rqHandler, repo } = conf;
+    const { fs, server, port, rqHandler, repo } = meta;
 
-    conf.serveFiles = true;
-    conf.cmdMap = {
+    meta.serveFS = true;
+    meta.cmdMap = {
       'default': async () => {
         return {
           msg: await fs.readFile('./src/ui/index.html', 'utf8'),
@@ -125,14 +132,41 @@ const varcraft = {
       }
     }
     server.on('request', async (rq, rs) => {
-      await rqHandler(rq, rs, conf);
+      await rqHandler(meta, rq, rs);
     });
     server.listen(port, () => console.log(`Server start on port: [${port}].`));
   },
-  'server.stop': () => {}
+  'server.stop': () => {},
+
+  'transaction.set': async (meta, op) => {
+
+    const { trans, repo } = meta;
+
+    if (state.lock) return;
+    state.lock = true;
+
+    state.version++;
+    state.transaction.push(transaction);
+
+    await repo.set('transaction', {
+      version: state.version,
+      transaction: state.transaction
+    });
+
+    state.lock = false;
+  },
+  'transaction.get': (repo, version) => {
+    //if first transaction version is behind query version, client have to download all data
+    //how to download all data without corruption
+    //return products after this version
+  }
 }
 
 for (const method in varcraftInterface.methods) {
+  if (!varcraft[method]) continue;
+  cmd[method] = varcraft[method];
+}
+for (const method in transactionInterface.methods) {
   if (!varcraft[method]) continue;
   cmd[method] = varcraft[method];
 }
@@ -149,14 +183,27 @@ let varRepository = new VarRepository(varStorage);
 const { VarFactory } = await import('./src/varFactory.js');
 const varFactory = new VarFactory(ulid, varRepository);
 
+
+
+const rootVar = await varRepository.getById('root');
+if (!rootVar) {
+  await varRepository.set('root', { map: {} });
+}
+const transactionVar = await varRepository.getById('transaction');
+if (!transactionVar) {
+  await varRepository.set('transaction', { version: 1, list: [] });
+}
+
+
+
 const cliCmdMap = {
   'var.get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
     const depth = Number(arg[2]) || 0;
 
-    return cmd['var.get'](varRepository, path, depth);
+    return await cmd['var.get'](varRepository, path, depth);
   },
-  'var.set': (arg) => {
+  'var.set': async (arg) => {
     if (!arg[1]) {
       console.error('path is empty');
       return;
@@ -165,9 +212,15 @@ const cliCmdMap = {
       console.error('data is empty');
       return;
     }
-    return cmd['var.set'](varRepository, varSerializer, pathToArr(arg[1]), arg[2]);
+
+    const meta = {
+      factory: varFactory,
+      repo: varRepository,
+      serializer: varSerializer
+    }
+    return await cmd['var.set'](meta, pathToArr(arg[1]), arg[2]);
   },
-  'var.del': (arg) => {
+  'var.del': async (arg) => {
     if (!arg[1]) {
       console.error('path is empty');
       return;
@@ -193,13 +246,10 @@ const runCliCmd = async () => {
   const process = (await import('node:process')).default;
   const cliArgs = parseCliArgs(process.argv);
   if (!cliCmdMap[cliArgs[0]]) {
+    console.log('Command not found');
     return;
   }
-
-  const response = await cliCmdMap[cliArgs[0]](cliArgs);
-  if (response) {
-    console.log(response);
-  }
+  console.log(await cliCmdMap[cliArgs[0]](cliArgs));
 }
 
 await runCliCmd();

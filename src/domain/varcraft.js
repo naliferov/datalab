@@ -3,15 +3,18 @@ export const varcraftInterface =  {
     deps: 'varRepository',
     methods: {
         'var.set': {
-            params: { path: 'array', data: 'object' }
+            params: { meta: '', path: 'array', data: '' }
         },
         'var.get': {
-            params: { path: 'array', depth: 'integer' }
+            params: { meta: '', path: 'array', depth: 'integer' }
         },
         'var.del': {},
         'var.mv': {
             params: { pathA: 'array', pathB: 'array' }
         },
+
+        'var.connect': {},
+        'var.watch': {},
 
         'var.search': {},
         'var.scan': {},
@@ -25,9 +28,9 @@ export const varcraftInterface =  {
 
         'storage.import': {},
         'storage.export': {},
+        'storage.countItems': {},
 
         'server.start': {},
         'server.stop': {},
     },
-    //binlog
 };
