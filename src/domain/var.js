@@ -1,7 +1,5 @@
-//Every var has id.
-
 export const Var = {
-    meta: {},
+    data: 'any',
     calc: (deps) => {}
 }
 export const VarMeta = {}
@@ -25,5 +23,6 @@ export const VarRelation = { //var relation has id of var
     list: [
         'varId1',
         'varId2',
-    ]
+    ],
+    func: () => {}
 }

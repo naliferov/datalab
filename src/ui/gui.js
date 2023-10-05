@@ -1,4 +1,4 @@
-import { varcraftInterface } from "/src/domain/varcraft.js";
+import { varcraftInterface } from "/src/domain/varcraftInterface.js";
 import { IndexedDBStorage } from "/src/storage/indexedDBStorage.js";
 import { Frame } from "./frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
