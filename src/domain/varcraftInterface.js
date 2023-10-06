@@ -1,5 +1,4 @@
 export const varcraftInterface =  {
-    version: 0,
     deps: 'varRepository',
     methods: {
         'var.set': {

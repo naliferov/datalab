@@ -1,4 +1,8 @@
-import { createVarSetByPath } from './varFunctions.js'
+import {
+    createVarSetByPath,
+    gatherVarDataByDepth,
+    prepareForTransfer
+} from './varFunctions.js'
 
 let bus;
 
@@ -7,35 +11,29 @@ const c = {
       bus = x.bus;
       return { msg: 'Bus is set.' }
     },
-    'bus.get': () => {
-        return bus;
-    },
     'var.set': async (x) => {
 
-        const { factory, repo, serializer, bus, path, data } = x;
+        const { path, data } = x;
 
-        const set = await bus.pub('var.createSetByPath', path);
-        //const set = await factory.createByPath(path);
-
-        return set;
-
-        //await cmd['transaction.set'](repo)
+        const set = await createVarSetByPath({ bus, path });
+        if (!set) return;
 
         for (let i = 0; i < set.length; i++) {
             const v = set[i];
-            //const transaction = v.transaction;
-            //if (!transaction) continue;
 
             if (v.data) {
                 v.data = data;
-                v.updated = 1;
+                if (!v.new) v.updated = true;
             }
-            if (v.updated || v.new) {
-                await repo.set(v.id, serializer.serialize(v));
+            if (v.new || v.updated) {
+                await bus.pub('repo.set', {
+                    id: v.id,
+                    v: prepareForTransfer(v)
+                });
             }
         }
 
-        return set;
+        return { var: prepareForTransfer(set.at(-1)) }
     },
     'var.get': async (x) => {
 
@@ -44,16 +42,17 @@ const c = {
         const set = await createVarSetByPath({ bus, path, isNeedStopIfVarNotFound: true });
         if (!set) return;
 
-        return set;
-
         const v = set.at(-1);
         if (!v) return;
         if (v.data) return v;
 
-        return await getData(v, depth);
+        return await gatherVarDataByDepth({ bus, v, depth });
     },
-    'var.del': async (repo, serializer, path) => {
-        const set = await repo.getByPath(path);
+    'var.del': async (path) => {
+        //const set = await repo.getByPath(path);
+
+        return;
+
         if (!set || !set.length) {
             console.log(path, 'Var set not found')
             return;
@@ -88,7 +87,7 @@ const c = {
         const getSubVars = async (v) => {
             for (let prop in v.map) {
                 const id = v.map[prop];
-                const subV = await repo.getById(id);
+                const subV = await repo.get(id);
                 subVars[id] = 1;
 
                 if (subV.map) await getSubVars(subV);
