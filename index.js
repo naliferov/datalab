@@ -1,5 +1,5 @@
-import { varcraft as v } from "./src/domain/varcraft.js";
 import { bus } from "./src/domain/bus.js";
+import { varcraft as v } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
@@ -10,17 +10,55 @@ await bus.sub('getUniqId', () => ulid());
 
 await bus.sub('repo.set', async (x) => {
   const { id, v } = x;
-
   await varRepository.set(id, v);
 
   return { msg: 'update complete', v };
 });
-await bus.sub('repo.get', async (id) => await varRepository.get(id));
-await bus.sub('repo.del', async (id) => {
 
+await bus.sub('repo.get', async (id) => {
+  const v = await varRepository.get(id);
+  if (v.data) {
+    v.v = v.data;
+    delete v.data;
+  }
+  return v;
 });
 
-await v({ cmd: 'bus.set', bus });
+await bus.sub('repo.del', async (x) => {
+  const { id } = x;
+  console.log('repo.del', id);
+  await varRepository.del(id);
+});
+
+await bus.sub('fs.readFile', async (x) => {
+  const { path } = x;
+  return await fs.readFile(path, 'utf8');
+});
+
+await bus.sub('http.in', async (x) => {
+    const { bus, event, data } = x;
+
+    const map = {
+      'default': async () => {
+        return {
+          msg: await bus.pub('fs.readFile', { path: './src/ui/index.html' }),
+          type: 'text/html',
+        }
+      },
+      'var.get': async (x) => {
+        let { path, depth } = x;
+        depth = Number(depth) || 0;
+
+        return { test: 1 };
+        //return await cmd['var.get'](repo, path, depth);
+      }
+    }
+    if (map[event]) {
+      return await map[event](data);
+    }
+});
+
+await v({ event: 'bus.set', bus });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const varStorage = new FsStorage('./state', fs);
@@ -34,12 +72,12 @@ if (!root) {
 }
 
 
-const cliCmdMap = {
+const eventMap = {
   'var.get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
     const depth = Number(arg[2]) || 0;
 
-    return await v({ cmd: 'var.get', path, depth });
+    return await v({ event: 'var.get', path, depth });
   },
   'var.set': async (arg) => {
     if (!arg[1]) {
@@ -51,7 +89,7 @@ const cliCmdMap = {
       return;
     }
     return await v({
-      cmd: 'var.set',
+      event: 'var.set',
       path: pathToArr(arg[1]),
       data: arg[2]
     });
@@ -61,32 +99,36 @@ const cliCmdMap = {
       console.error('path is empty');
       return;
     }
-    return await v({ cmd: 'var.del', path: pathToArr(arg[1]) });
+    return await v({
+      event: 'var.del',
+      path: pathToArr(arg[1])
+    });
   },
   'server.start': async (arg) => {
 
-    const conf = {
+    const x = {
       server: (await import('node:http')).createServer(),
       port: arg[1] || 8080,
-      fs,
-      repo: varRepository
     }
     const { rqHandler } = await import('./src/transport/http.js');
-    conf.rqHandler = rqHandler;
 
-    //return cmd['server.start'](conf);
-  }
+    x.server.on('request', async (rq, rs) => {
+      await rqHandler({ bus, rq, rs, fs, serveFS: true });
+    });
+    x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
+  },
 }
 
-const runCliCmd = async () => {
+const runCliEvent = async () => {
   const process = (await import('node:process')).default;
   const cliArgs = parseCliArgs(process.argv);
-  if (!cliCmdMap[cliArgs[0]]) {
+
+  if (!eventMap[cliArgs[0]]) {
     console.log('Command not found');
     return;
   }
-  const r = await cliCmdMap[cliArgs[0]](cliArgs);
-  console.log(r);
+  const r = await eventMap[cliArgs[0]](cliArgs);
+  if (r) console.log(r);
 }
 
-await runCliCmd();
+await runCliEvent();

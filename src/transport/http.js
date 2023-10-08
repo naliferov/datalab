@@ -99,7 +99,9 @@ const rqResponse = (rs, v, contentType) => {
         send('', 'text/plain');
     }
 }
-export const rqHandler = async (meta, rq, rs) => {
+export const rqHandler = async (x) => {
+
+    const { bus, rq, rs, fs } = x;
 
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
@@ -107,7 +109,7 @@ export const rqHandler = async (meta, rq, rs) => {
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
 
-    if (meta.serveFS && await rqResolveFile(rq, rs, meta.fs)) {
+    if (x.serveFS && await rqResolveFile(rq, rs, fs)) {
         return;
     }
 
@@ -115,16 +117,18 @@ export const rqHandler = async (meta, rq, rs) => {
     const body = await rqParseBody(rq);
     const msg = body ?? query;
 
-    const cmd = body.cmd ?? 'default';
-    const fn = meta.cmdMap[cmd];
+    const event = body.event ?? 'default';
 
-    if (!isLocal && cmd !== 'var.get' && cmd !== 'default') {
-        rqResponse(rs,'Forbidden.');
+    if (!isLocal && event !== 'var.get' && event !== 'default') {
+        rqResponse(rs,'Forbidden');
         return;
     }
 
-    const out = await fn({ msg });
-    if (!out) return;
+    const out = await bus.pub('http.in',{ bus, event, msg });
+    if (!out) {
+        rqResponse(rs,'Default response');
+        return;
+    }
 
     if (typeof out === 'object' && out.msg && out.type) {
         const { msg, type } = out;
@@ -165,9 +169,14 @@ export class HttpClient {
         const response = await fetch(this.baseURL ? this.baseURL + url : url, fetchParams);
         if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
 
-        let res = { statusCode: response.status, headers: response.headers };
-        if (options.blob) res.data = await response.blob();
-        else {
+
+        let res = {
+            statusCode: response.status,
+            headers: response.headers
+        };
+        if (options.blob) {
+            res.data = await response.blob();
+        } else {
             const contentType = response.headers.get('content-type') ?? '';
             res.data = contentType.startsWith('application/json') ? await response.json() : await response.text();
         }
