@@ -1,4 +1,4 @@
-export class Ob {
+export class O {
 
     constructor(data) {
         this.data = data || {};
@@ -65,6 +65,8 @@ export class Ob {
         this.data.style.left = newX;
         dom.style.left = newX;
     }
+
+    absolute() { this.getDOM().style.position = 'absolute'; }
     setPosition(x = 0, y = 0) {
         if (!this.data.style) this.data.style = {};
         if (x) {
@@ -83,6 +85,7 @@ export class Ob {
             y: sizes.y
         }
     }
+
     setSize(width, height) {
         if (width) this.getDOM().style.width = width + 'px';
         if (height) this.getDOM().style.height = height + 'px';
@@ -106,6 +109,7 @@ export class Ob {
             y: sizes.y + scrollY,
         }
     }
+
     getChildren() { return this.dom.children }
     getChildrenCount() { return this.dom.children.length }
     select() {
@@ -154,7 +158,7 @@ export class Ob {
 
     parentDOM() { return this.getDOM().parentNode; }
     parent() {
-        const o = new Ob;
+        const o = new O;
         o.setDOM(this.getDOM().parentNode);
         return o;
     }

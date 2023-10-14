@@ -1,10 +1,10 @@
 const createVar = async (bus, type, _) => {
+
+    const id = await bus.pub('getUniqId');
     let v = {
-        [_]: {
-            id: await bus.pub('getUniqId'),
-            new: true,
-        }
+        [_]: { id, new: true },
     };
+    v.id = id;
 
     if (type === 'val') {
         v.v = true;
@@ -21,6 +21,8 @@ export const createVarSetByPath = async (x) => {
 
     let v1 = await bus.pub(`${repo}.get`, 'root');
     v1[_] = { id: 'root' };
+    v1.id = v1[_].id;
+
     let set = [ v1 ];
 
     if (path[0] === 'root') return set;
@@ -35,7 +37,10 @@ export const createVarSetByPath = async (x) => {
         let id = v1.map[name];
         if (id) {
             v2 = await bus.pub(`${repo}.get`, id);
-            if (v2) v2[_] = { id };
+            if (v2) {
+                v2[_] = { id };
+                v2.id = v2[_].id;
+            }
         }
 
         if (!v2) {
@@ -58,11 +63,10 @@ export const gatherVarData = async (x) => {
 
     const { bus, v, depth } = x;
 
-    const data = {};
+    const data = { id: v.id };
+    if (v.v) data.v = v.v;
+    if (v.data) data.data = v.data;
 
-    if (v.data) return { data: v.data };
-    if (v.v) return { v: v.v };
-    //todo exception
     if (!v.map) return data;
 
     data.map = {};
@@ -78,6 +82,8 @@ export const gatherVarData = async (x) => {
         }
 
         const v2 = await bus.pub('repo.get', id);
+        if (v2) v2.id = id;
+
         if (v2.map) {
             data.map[prop] = await gatherVarData({ bus, v: v2, depth: depth - 1 });
 

@@ -1,4 +1,4 @@
-export class Editor {
+export class DataBrowser {
 
     constructor(frameFactory) {
         //this.frameFactory;
@@ -78,8 +78,6 @@ export class Editor {
     }
 
     async handleKeydown(e) {
-
-        return;
 
         if (!e.target.classList.contains('dataKey')) return;
 

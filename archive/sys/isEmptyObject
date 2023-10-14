@@ -1,1 +1,0 @@
-{"type":"js","v":"obj => {\n    for (let k in obj) return false;\n    return true;\n}"}

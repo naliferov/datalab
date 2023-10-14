@@ -7,17 +7,17 @@
             this.v = await s.f('sys.gui.view');
 
             // const baseUrl = document.location.protocol + '//' + document.location.host;
-            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-editor/min/vs' }});
+            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-dataBrowser/min/vs' }});
             // window.MonacoEnvironment = {
             //     getWorkerUrl: (workerId, label) => {
             //         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-editor/min/' };
-            //     importScripts('${baseUrl}/node_modules/monaco-editor/min/vs/base/worker/workerMain.js');`
+            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-dataBrowser/min/' };
+            //     importScripts('${baseUrl}/node_modules/monaco-dataBrowser/min/vs/base/worker/workerMain.js');`
             //         )}`;
             //     }
             // };
             // await (new Promise((resolve, reject) => {
-            //     require(["vs/editor/editor.main"], () => resolve());
+            //     require(["vs/dataBrowser/dataBrowser.main"], () => resolve());
             // }));
 
             const input = new (await s.f('sys.gui.input'));
@@ -151,7 +151,7 @@
 
             //BUILDING type
             const app = new this.v;
-            app.setDOM(document.getElementById('app'));
+            app.setDOM(document.getElementById('frame'));
 
 
             const runBtn = new this.v({ class: 'burger-btn' });

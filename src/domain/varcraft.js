@@ -3,7 +3,7 @@ import {
     gatherVarData,
     gatherSubVarsIds,
     prepareForTransfer
-} from './varFunctions.js'
+} from './varops.js'
 
 let bus;
 const _ = Symbol('_');
@@ -59,6 +59,7 @@ const events = {
             bus, path, repo,
             isNeedStopIfVarNotFound: true, _,
         });
+
         if (!set) return;
 
         const v = set.at(-1);

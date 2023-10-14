@@ -1,21 +1,15 @@
-import { Ob } from "../../gui/type/ob.js";
+import { O } from "../gui/type/o.js";
 
 let bus;
 let doc;
-
 let root;
-let obFactory;
-
-const createObj = () => {
-    return {}
-}
 
 const events = {
     'bus.set': (x) => bus = x.bus,
     'doc.set': (x) => {
         doc = x.doc;
 
-        root = new Ob({ id: 'app' });
+        root = new O({ id: 'app' });
         doc.body.appendChild(root.getDOM());
     },
 
@@ -25,15 +19,13 @@ const events = {
         let target = root;
         if (x.target) target = x.target;
 
-        const ob = new Ob(o);
+        const object = new O(o);
         if (o.event) {
-            for (let eType in o.event) {
-                ob.on(eType, o.event[eType]);
-            }
+            for (let eType in o.event) object.on(eType, o.event[eType]);
         }
-        target.insert(ob);
+        target.insert(object);
 
-        return ob;
+        return object;
     },
     'doc.mutated': (x) => {
         //console.log(x);
