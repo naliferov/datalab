@@ -4,7 +4,7 @@
         getV() { return this.v }
         getTitle() { return 'Terminal'; }
         init() {
-            const v = s.f('sys.ui.view');
+            const v = s.f('sys.gui.view');
 
             this.v = new v({ class: 'terminal' });
             this.header = new v({ class: 'consoleHeader' });

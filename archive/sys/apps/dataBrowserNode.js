@@ -7,7 +7,7 @@ async () => {
             this.dataBrowser = dataBrowser;
             this.domId = s.f('sys.uuid');
 
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
             this.v = new v({ id: this.domId, class: ['node'] });
             this.isOpened = false;
             this.isRoot = isRoot;
@@ -27,7 +27,7 @@ async () => {
             if (data === null) dTypeLabel = 'null';
             else if (data === undefined) dTypeLabel = 'undefined';
 
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
             const container = new v({ class: ['nodeContainer', 'flex'] }); e('>', [container, this.v]);
 
             this.openClose = new v({ class: 'openClose' });
@@ -217,7 +217,7 @@ async () => {
         async showOutlinerOpsPopup(opsBtn) {
             s.popup.clear();
 
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
 
             const createBtn = txt => new v({ txt, class: 'btn' });
 

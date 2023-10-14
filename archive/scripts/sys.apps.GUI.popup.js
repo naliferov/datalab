@@ -2,7 +2,7 @@
     return class popup {
 
         constructor() {
-            const v = s.f('sys.ui.view');
+            const v = s.f('sys.gui.view');
             this.v = new v({ class: 'popup' });
         }
         clear() {

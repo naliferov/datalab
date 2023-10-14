@@ -5,7 +5,13 @@ import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
 import { ulid } from "ulid";
 
-await bus.sub('log', async (x) => console.log(x));
+await bus.sub('log', async (x) => {
+  if (typeof x === 'object') {
+    console.log(x.msg);
+    return;
+  }
+  console.log(x);
+});
 await bus.sub('getUniqId', () => ulid());
 
 await bus.sub('repo.set', async (x) => {
@@ -36,12 +42,12 @@ await bus.sub('fs.readFile', async (x) => {
 });
 
 await bus.sub('http.in', async (x) => {
-    const { bus, event, data } = x;
+    const { bus, event, msg } = x;
 
     const map = {
       'default': async () => {
         return {
-          msg: await bus.pub('fs.readFile', { path: './src/ui/index.html' }),
+          msg: await bus.pub('fs.readFile', { path: './src/gui/index.html' }),
           type: 'text/html',
         }
       },
@@ -51,11 +57,16 @@ await bus.sub('http.in', async (x) => {
 
         return { test: 1 };
         //return await cmd['var.get'](repo, path, depth);
+      },
+      'var.getById': async (x) => {
+        const { bus, msg } = x;
+        const { id } = msg;
+
+        return bus.pub('repo.get', id);
       }
     }
-    if (map[event]) {
-      return await map[event](data);
-    }
+
+    if (map[event]) return await map[event](x);
 });
 
 await v({ event: 'bus.set', bus });

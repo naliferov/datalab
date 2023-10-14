@@ -4,7 +4,7 @@
         async start() {
             //todo reactivity for deps and realtime updates
             this.http = new (await s.f('sys.httpClient'));
-            this.v = await s.f('sys.ui.view');
+            this.v = await s.f('sys.gui.view');
 
             // const baseUrl = document.location.protocol + '//' + document.location.host;
             // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-editor/min/vs' }});
@@ -20,7 +20,7 @@
             //     require(["vs/editor/editor.main"], () => resolve());
             // }));
 
-            const input = new (await s.f('sys.ui.input'));
+            const input = new (await s.f('sys.gui.input'));
             input.onKeyDown(e => appsManager.inputEvent('keydown', e));
             input.onKeyUp(e => appsManager.inputEvent('keyup', e));
             input.onClick(e => appsManager.inputEvent('click', e));
@@ -148,7 +148,7 @@
 
             //console.log(await s.f('sys.apps.fileUploader'));
 
-            //BUILDING frame
+            //BUILDING type
             const app = new this.v;
             app.setDOM(document.getElementById('app'));
 

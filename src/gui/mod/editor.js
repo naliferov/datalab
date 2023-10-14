@@ -1,4 +1,4 @@
-export class dataBrowser {
+export class Editor {
 
     constructor(frameFactory) {
         //this.frameFactory;
@@ -10,7 +10,7 @@ export class dataBrowser {
         //this.http = new (await s.f('sys.httpClient'));
         this.nodes = new Map;
 
-        const v = await s.f('sys.ui.view');
+        const v = await s.f('sys.gui.view');
         this.v = new v({ class: 'dataBrowser' });
 
         //todo replace dataNode with streams?
@@ -217,7 +217,7 @@ export class dataBrowser {
         const dataNode = node.getDataNode();
         const data = dataNode.getData();
 
-        const v = s.f('sys.ui.view');
+        const v = s.f('sys.gui.view');
         const createBtn = (txt) => {
             return new v({ txt, class: ['btn', 'contextMenu', 'white', 'hoverGray'] });
         }

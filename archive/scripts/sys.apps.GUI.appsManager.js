@@ -52,7 +52,7 @@
 
         async openApp(appPath, dataNode, addToLocalState) {
 
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
             //this can be cached with subscription on change, change protos in real time
 
             const appFrame = Object.create(s.f('sys.apps.GUI.appFrame'));

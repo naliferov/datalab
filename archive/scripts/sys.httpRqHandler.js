@@ -54,7 +54,7 @@ async (rq, rs) => {
             });
             rq.isLongRequest = true;
         },
-        // 'GET:/module.js': async () => {
+        // 'GET:/mod.js': async () => {
         //     const { id } = sys.rqParseQuery(rq);
         //     if (!id) {
         //         rs.writeHead(400).end('id is invalid.'); return;
@@ -176,7 +176,7 @@ async (rq, rs) => {
         },
     }
 
-    if (!rq.mp.startsWith('GET:/module.js')) {
+    if (!rq.mp.startsWith('GET:/mod.js')) {
         if (s.sys.rqResolveStatic && await s.sys.rqResolveStatic(rq, rs)) return;
     }
     if (m[rq.mp]) {

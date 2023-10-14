@@ -1,11 +1,11 @@
-export class Frame {
+export class Ob {
 
     constructor(data) {
         this.data = data || {};
     }
     getId() { return this.dom.id; }
     attachShadow() {
-        this.shadow = this.getDOM().attachShadow({ mode: "open" });
+        this.shadow = this.getDOM().attachShadow({ mode: 'open' });
     }
     insert(view) {
         if (this.shadow) this.shadow.appendChild(view.getDOM());
@@ -43,9 +43,7 @@ export class Frame {
 
     getTxt() { return this.getDOM().innerText; }
     setTxt(txt) { this.getDOM().innerText = txt; }
-
     setHtml(txt) { this.getDOM().innerHTML = txt; }
-
     setAttr(k, v) {
         this.getDOM().setAttribute(k, v);
         return this;
@@ -151,14 +149,14 @@ export class Frame {
     focus() { this.getDOM().focus(); }
     clear() { this.getDOM().innerHTML = ''; }
 
-    parentDOM() { return this.getDOM().parentNode; }
     nextDOM() { return this.getDOM().nextSibling; }
     prevDOM() { return this.getDOM().previousSibling; }
 
+    parentDOM() { return this.getDOM().parentNode; }
     parent() {
-        const v = new V;
-        v.setDOM(this.getDOM().parentNode);
-        return v;
+        const o = new Ob;
+        o.setDOM(this.getDOM().parentNode);
+        return o;
     }
     getDOMIndex() {
         const parent = this.parentDOM();

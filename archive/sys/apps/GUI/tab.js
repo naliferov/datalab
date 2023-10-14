@@ -2,7 +2,7 @@ async () => {
     return class TabName {
         constructor(tabId, name) {
 
-            const v = s.f('sys.ui.view');
+            const v = s.f('sys.gui.view');
             this.v = new v({ id: tabId, class: 'tab' });
 
             this.name = new v({ class: 'tabName', txt: name });

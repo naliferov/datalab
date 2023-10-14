@@ -17,10 +17,13 @@ const createVar = async (bus, type, _) => {
 export const createVarSetByPath = async (x) => {
 
     const { bus, path, _, isNeedStopIfVarNotFound } = x;
+    const repo = x.repo || 'repo';
 
-    let v1 = await bus.pub('repo.get', 'root');
+    let v1 = await bus.pub(`${repo}.get`, 'root');
     v1[_] = { id: 'root' };
     let set = [ v1 ];
+
+    if (path[0] === 'root') return set;
 
     for (let i = 0; i < path.length; i++) {
         const name = path[i];
@@ -31,7 +34,7 @@ export const createVarSetByPath = async (x) => {
 
         let id = v1.map[name];
         if (id) {
-            v2 = await bus.pub('repo.get', id);
+            v2 = await bus.pub(`${repo}.get`, id);
             if (v2) v2[_] = { id };
         }
 
@@ -57,14 +60,11 @@ export const gatherVarData = async (x) => {
 
     const data = {};
 
-    if (v.data) {
-        return { data: v.data };
-    }
-    if (v.v) {
-        return { v: v.v };
-    }
+    if (v.data) return { data: v.data };
+    if (v.v) return { v: v.v };
     //todo exception
     if (!v.map) return data;
+
     data.map = {};
 
     for (let prop in v.map) {

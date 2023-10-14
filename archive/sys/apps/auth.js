@@ -10,7 +10,7 @@
 
             if (this.v) this.v.clear();
 
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
             const http = new (await s.f('sys.httpClient'));
 
             let authPanel = new v({ class: ['authApp'] });

@@ -1,10 +1,15 @@
+const T_v = 1;
+const T_map = 2;
+const T_list = 4;
+const T_fn = 5;
+const T_link = 6;
+
 export const Var = {
-    data: 'any',
+    v: 'any',
     calc: (deps) => {}
 }
 export const VarMeta = {}
 export const VarRelation = { //var relation has id of var
-    meta: {}, //info for description and etc
     direct: {
         varId1: {
             id: 'varId',

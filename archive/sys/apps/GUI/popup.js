@@ -2,7 +2,7 @@
     return class popup {
 
         async init() {
-            const v = await s.f('sys.ui.view');
+            const v = await s.f('sys.gui.view');
             this.v = new v({ class: 'popup' });
         }
         clear() {
