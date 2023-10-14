@@ -8,7 +8,7 @@ export const toRight = (o, targetO) => {
 //const varRepository = new VarRepository(new NetStorage(bus));
 //separate style from pure logic
 
-export const makeOb = (x) => {
+export const mkOb = (x) => {
     //todo opObject //dataObj // tick, add, subtract
     //o, msg, num, list, symbol, comment
     const data = {
@@ -23,8 +23,8 @@ export const makeOb = (x) => {
     return data;
 }
 
-//tick, add, subtract
-export const makeOp = {
+//tick, add, subtract, move and etc.
+export const mkOp = {
     txt: '+',
     style: {
         display: 'inline-block',

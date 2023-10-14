@@ -3,7 +3,6 @@ import { varcraft as v } from "../domain/varcraft.js";
 import { ocraft } from "../domain/ocraft.js";
 import { HttpClient } from "/src/transport/http.js";
 import { IndexedDb } from "/src/storage/indexedDb.js";
-import { toRight } from "/src/gui/op.js";
 
 const doc = globalThis.document;
 const http = new HttpClient();
@@ -31,13 +30,7 @@ await bus.sub('repo.set', async (x) => {
 });
 
 await bus.sub('repo.get', async (x) => {
-    let id;
-    if (typeof x === 'string') {
-        id = x;
-    } else if (typeof x === 'object') {
-        let { path, depth } = x;
-        //return await bus.pub('http.post', { event: 'var.get', path, depth });
-    }
+    let { id } = x;
     return await bus.pub('http.post', { event: 'var.getById', id });
 });
 
@@ -69,29 +62,37 @@ observer.observe(doc, {
 
 const add = async (o, target) => await ocraft({ event: 'o.add', o, target });
 
+let lastId;
 const render = async (o, parentRow) => {
+
     for (let p in o) {
 
-        if (p === 'map') {
+        if (p === '_id') {
+            lastId = o[p];
+            continue;
+        } else if (p === 'map') {
             await render(o[p], parentRow);
             continue;
         } else if (p === 'v') {
             let txt = o[p];
             if (txt) txt = txt.split('\n')[0];
-            await add({ txt, style: { display: 'inline' }}, parentRow);
+
+            const valueObj = await add({ txt, style: { display: 'inline' }}, parentRow);
+            if (lastId) valueObj.setAttr('varId', lastId);
             continue;
         }
 
         const row = await add({ style: { marginLeft: '10px'} }, parentRow);
-        await add({ txt: p, style: { display: 'inline', fontWeight: 'bold' }}, row);
-        await add({ txt: ': ', style: { display: 'inline' }}, row);
+        if (lastId) row.setAttr('varId', lastId);
+
+        await add({ txt: p, class: 'mapK' }, row);
+        await add({ txt: ': ', class: 'mapSep' }, row);
 
         const val = o[p];
-
-        if (p === 'map') {
-            await render(o[p], row);
-        } else if (typeof val === 'object' && val !== null) {
+        if (typeof val === 'object' && val !== null) {
             await render(val, row);
+        } else if (typeof val === 'string') {
+            await add({ txt: 'open', class: 'varLink' }, row);
         }
     }
 }
@@ -103,11 +104,11 @@ await add({ txt: 'Data Browser', class: 'header', style: {
     fontWeight: 'bold',
     fontSize: '18px',
     marginBottom: '10px',
-}}, dataBrowser)
+}}, dataBrowser);
 //dataEditor.container
 
-const root = await v({ event: 'var.get', path: ['root'], depth: 4 });
-console.log(root);
+const root = await v({ event: 'var.get', path: ['root'], depth: 1 });
+//console.log(root);
 await render(root, dataBrowser);
 
 // const txtEdit = await add({

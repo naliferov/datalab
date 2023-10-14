@@ -21,13 +21,11 @@ await bus.sub('repo.set', async (x) => {
   return { msg: 'update complete', v };
 });
 
-await bus.sub('repo.get', async (id) => {
-  const v = await varRepository.get(id);
-  if (v.data) {
-    v.v = v.data;
-    delete v.data;
+await bus.sub('repo.get', async (x) => {
+  const { id } = x;
+  if (id) {
+    return await varRepository.get(id);
   }
-  return v;
 });
 
 await bus.sub('repo.del', async (x) => {
@@ -62,7 +60,7 @@ await bus.sub('http.in', async (x) => {
         const { bus, msg } = x;
         const { id } = msg;
 
-        return bus.pub('repo.get', id);
+        return bus.pub('repo.get', { id });
       }
     }
 

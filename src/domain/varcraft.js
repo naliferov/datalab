@@ -29,16 +29,10 @@ const events = {
         for (let i = 0; i < set.length; i++) {
             const v = set[i];
 
-            if (v.data) {
-                v.v = data;
-                if (!v[_].new) v[_].updated = true;
-            }
             if (v.v) {
-                delete v.data;
                 v.v = data;
                 if (!v[_].new) v[_].updated = true;
             }
-
             if (v[_].new || v[_].updated) {
                 await bus.pub('repo.set', {
                     id: v[_].id,
@@ -65,13 +59,13 @@ const events = {
         const v = set.at(-1);
         if (!v) return;
 
-        return await gatherVarData({ bus, v, depth });
+        return await gatherVarData({ bus, v, depth, _ });
     },
     'var.del': async (x) => {
 
         const { path } = x;
 
-        const set = await createVarSetByPath({ bus, path, _, isNeedStopIfVarNotFound: true });
+        const set = await createVarSetByPath({ bus, path, isNeedStopIfVarNotFound: true, _ });
         if (!set || set.length < 2) {
             await this.pub('log', { msg: 'Var set not found' });
             return;
@@ -83,7 +77,7 @@ const events = {
         const subVars = await gatherSubVarsIds({ bus, v: v2 });
         const len = Object.keys(subVars).length;
         if (len > 5) {
-            await this.pub('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
+            await bus.pub('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
             return;
         }
         for (let i = 0; i < subVars.length; i++) {
@@ -101,7 +95,7 @@ const events = {
     },
     'var.getById': async (x) => {
         const { id } = x;
-        return await bus.pub('repo.get', id);
+        return await bus.pub('repo.get', { id });
     },
     'var.mv': {},
     'var.connect': {},
