@@ -30,7 +30,6 @@ await bus.sub('repo.get', async (x) => {
 
 await bus.sub('repo.del', async (x) => {
   const { id } = x;
-  console.log('repo.del', id);
   await varRepository.del(id);
 });
 
@@ -50,11 +49,11 @@ await bus.sub('http.in', async (x) => {
         }
       },
       'var.get': async (x) => {
-        let { path, depth } = x;
+        let { msg } = x;
+        let { id, path, depth } = msg;
         depth = Number(depth) || 0;
 
         return { test: 1 };
-        //return await cmd['var.get'](repo, path, depth);
       },
       'var.getById': async (x) => {
         const { bus, msg } = x;

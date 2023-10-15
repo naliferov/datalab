@@ -6,19 +6,11 @@ import { IndexedDb } from "/src/storage/indexedDb.js";
 
 const doc = globalThis.document;
 const http = new HttpClient();
-const indexedDb = new IndexedDb;
-await indexedDb.open();
+const idb = new IndexedDb;
+await idb.open();
 
-// await indexedDb.set('root', {
-//     omg: 'this is VALUE 88620 99 000',
-// });
-
-//console.log(await indexedDb.get('root'));
-
-await bus.sub('http.post', async (x) => {
-    const { data } = await http.post('/', x);
-    return data;
-});
+const root = await idb.get('root');
+if (!root) await idb.set('root', { map: {} });
 
 await bus.sub('log', async (x) => console.log(x));
 await bus.sub('getUniqId', () => crypto.randomUUID());
@@ -28,23 +20,16 @@ await bus.sub('repo.set', async (x) => {
     //await varRepository.set(id, v);
     return { msg: 'update complete', v };
 });
-
 await bus.sub('repo.get', async (x) => {
     let { id } = x;
     return await bus.pub('http.post', { event: 'var.getById', id });
 });
-
-await bus.sub('ctx.db.get', async (x) => {
-    if (typeof x === 'object') {
-        let { path, depth } = x;
-        //return await bus.pub('http.post', { event: 'var.get', path, depth });
-    }
+await bus.sub('idb.set', async (x) => {
+    console.log(x);
 });
-await bus.sub('ctx.db.set', async (x) => {
-    if (typeof x === 'object') {
-        let { path, depth } = x;
-        //return await bus.pub('http.post', { event: 'var.get', path, depth });
-    }
+await bus.sub('idb.get', async (x) => {
+    const { id } = x;
+    return await idb.get(id);
 });
 
 await v({ event: 'bus.set', bus });
@@ -60,65 +45,20 @@ observer.observe(doc, {
     characterData: true, characterDataOldValue: true
 });
 
-const add = async (o, target) => await ocraft({ event: 'o.add', o, target });
+await bus.sub('http.post', async (x) => {
+    const { data } = await http.post('/', x);
+    return data;
+});
 
-let lastId;
-const render = async (o, parentRow) => {
+//const rootData = await v({ event: 'var.get', path: ['root'], depth: 3 });
+//console.log(rootData);
 
-    for (let p in o) {
+const result = await v({ event: 'var.set', path: ['ctx', 'idb', 'isDataBrowserShowed'], data: true });
+//console.log(result);
 
-        if (p === '_id') {
-            lastId = o[p];
-            continue;
-        } else if (p === 'map') {
-            await render(o[p], parentRow);
-            continue;
-        } else if (p === 'v') {
-            let txt = o[p];
-            if (txt) txt = txt.split('\n')[0];
+//const result = await v({ event: 'var.get', path: ['ctx', 'idb', 'root'] });
+//console.log(result);
 
-            const valueObj = await add({ txt, style: { display: 'inline' }}, parentRow);
-            if (lastId) valueObj.setAttr('varId', lastId);
-            continue;
-        }
 
-        const row = await add({ style: { marginLeft: '10px'} }, parentRow);
-        if (lastId) row.setAttr('varId', lastId);
-
-        await add({ txt: p, class: 'mapK' }, row);
-        await add({ txt: ': ', class: 'mapSep' }, row);
-
-        const val = o[p];
-        if (typeof val === 'object' && val !== null) {
-            await render(val, row);
-        } else if (typeof val === 'string') {
-            await add({ txt: 'open', class: 'varLink' }, row);
-        }
-    }
-}
-
-const dataBrowser = await add({ class: 'dataBrowser', style: {border: '1px solid black'} });
-dataBrowser.absolute();
-
-await add({ txt: 'Data Browser', class: 'header', style: {
-    fontWeight: 'bold',
-    fontSize: '18px',
-    marginBottom: '10px',
-}}, dataBrowser);
-//dataEditor.container
-
-const root = await v({ event: 'var.get', path: ['root'], depth: 1 });
-//console.log(root);
-await render(root, dataBrowser);
-
-// const txtEdit = await add({
-//     txt: 'Text dataBrowser',
-//     editable: true,
-//     style: {
-//         width: '250px', height: '20px',
-//         border: '1px solid black', outline: 'none',
-//         fontFamily: "'Roboto', Arial, sans-serif", fontSize: '15px'
-//     }
-// });
-
-//toRight(txtEdit, dataViewer);
+//const result = await v({ event: 'var.get', div: 'idb', path: ['idb', 'root'], data: true });
+//console.log(result);

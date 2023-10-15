@@ -1,12 +1,59 @@
-export class DataBrowser {
+import { ocraft } from "../../../domain/ocraft.js";
 
-    constructor(frameFactory) {
-        //this.frameFactory;
-    }
+export class DataBrowser {
 
     getV() { return this.v; }
     getTitle() { return 'Data browser'; }
-    async init() {
+
+    async init(data) {
+
+        const add = async (o, target) => await ocraft({ event: 'o.add', o, target });
+
+        const render = async (o, parentRow, varId) => {
+
+            for (let p in o) {
+
+                if (p === '_id') continue;
+                else if (p === 'map') {
+                    await render(o[p], parentRow, o._id);
+                    continue;
+                } else if (p === 'v') {
+                    let txt = o[p];
+                    if (txt && txt.split) {
+                        txt = txt.split('\n')[0];
+                    }
+                    const varVal = await add({ txt, class: 'varVal'}, parentRow);
+                    varVal.setAttr('varId', o._id);
+                    continue;
+                }
+
+                const row = await add({ class: 'varRow' }, parentRow);
+                if (varId) row.setAttr('varId', varId);
+                await add({ txt: p, class: 'mapK' }, row);
+                await add({ txt: ': ', class: 'mapSep' }, row);
+
+                const val = o[p];
+                if (typeof val === 'object' && val !== null) {
+                    await render(val, row, varId);
+                } else if (typeof val === 'string') {
+                    await add({ txt: 'open', class: 'varLink' }, row);
+                }
+            }
+        }
+
+        const dataBrowser = await add({ class: 'dataBrowser', style: {border: '1px solid black'} });
+        dataBrowser.absolute();
+
+        await add({ txt: 'Data Browser', class: 'header', style: {
+            fontWeight: 'bold',
+            fontSize: '18px',
+            marginBottom: '10px',
+        }}, dataBrowser);
+
+        await render(data, dataBrowser);
+    }
+
+    async init2() {
         //this.http = new (await s.f('sys.httpClient'));
         this.nodes = new Map;
 
@@ -39,8 +86,8 @@ export class DataBrowser {
 
         this.buffer = null;
     }
-    addNode(dataBrowserNode) {
-        this.nodes.set(dataBrowserNode.getId(), dataBrowserNode);
+    addNode(node) {
+        this.nodes.set(node.getId(), node);
     }
     removeNode(id) {
         this.nodes.delete(id);

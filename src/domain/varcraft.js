@@ -3,27 +3,33 @@ import {
     gatherVarData,
     gatherSubVarsIds,
     prepareForTransfer
-} from './varops.js'
+} from './varops.js';
 
 let bus;
 const _ = Symbol('_');
 
-const getCustomRepoFromPath = (path) => {
-    if (
-        path[0] && path[0] === 'ctx' &&
-        path[1] === 'indexedDB'
-    ) {
-        return 'indexedDB';
+const getRepo = (path) => {
+    if (path[0] && path[0] === 'ctx' && path[1] === 'idb') {
+        return 'idb';
     }
+    return 'repo';
+}
+const cutCtxFromPath = path => {
+    if (path[0] && path[0] === 'ctx') {
+        return path.slice(2);
+    }
+    return path;
 }
 
 const events = {
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {
 
-        const { path, data } = x;
+        const { id, data } = x;
+        const repo = getRepo(x.path);
+        const path = cutCtxFromPath(x.path);
 
-        const set = await createVarSetByPath({ bus, path, _, });
+        const set = await createVarSetByPath({ bus, path, repo, _, });
         if (!set) return;
 
         for (let i = 0; i < set.length; i++) {
@@ -34,7 +40,7 @@ const events = {
                 if (!v[_].new) v[_].updated = true;
             }
             if (v[_].new || v[_].updated) {
-                await bus.pub('repo.set', {
+                await bus.pub(`${repo}.set`, {
                     id: v[_].id,
                     v: prepareForTransfer(v)
                 });
@@ -45,10 +51,11 @@ const events = {
     },
     'var.get': async (x) => {
 
-        let { path, depth } = x;
+        let { depth } = x;
         if (!depth && depth !== 0) depth = 0;
+        const repo = getRepo(x.path);
+        const path = cutCtxFromPath(x.path);
 
-        const repo = getCustomRepoFromPath(path);
         const set = await createVarSetByPath({
             bus, path, repo,
             isNeedStopIfVarNotFound: true, _,
@@ -59,13 +66,18 @@ const events = {
         const v = set.at(-1);
         if (!v) return;
 
-        return await gatherVarData({ bus, v, depth, _ });
+        return await gatherVarData({ bus, repo, v, depth, _ });
     },
     'var.del': async (x) => {
 
-        const { path } = x;
+        const { id } = x;
+        const repo = getRepo(x.path);
+        const path = cutCtxFromPath(x.path);
 
-        const set = await createVarSetByPath({ bus, path, isNeedStopIfVarNotFound: true, _ });
+        const set = await createVarSetByPath({
+            bus, path, repo,
+            isNeedStopIfVarNotFound: true, _
+        });
         if (!set || set.length < 2) {
             await this.pub('log', { msg: 'Var set not found' });
             return;
@@ -82,20 +94,21 @@ const events = {
         }
         for (let i = 0; i < subVars.length; i++) {
             const id = subVars[i];
-            await bus.pub('repo.del', { id });
+            await bus.pub(`${repo}.del`, { id });
         }
 
-        await bus.pub('repo.del', { id: v2[_].id });
+        await bus.pub(`${repo}.del`, { id: v2[_].id });
 
         delete v1.map[v2[_].name];
-        await bus.pub('repo.set', {
+        await bus.pub(`${repo}.set`, {
             id: v1[_].id,
             v: prepareForTransfer(v1)
         });
     },
     'var.getById': async (x) => {
         const { id } = x;
-        return await bus.pub('repo.get', { id });
+        const repo = x.repo || 'repo';
+        return await bus.pub(`${repo}.get`, { id });
     },
     'var.mv': {},
     'var.connect': {},

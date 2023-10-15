@@ -35,6 +35,10 @@ export class O {
                 this.dom.className = this.data.class;
             }
         }
+        if (this.data.attrs) {
+            const attrs = this.data.attrs;
+            for (let k in attrs) this.setAttr(k, attrs[k]);
+        }
         if (this.data.txt !== undefined) this.dom.innerText = this.data.txt;
         if (this.data.value !== undefined) this.dom.value = this.data.value;
 

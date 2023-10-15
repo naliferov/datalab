@@ -39,3 +39,7 @@ export const mkOp = {
     //     }
     // }
 };
+
+export const addDataBrowser = (data) => {
+    
+}
