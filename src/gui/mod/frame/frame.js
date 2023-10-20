@@ -1,27 +1,25 @@
 export const Frame = {
 
-    getApp() { return this.frame; },
-    getAppPath() { return this.appPath; },
-    getModPath() { return this.modPath; },
-    getView() { return this.view; },
+    setO(O) { this.O = O },
+    setOp(Op) { this.op = op },
+
+    getV() { return this.view; },
 
     setIndex(index) { this.index = index; },
     getIndex() { return this.index; },
 
-    async init(o) {
+    async init() {
 
-        this.view = new v({ class: 'appFrame' });
+        this.view = new this.O({ class: 'frame' });
         this.view.setSize(500, 500);
-        //this.app = new (await s.f(appPath));
-        //this.appPath = appPath;
 
-        const topBar = new v({ class: ['appTopBar'] });
-        this.topBar = topBar;
-        e('>', [topBar, this.view]);
-        topBar.on('pointerdown', (e) => this.topBarDragAndDrop(e));
+        const top = new this.O({ class: ['topBar'] });
+        this.top = top;
+        e('>', [top, this.view]);
+        top.on('pointerdown', (e) => this.topBarDragAndDrop(e));
 
-        const closeBtn = new v({ class: 'tabCloseBtn' });
-        e('>', [closeBtn, topBar]);
+        const closeBtn = new this.O({ class: 'closeBtn' });
+        e('>', [closeBtn, top]);
         closeBtn.on('click', () => {
             this.view.remove();
             if (this.app.close) {
@@ -34,7 +32,7 @@ export const Frame = {
         const title = new v({ txt: this.app.getTitle(), class: 'appTitle' });
         e('>', [title, topBar]);
 
-        const content = new v({ class: 'appContent' });
+        const content = new v({ class: 'content' });
         this.content = content;
         e('>', [content, this.view]);
 
@@ -88,6 +86,7 @@ export const Frame = {
             this.setSize(width, height);
         }
     },
+
     topBarDragAndDrop(e) {
         const viewSizes = this.view.getSizes();
         const shift = { x: e.clientX - viewSizes.x, y: e.clientY - viewSizes.y };
@@ -251,8 +250,6 @@ export const Frame = {
         });
     },
     resizeBottomRight(e) {
-        //const viewSizes = this.view.getSizes(); //sizes of nsBarTop
-        //const shift = { x: e.clientX - viewSizes.x, y: e.clientY - viewSizes.y };
 
         const sizes = this.view.getSizes();
         this.view.addClass('drag');
@@ -263,10 +260,10 @@ export const Frame = {
                 const height = e.clientY - sizes.y;
                 this.view.setSize(width, height);
                 this.recalcDimensions();
-                s.e('appFrame.changeSize', { appFrame: this, width, height });
+                //s.e('appFrame.changeSize', { appFrame: this, width, height });
             },
             up: (e) => {
-                s.e('input.pointer.setHandlers', { move: null, up: null });
+                //s.e('input.pointer.setHandlers', { move: null, up: null });
                 this.view.removeClass('drag');
             }
         });

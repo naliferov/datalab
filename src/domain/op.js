@@ -1,3 +1,28 @@
+let bus;
+let O;
+
+const events = {
+    'bus.set': (x) => bus = x.bus,
+    'o.set': (x) => O = x.o,
+    'add': (x) => {
+        const { path, o, v } = x;
+
+        let target = O;
+        if (x.target) target = x.target;
+
+        const object = new O(o);
+        if (o.event) {
+            for (let eType in o.event) object.on(eType, o.event[eType]);
+        }
+        target.insert(object);
+
+        return object;
+    },
+    'doc.mutate': (x) => {
+        //console.log(x);
+    }
+}
+
 export const toRight = (o, targetO) => {
     const {x, y, width} = targetO.getSize();
 
@@ -35,11 +60,17 @@ export const mkOp = {
     // event: {
     //     click: async (e) => {
     //         const o = createOb();
-    //         await ocraft({ event: 'o.add', o: o });
+    //         await op({ event: 'o.add', o: o });
     //     }
     // }
 };
 
-export const addDataBrowser = (data) => {
-    
+export const op = async x => {
+    const { event } = x;
+
+    if (!events[event]) {
+        return 'Command not found';
+    }
+    return await events[event](x);
 }
+

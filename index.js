@@ -14,21 +14,21 @@ await bus.sub('log', async (x) => {
 });
 await bus.sub('getUniqId', () => ulid());
 
-await bus.sub('repo.set', async (x) => {
+await bus.sub('default.set', async (x) => {
   const { id, v } = x;
   await varRepository.set(id, v);
 
   return { msg: 'update complete', v };
 });
 
-await bus.sub('repo.get', async (x) => {
+await bus.sub('default.get', async (x) => {
   const { id } = x;
   if (id) {
     return await varRepository.get(id);
   }
 });
 
-await bus.sub('repo.del', async (x) => {
+await bus.sub('default.del', async (x) => {
   const { id } = x;
   await varRepository.del(id);
 });
@@ -41,7 +41,7 @@ await bus.sub('fs.readFile', async (x) => {
 await bus.sub('http.in', async (x) => {
     const { bus, event, msg } = x;
 
-    const map = {
+    const m = {
       'default': async () => {
         return {
           msg: await bus.pub('fs.readFile', { path: './src/gui/index.html' }),
@@ -62,8 +62,7 @@ await bus.sub('http.in', async (x) => {
         return bus.pub('repo.get', { id });
       }
     }
-
-    if (map[event]) return await map[event](x);
+    if (m[event]) return await m[event](x);
 });
 
 await v({ event: 'bus.set', bus });
@@ -75,9 +74,7 @@ const { VarRepository } = await import('./src/varRepository.js');
 let varRepository = new VarRepository(varStorage);
 
 const root = await varRepository.get('root');
-if (!root) {
-  await varRepository.set('root', { map: {} });
-}
+if (!root) await varRepository.set('root', { m: {} });
 
 
 const eventMap = {
@@ -97,9 +94,8 @@ const eventMap = {
       return;
     }
     return await v({
-      event: 'var.set',
-      path: pathToArr(arg[1]),
-      data: arg[2]
+      event: 'var.set', path: pathToArr(arg[1]),
+      data: arg[2], type: arg[3],
     });
   },
   'var.del': async (arg) => {

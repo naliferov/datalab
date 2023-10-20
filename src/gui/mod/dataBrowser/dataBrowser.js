@@ -1,20 +1,22 @@
-import { ocraft } from "../../../domain/ocraft.js";
-
 export class DataBrowser {
+
+    constructor(bus) {
+        this.bus = bus;
+    }
 
     getV() { return this.v; }
     getTitle() { return 'Data browser'; }
 
     async init(data) {
 
-        const add = async (o, target) => await ocraft({ event: 'o.add', o, target });
+        const add = async (o, target) => await op({ event: 'add', o, target });
 
         const render = async (o, parentRow, varId) => {
 
             for (let p in o) {
 
                 if (p === '_id') continue;
-                else if (p === 'map') {
+                else if (p === 'm') {
                     await render(o[p], parentRow, o._id);
                     continue;
                 } else if (p === 'v') {
@@ -29,6 +31,7 @@ export class DataBrowser {
 
                 const row = await add({ class: 'varRow' }, parentRow);
                 if (varId) row.setAttr('varId', varId);
+
                 await add({ txt: p, class: 'mapK' }, row);
                 await add({ txt: ': ', class: 'mapSep' }, row);
 

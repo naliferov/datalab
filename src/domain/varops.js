@@ -1,4 +1,4 @@
-const mkVar = async (bus, type, _) => {
+const mkvar = async (bus, type, _) => {
 
     const id = await bus.pub('getUniqId');
     let v = {
@@ -6,15 +6,21 @@ const mkVar = async (bus, type, _) => {
     };
     v._id = id;
 
+    //if (type === 'b') v.b = true;
     if (type === 'v') v.v = true;
-    else v.map = {};
+    else if (type === 'm') v.m = {};
+    else if (type === 'l') v.l = [];
+    else if (type === 'f') v.f = {};
+    else if (type === 'x') v.x = {};
+    else throw new Error(`Unknown type [${type}]`);
 
     return v;
 }
 
 export const createVarSetByPath = async (x) => {
 
-    const { bus, repo, path, isNeedStopIfVarNotFound, _ } = x;
+    const { bus, repo, path, isNeedStopIfVarNotFound, _, } = x;
+    let type = x.type || 'v';
 
     let v1 = await bus.pub(`${repo}.get`, { id: 'root' });
     v1[_] = { id: 'root', name: 'root' };
@@ -26,11 +32,10 @@ export const createVarSetByPath = async (x) => {
         const name = path[i];
         if (!name) return;
 
-        //todo if name ending is [] so work with "l"
         const v1 = set.at(-1);
         let v2;
-        //todo rename map to "m"
-        let id = v1.map[name];
+
+        let id = v1.m[name];
         if (id) {
             v2 = await bus.pub(`${repo}.get`, { id });
             if (v2) v2[_] = { id };
@@ -39,9 +44,10 @@ export const createVarSetByPath = async (x) => {
         if (!v2) {
             if (isNeedStopIfVarNotFound) return;
 
-            v2 = await mkVar(bus, (i === path.length - 1) ? 'v' : 'map', _);
+            const varType = (i === path.length - 1) ? type : 'm';
+            v2 = await mkvar(bus, varType, _);
 
-            v1.map[name] = v2[_].id;
+            v1.m[name] = v2[_].id;
             if (!v1[_].new) v1[_].updated = true;
         }
         v2[_].name = name;
@@ -59,31 +65,28 @@ export const gatherVarData = async (x) => {
     const data = { _id: v[_].id };
     if (v.v) data.v = v.v;
 
-    if (!v.map) return data;
+    if (!v.m) return data;
 
-    data.map = {};
+    data.m = {};
 
-    for (let prop in v.map) {
+    for (let prop in v.m) {
 
-        const id = v.map[prop];
+        const id = v.m[prop];
         if (!id) return;
 
         if (depth === 0) {
-            data.map[prop] = id;
+            data.m[prop] = id;
             continue;
         }
-
         const v2 = await bus.pub(`${repo}.get`, { id });
         if (v2) {
             v2[_] = { id }; v2._id = id;
         }
 
-        if (v2.map) {
-            data.map[prop] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
-        } else if (v2.data) {
-            data.map[prop] = v2;
-        } else if (v2.v) {
-            data.map[prop] = v2;
+        if (v2.v) {
+            data.m[prop] = v2;
+        } else if (v2.m) {
+            data.m[prop] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
         }
     }
     return data;
@@ -93,17 +96,17 @@ export const gatherSubVarsIds = async (x) => {
 
     const { bus, repo, v } = x;
 
-    if (!v.map) return {};
+    if (!v.m) return {};
 
     const subVars = [];
 
     const getSubVars = async (v) => {
-        for (let prop in v.map) {
-            const id = v.map[prop];
+        for (let prop in v.m) {
+            const id = v.m[prop];
             const subV = await bus.pub(`${repo}.get`, { id });
             subVars.push(id);
 
-            if (subV.map) await getSubVars(subV);
+            if (subV.m) await getSubVars(subV);
         }
     }
     await getSubVars(v);
@@ -115,7 +118,7 @@ export const prepareForTransfer = (v) => {
     const d = {};
 
     if (v.v) d.v = v.v;
-    if (v.map) d.map = v.map;
+    if (v.m) d.m = v.m;
     if (v.l) d.l = v.l;
     if (v.f) d.f = v.f;
     if (v.x) d.x = v.x;
