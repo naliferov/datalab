@@ -6,8 +6,8 @@ const mkvar = async (bus, type, _) => {
     };
     v._id = id;
 
-    //if (type === 'b') v.b = true;
-    if (type === 'v') v.v = true;
+    if (type === 'b') v.b = {};
+    else if (type === 'v') v.v = true;
     else if (type === 'm') v.m = {};
     else if (type === 'l') v.l = [];
     else if (type === 'f') v.f = {};

@@ -1,1 +1,0 @@
-str => str.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}/)

@@ -1,1 +1,0 @@
-async () => JSON.parse(await s.nodeFS.readFile('state/secrets.json', 'utf8'))

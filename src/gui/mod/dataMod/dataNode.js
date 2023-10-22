@@ -134,7 +134,7 @@ class editorNode {
         let v = this.dataNode.getData();
         if (dType !== 'object' || v === null) return;
 
-        //if (s.f('sys.isEmptyObject', v) || (Array.isArray(v) && v.length === 0)) {
+        //if (s.op('sys.isEmptyObject', v) || (Array.isArray(v) && v.length === 0)) {
 
         await this.requestData();
 
@@ -209,7 +209,7 @@ class editorNode {
 
         return true;
         //if (Array.isArray(data)) return data.length > 0;
-        //return !s.f('sys.isEmptyObject', data);
+        //return !s.op('sys.isEmptyObject', data);
     }
 
     async showOutlinerOpsPopup(opsBtn) {

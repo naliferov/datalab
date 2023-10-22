@@ -140,56 +140,6 @@
             min-width: 2px;
         }
 
-        .appFrame {
-            position: absolute;
-            top: 30px;
-            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-
-        /* this create small glitches when after start and drag window */
-        .appFrame.drag {
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none;   /* Chrome/Safari/Opera */
-            -khtml-user-select: none;    /* Konqueror */
-            -moz-user-select: none;      /* Firefox */
-            -ms-user-select: none;       /* Internet Explorer/Edge*/
-            user-select: none;
-        }
-        .appTopBar {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            padding: 5px 0;
-            background: lightgray;
-            cursor: pointer;
-            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
-        }
-        .appFrame.drag .appTopBar {
-            cursor: move;
-        }
-        .appTitle {
-            font-weight: bold;
-            white-space: nowrap;
-            margin-left: 5px;
-        }
-        .resizer {
-            position: absolute;
-            min-width: 1em;
-            min-height: 1em;
-        }
-        .resizeTop {
-            left: 0.5em;
-            right: 0.5em;
-            top: -0.5em;
-            cursor: ns-resize;
-        }
-        .resizeBottom {
-            left: 0.5em;
-            right: 0.5em;
-            bottom: -0.5em;
-            cursor: ns-resize;
-        }
         .resizeLeft {
             top: 0.5em;
             bottom: 0.5em;

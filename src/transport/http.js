@@ -151,12 +151,21 @@ export class HttpClient {
 
     async rq(method, url, params, headers, options = {}) {
         let timeoutId;
-        const controller = new AbortController(); if (options.timeout) timeoutId = setTimeout(() => controller.abort(), options.timeout);
-        if (!headers['Content-Type']) headers['Content-Type'] = 'application/json';
+        const controller = new AbortController();
+        if (options.timeout) {
+            timeoutId = setTimeout(() => controller.abort(), options.timeout);
+        }
+        if (!headers['Content-Type']) {
+            if (params instanceof ArrayBuffer) {
+                headers['Content-Type'] = 'application/octet-stream';
+            } else {
+                headers['Content-Type'] = 'application/json';
+            }
+        }
 
         const fetchParams = {method, headers, signal: controller.signal};
 
-        if (method === 'POST') {
+        if (method === 'POST' || method === 'PUT') {
             if (params instanceof ArrayBuffer) {
                 fetchParams.body = params;
             } else {
@@ -169,18 +178,17 @@ export class HttpClient {
         const response = await fetch(this.baseURL ? this.baseURL + url : url, fetchParams);
         if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
 
-
-        let res = {
+        let r = {
             statusCode: response.status,
             headers: response.headers
         };
         if (options.blob) {
-            res.data = await response.blob();
+            r.data = await response.blob();
         } else {
             const contentType = response.headers.get('content-type') ?? '';
-            res.data = contentType.startsWith('application/json') ? await response.json() : await response.text();
+            r.data = contentType.startsWith('application/json') ? await response.json() : await response.text();
         }
-        return res;
+        return r;
     }
 
     async get(url, params = {}, headers = {}, options = {}) { return await this.rq('GET', url, params, headers, options); }

@@ -70,7 +70,7 @@ await v({ event: 'bus.set', bus });
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const varStorage = new FsStorage('./state', fs);
 
-const { VarRepository } = await import('./src/varRepository.js');
+const { VarRepository } = await import('./src/domain/varRepository.js');
 let varRepository = new VarRepository(varStorage);
 
 const root = await varRepository.get('root');

@@ -10,19 +10,6 @@ const types = new Set(['b', 'v', 'm', 'l', 'f', 'x']);
 let bus;
 const _ = Symbol('_');
 
-const getRepo = (path) => {
-    if (path[0] && path[0] === 'ctx' && path[1] === 'idb') {
-        return 'idb';
-    }
-    return 'default';
-}
-const cutCtxFromPath = path => {
-    if (path[0] && path[0] === 'ctx') {
-        return path.slice(2);
-    }
-    return path;
-}
-
 const events = {
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {

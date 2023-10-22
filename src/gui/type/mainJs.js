@@ -7,17 +7,17 @@
             this.v = await s.f('sys.gui.view');
 
             // const baseUrl = document.location.protocol + '//' + document.location.host;
-            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-dataBrowser/min/vs' }});
+            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-dataMod/min/vs' }});
             // window.MonacoEnvironment = {
             //     getWorkerUrl: (workerId, label) => {
             //         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-dataBrowser/min/' };
-            //     importScripts('${baseUrl}/node_modules/monaco-dataBrowser/min/vs/base/worker/workerMain.js');`
+            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-dataMod/min/' };
+            //     importScripts('${baseUrl}/node_modules/monaco-dataMod/min/vs/base/worker/workerMain.js');`
             //         )}`;
             //     }
             // };
             // await (new Promise((resolve, reject) => {
-            //     require(["vs/dataBrowser/dataBrowser.main"], () => resolve());
+            //     require(["vs/dataMod/dataMod.main"], () => resolve());
             // }));
 
             const input = new (await s.f('sys.gui.input'));
@@ -146,7 +146,7 @@
 
             const localState = new (await s.f('sys.apps.GUI.localState'));
 
-            //console.log(await s.f('sys.apps.fileUploader'));
+            //console.log(await s.op('sys.apps.fileUploader'));
 
             //BUILDING type
             const app = new this.v;
@@ -174,7 +174,7 @@
 
                 oBtn = createBtn('Data browser');
                 oBtn.on('click', () => {
-                    appsManager.openApp('sys.apps.dataBrowser', null, true);
+                    appsManager.openApp('sys.apps.dataMod', null, true);
                     popup.clear();
                 });
                 //oBtn.on('pointerenter', removeSubmenu);

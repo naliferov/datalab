@@ -24,7 +24,7 @@ async () => {
             e('>', [this.automaticScroll, scrollContainer]);
             e('>', [new v({ txt: 'automatic scroll' }), scrollContainer]);
 
-            //const http = new (s.f('sys.httpClient'));
+            //const http = new (s.op('sys.httpClient'));
             // const file = new v({tagName: 'input'});
             // file.setAttr('type', 'file');
             // e('>', [file, this.header]);

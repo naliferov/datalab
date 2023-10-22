@@ -1,22 +1,24 @@
-let bus;
-let O;
+let b;
 
 const events = {
-    'bus.set': (x) => bus = x.bus,
-    'o.set': (x) => O = x.o,
-    'add': (x) => {
-        const { path, o, v } = x;
+    'b': x => b = x.b,
 
-        let target = O;
-        if (x.target) target = x.target;
+    'i': async (x) => {
+        const { path, o1, o2, v } = x;
 
-        const object = new O(o);
-        if (o.event) {
-            for (let eType in o.event) object.on(eType, o.event[eType]);
+        //const o1obj = await b.p('doc.get', { id: o1 });
+        if (o2) {
+            const id = await b.p('doc.ins', { o1, o2 });
+            //console.log(id);
         }
-        target.insert(object);
 
-        return object;
+        //const object = new O(o);
+        //if (o.event) {
+          //  for (let eType in o.event) object.on(eType, o.event[eType]);
+        //}
+        //target.insert(object);
+
+        //return object;
     },
     'doc.mutate': (x) => {
         //console.log(x);
@@ -65,12 +67,38 @@ export const mkOp = {
     // }
 };
 
-export const op = async x => {
-    const { event } = x;
+const on = (id, eventName, callback) => {
+    //add event to id!
 
-    if (!events[event]) {
-        return 'Command not found';
+    //dom.addEventListener(eventName, callback);
+}
+
+const m = () => {
+
+}
+export const dmk = (d, x) => {
+    const { id, type, txt } = x;
+
+    const o = d.createElement(type || 'div');
+    if (txt) o.innerText = txt;
+
+    const classD = x['class'];
+    if (classD) {
+        o.className = Array.isArray(classD) ? classD.join(' ') : classD;
     }
-    return await events[event](x);
+    return o;
+}
+const dragAndDrop = () => {
+
+}
+
+const insert = (o) => {
+    //if (this.shadow) this.shadow.appendChild(view.getDOM());
+    //this.dom.appendChild(view.getDOM());
+}
+
+export const op = async (e, x) => {
+    if (!events[e]) return 'Command not found';
+    return await events[e](x);
 }
 

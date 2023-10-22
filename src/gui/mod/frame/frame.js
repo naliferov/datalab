@@ -1,60 +1,53 @@
 export const Frame = {
 
-    setO(O) { this.O = O },
-    setOp(Op) { this.op = op },
-
-    getV() { return this.view; },
-
-    setIndex(index) { this.index = index; },
-    getIndex() { return this.index; },
-
+    setB(b) { this.b = b },
     async init() {
 
-        this.view = new this.O({ class: 'frame' });
-        this.view.setSize(500, 500);
+        const p = async (event, data) => await this.b.p(event, data);
 
-        const top = new this.O({ class: ['topBar'] });
-        this.top = top;
-        e('>', [top, this.view]);
-        top.on('pointerdown', (e) => this.topBarDragAndDrop(e));
+        this.o = await p('doc.mk', { class: ['frame'] });
+        await p('doc.setStyle', { o: this.o, style: {
+            width: '200px', height: '200px', background: 'lightgray'
+        } });
 
-        const closeBtn = new this.O({ class: 'closeBtn' });
-        e('>', [closeBtn, top]);
-        closeBtn.on('click', () => {
-            this.view.remove();
-            if (this.app.close) {
-                this.app.close();
-            }
-            s.e('appFrame.close', { appFrame: this });
-        });
+        const top = await p('doc.mk', { class: ['topBar'] });
+        await p('doc.ins', { o1: this.o, o2: top });
+        //top.on('pointerdown', (e) => this.topBarDragAndDrop(e));
 
-        //todo if not get title, use last part of appPath
-        const title = new v({ txt: this.app.getTitle(), class: 'appTitle' });
-        e('>', [title, topBar]);
 
-        const content = new v({ class: 'content' });
-        this.content = content;
-        e('>', [content, this.view]);
+        // const closeBtn = new this.O({ class: 'closeBtn' });
+        // e('>', [closeBtn, top]);
+        // closeBtn.on('click', () => {
+        //     this.view.remove();
+        //     if (this.app.close) {
+        //         this.app.close();
+        //     }
+        //     s.e('appFrame.close', { appFrame: this });
+        // });
 
-        await this.app.init();
+        //const title = new v({ txt: this.app.getTitle(), class: 'appTitle' });
+        //e('>', [title, topBar]);
 
-        e('>', [this.app.getV(), content]);
+        const resizeTop = await p('doc.mk', { class: ['resizer', 'resizeTop'] });
+        await p('doc.ins', { o1: this.o, o2: resizeTop });
+        //resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
 
-        const resizeTop = new v({ class: ['resizer', 'resizeTop'] });
-        e('>', [resizeTop, this.view]);
-        resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
+        const nsResizeBottom = await p('doc.mk', { class: ['resizer', 'resizeBottom'] });
+        await p('doc.ins', { o1: this.o, o2: nsResizeBottom });
+        await p('doc.on', { e: 'pointerdown', o: nsResizeBottom, f: (e) => this.resizeBottom(e) });
 
-        const nsResizeBottom = new v({ class: ['resizer', 'resizeBottom'] });
-        e('>', [nsResizeBottom, this.view]);
-        nsResizeBottom.on('pointerdown', (e) => this.resizeBottom(e));
+        //nsResizeBottom.on('pointerdown', (e) => this.resizeBottom(e));
+        return;
 
-        const nsResizeLeft = new v({ class: ['resizer', 'resizeLeft'] });
-        e('>', [nsResizeLeft, this.view]);
-        nsResizeLeft.on('pointerdown', (e) => this.resizeLeft(e));
+
+        const resizeLeft = new v({ class: ['resizer', 'resizeLeft'] });
+        //e('>', [resizeLeft, this.view]);
+        resizeLeft.on('pointerdown', (e) => this.resizeLeft(e));
 
         const resizeRight = new v({ class: ['resizer', 'resizeRight'] });
         e('>', [resizeRight, this.view]);
         resizeRight.on('pointerdown', (e) => this.resizeRight(e));
+
 
 
         const resizeTopLeft = new v({ class: ['resizer', 'resizeTopLeft'] });
@@ -129,6 +122,8 @@ export const Frame = {
         });
     },
     resizeBottom(e) {
+        console.log('test 9999');
+
         const sizes = this.view.getSizes();
         this.view.addClass('drag');
 
