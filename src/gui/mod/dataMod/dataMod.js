@@ -4,8 +4,6 @@ export const DataMod = {
 
     async init(data) {
 
-        const add = async (o, target) => await op({ event: 'add', o, target });
-
         const render = async (o, parentRow, varId) => {
 
             for (let p in o) {

@@ -111,7 +111,9 @@ const eventMap = {
   'server.start': async (arg) => {
 
     const x = {
-      server: (await import('node:http')).createServer(),
+      server: (await import('node:http')).createServer({
+        requestTimeout: 30000,
+      }),
       port: arg[1] || 8080,
     }
     const { rqHandler } = await import('./src/transport/http.js');

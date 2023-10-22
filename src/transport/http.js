@@ -102,10 +102,14 @@ const rqResponse = (rs, v, contentType) => {
 export const rqHandler = async (x) => {
 
     const { bus, rq, rs, fs } = x;
+    rq.socket.on('error', (e) => {
+        bus.pub('log', { msg: 'rq socker err', e });
+    });
 
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
     const url = new URL('http://t.c' + rq.url);
+
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
 

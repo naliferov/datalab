@@ -105,11 +105,6 @@ await b.s('doc.ins', async (x) => {
     return o2ob;
 });
 await b.s('doc.mv', async (x) => {});
-await b.s('doc.setSize', async (x) => {
-    const { o, size } = x;
-    o.style.width = size.x + 'px';
-    o.style.height = size.y + 'px';
-});
 await b.s('doc.setStyle', async (x) => {
     const { o, style } = x;
     for (let k in style) o.style[k] = style[k];
@@ -124,6 +119,7 @@ await fr.init();
 await op('i', { o1: 'app', o2: fr.o });
 
 const dataMod = Object.create(DataMod);
+dataMod.setB(b);
 //await op('i', { o1: 'app', o2: frame.o });
 
 //frame.setO(O);
