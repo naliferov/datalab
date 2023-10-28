@@ -7,17 +7,17 @@
             this.v = await s.f('sys.gui.view');
 
             // const baseUrl = document.location.protocol + '//' + document.location.host;
-            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-dataMod/min/vs' }});
+            // require.config({ paths: { 'vs': baseUrl + '/node_modules/monaco-dataEditor/min/vs' }});
             // window.MonacoEnvironment = {
             //     getWorkerUrl: (workerId, label) => {
             //         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-dataMod/min/' };
-            //     importScripts('${baseUrl}/node_modules/monaco-dataMod/min/vs/base/worker/workerMain.js');`
+            //     self.MonacoEnvironment = { baseUrl: '${baseUrl}/node_modules/monaco-dataEditor/min/' };
+            //     importScripts('${baseUrl}/node_modules/monaco-dataEditor/min/vs/base/worker/workerMain.js');`
             //         )}`;
             //     }
             // };
             // await (new Promise((resolve, reject) => {
-            //     require(["vs/dataMod/dataMod.main"], () => resolve());
+            //     require(["vs/dataEditor/dataEditor.main"], () => resolve());
             // }));
 
             const input = new (await s.f('sys.gui.input'));
@@ -174,7 +174,7 @@
 
                 oBtn = createBtn('Data browser');
                 oBtn.on('click', () => {
-                    appsManager.openApp('sys.apps.dataMod', null, true);
+                    appsManager.openApp('sys.apps.dataEditor', null, true);
                     popup.clear();
                 });
                 //oBtn.on('pointerenter', removeSubmenu);

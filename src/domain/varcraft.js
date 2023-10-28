@@ -7,10 +7,11 @@ import {
 
 const types = new Set(['b', 'v', 'm', 'l', 'f', 'x']);
 
+let _;
 let bus;
-const _ = Symbol('_');
 
 const events = {
+    '_.set': (x) => _ = x._,
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {
 
@@ -44,10 +45,9 @@ const events = {
         let repo = x.repo || 'default';
 
         const set = await createVarSetByPath({
-            bus, repo, path,
-            isNeedStopIfVarNotFound: true, _,
+            bus, repo, path, _,
+            isNeedStopIfVarNotFound: true,
         });
-
         if (!set) return;
 
         const v = set.at(-1);
@@ -61,8 +61,8 @@ const events = {
         let repo = x.repo || 'default';
 
         const set = await createVarSetByPath({
-            bus, repo, path,
-            isNeedStopIfVarNotFound: true, _
+            bus, repo, path, _,
+            isNeedStopIfVarNotFound: true,
         });
         if (!set || set.length < 2) {
             await this.pub('log', { msg: 'Var set not found' });

@@ -26,8 +26,7 @@ const events = {
 }
 
 export const toRight = (o, targetO) => {
-    const {x, y, width} = targetO.getSize();
-
+    const { x, y, width } = targetO.getSize();
     o.absolute();
     o.setPosition(x + width + 10, y);
 }
@@ -69,7 +68,6 @@ export const mkOp = {
 
 const on = (id, eventName, callback) => {
     //add event to id!
-
     //dom.addEventListener(eventName, callback);
 }
 
@@ -91,11 +89,13 @@ export const dmk = (d, x) => {
 const dragAndDrop = () => {
 
 }
-
 const insert = (o) => {
     //if (this.shadow) this.shadow.appendChild(view.getDOM());
     //this.dom.appendChild(view.getDOM());
 }
+// const setAtr (d, k, v) => {
+//
+// }
 
 export const op = async (e, x) => {
     if (!events[e]) return 'Command not found';

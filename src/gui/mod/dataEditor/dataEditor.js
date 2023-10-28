@@ -1,52 +1,74 @@
-export const DataMod = {
+export const DataEditor = {
+
+    //tree view, list view, card view
 
     setB(b) { this.b = b; },
+    set_(_) { this._ = _; },
 
     async init(data) {
 
-        const render = async (o, parentRow, varId) => {
+        const _ = this._;
+        const simpleT = new Set(['undefined', 'boolean', 'number', 'bigint', 'string']);
+
+        const p = async (event, data) => await this.b.p(event, data);
+        //const i = (o2, o1) => o1.appendChild(o2);
+        const add = async (data, parent) => {
+            const o = await p('doc.mk', data);
+            parent.appendChild(o);
+            return o;
+        }
+
+        const rendM = async (id, o, parent) => {
 
             for (let p in o) {
+                const v = o[p];
 
-                if (p === '_id') continue;
-                else if (p === 'm') {
-                    await render(o[p], parentRow, o._id);
-                    continue;
-                } else if (p === 'v') {
-                    let txt = o[p];
-                    if (txt && txt.split) {
-                        txt = txt.split('\n')[0];
-                    }
-                    const varVal = await add({ txt, class: 'varVal'}, parentRow);
-                    varVal.setAttr('varId', o._id);
-                    continue;
-                }
-
-                const row = await add({ class: 'varRow' }, parentRow);
-                if (varId) row.setAttr('varId', varId);
+                const row = await add({ class: 'vRow' }, parent);
+                if (id) row.setAttribute('vid', id);
 
                 await add({ txt: p, class: 'mapK' }, row);
                 await add({ txt: ': ', class: 'mapSep' }, row);
 
-                const val = o[p];
-                if (typeof val === 'object' && val !== null) {
-                    await render(val, row, varId);
-                } else if (typeof val === 'string') {
-                    await add({ txt: 'open', class: 'varLink' }, row);
+                if (simpleT.has(typeof v)) {
+                    //get entity by id; this is openeble item
+                    await renderV(0, v, row);
+                } else if (v[_]) {
+
+                    if (v.m) {
+                        await rendM(v[_].id, v.m, row);
+                    } else if (v.v) {
+                        await renderV(v[_].id, v.v, row);
+                    } else {
+                        console.log('else type of var', v);
+                    }
+
+                } else {
+                    console.log('Unknown type of VAR', v);
                 }
             }
         }
+        const renderV = async (id, v, parent) => {
+            let txt = v;
+            if (txt && txt.split) {
+                txt = txt.split('\n')[0];
+            }
+            const val = await add({ txt, class: 'vVal'}, parent);
+            if (id) val.setAttribute('vid', id);
+        }
 
-        const dataBrowser = await add({ class: 'dataBrowser', style: {border: '1px solid black'} });
-        dataBrowser.absolute();
+        const render = async (id, o, parent) => {
+            if (!o[_]) {
+                console.log('Unknown VAR', o);
+                return;
+            }
+            if (o.m) await rendM(o['_id'], o.m, parent);
+        }
 
-        await add({ txt: 'Data Browser', class: 'header', style: {
-            fontWeight: 'bold',
-            fontSize: '18px',
-            marginBottom: '10px',
-        }}, dataBrowser);
+        this.o = await p('doc.mk', { class: 'dataEditor', style: { border: '1px solid black' } });
 
-        await render(data, dataBrowser);
+        //path instead of root
+
+        await render(null, data, this.o);
     },
 
     async init2() {

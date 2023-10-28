@@ -5,6 +5,8 @@ import { parseCliArgs } from "./src/transport/cli.js";
 import { pathToArr } from "./src/util/util.js";
 import { ulid } from "ulid";
 
+const _ = Symbol('sys');
+
 await bus.sub('log', async (x) => {
   if (typeof x === 'object') {
     console.log(x.msg);
@@ -57,14 +59,13 @@ await bus.sub('http.in', async (x) => {
       },
       'var.getById': async (x) => {
         const { bus, msg } = x;
-        const { id } = msg;
-
-        return bus.pub('repo.get', { id });
+        return bus.pub('default.get', { id: msg.id });
       }
     }
     if (m[event]) return await m[event](x);
 });
 
+await v({ event: '_.set', _ });
 await v({ event: 'bus.set', bus });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');

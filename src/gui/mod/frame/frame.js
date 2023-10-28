@@ -7,7 +7,8 @@ export const Frame = {
 
         this.o = await p('doc.mk', { class: ['frame'] });
         await p('doc.setStyle', { o: this.o, style: {
-            width: '200px', height: '200px', background: 'lightgray'
+            minWidth: '100px', minHeight: '100px',
+            background: 'lightgray'
         } });
 
         const top = await p('doc.mk', { class: ['topBar'] });

@@ -2,7 +2,7 @@ const mkvar = async (bus, type, _) => {
 
     const id = await bus.pub('getUniqId');
     let v = {
-        [_]: { id, new: true },
+        [_]: { id, new: true }, //[_] is for service data
     };
     v._id = id;
 
@@ -62,31 +62,36 @@ export const gatherVarData = async (x) => {
 
     const { bus, repo, v, depth, _ } = x;
 
-    const data = { _id: v[_].id };
+    const data = {
+        _id: v[_].id,
+        [_]: { id: v[_].id },
+    };
     if (v.v) data.v = v.v;
 
     if (!v.m) return data;
 
     data.m = {};
 
-    for (let prop in v.m) {
+    //todo make function for gatherMapData;
+    for (let p in v.m) {
 
-        const id = v.m[prop];
+        const id = v.m[p];
         if (!id) return;
 
         if (depth === 0) {
-            data.m[prop] = id;
+            data.m[p] = id;
             continue;
         }
-        const v2 = await bus.pub(`${repo}.get`, { id });
+        const v2 = await bus.p(`${repo}.get`, { id });
         if (v2) {
-            v2[_] = { id }; v2._id = id;
+            v2._id = id;
+            v2[_] = { id };
         }
 
         if (v2.v) {
-            data.m[prop] = v2;
+            data.m[p] = v2;
         } else if (v2.m) {
-            data.m[prop] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
+            data.m[p] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
         }
     }
     return data;
