@@ -13,20 +13,3 @@ export const bus = {
     },
     async s(event, handler) { return await this.sub(event, handler); },
 }
-
-export const ps = {
-    setHandlers(handlers) {
-        this.handlers = handlers;
-    },
-    async p(e, data) {
-        if (!this.handlers[e]) return;
-
-        return await this.handlers[e](data);
-    },
-    async s(e, handler) {
-        if (this.handlers[e]) {
-            await this.p('log', { msg: `Handler for event [${e}] already set.` });
-        }
-        this.handlers[e] = handler;
-    }
-}

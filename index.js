@@ -7,46 +7,46 @@ import { ulid } from "ulid";
 
 const _ = Symbol('sys');
 
-await bus.sub('log', async (x) => {
+await bus.s('log', async (x) => {
   if (typeof x === 'object') {
     console.log(x.msg);
     return;
   }
   console.log(x);
 });
-await bus.sub('getUniqId', () => ulid());
+await bus.s('getUniqId', () => ulid());
 
-await bus.sub('default.set', async (x) => {
+await bus.s('default.set', async (x) => {
   const { id, v } = x;
   await varRepository.set(id, v);
 
   return { msg: 'update complete', v };
 });
 
-await bus.sub('default.get', async (x) => {
+await bus.s('default.get', async (x) => {
   const { id } = x;
   if (id) {
     return await varRepository.get(id);
   }
 });
 
-await bus.sub('default.del', async (x) => {
+await bus.s('default.del', async (x) => {
   const { id } = x;
   await varRepository.del(id);
 });
 
-await bus.sub('fs.readFile', async (x) => {
+await bus.s('fs.readFile', async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
 });
 
-await bus.sub('http.in', async (x) => {
+await bus.s('http.in', async (x) => {
     const { bus, event, msg } = x;
 
     const m = {
       'default': async () => {
         return {
-          msg: await bus.pub('fs.readFile', { path: './src/gui/index.html' }),
+          msg: await bus.p('fs.readFile', { path: './src/gui/index.html' }),
           type: 'text/html',
         }
       },
@@ -54,7 +54,7 @@ await bus.sub('http.in', async (x) => {
         let { msg } = x;
         let { id, path, v } = msg;
 
-        if (id && v) await bus.pub('default.set', { id, v });
+        if (id && v) await bus.p('default.set', { id, v });
 
         return { ok: 1 };
       },
@@ -62,7 +62,7 @@ await bus.sub('http.in', async (x) => {
         let { msg } = x;
         let { id, path, depth } = msg;
 
-        if (id) return bus.pub('default.get', { id });
+        if (id) return bus.p('default.get', { id });
         return { test: 1 };
       },
     }

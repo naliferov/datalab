@@ -8,7 +8,7 @@ import { IndexedDb } from "/src/storage/indexedDb.js";
 
 const _ = Symbol('sys');
 
-const http = new HttpClient();
+const http = new HttpClient;
 const idb = new IndexedDb;
 await idb.open();
 
@@ -18,36 +18,36 @@ if (!root) await idb.set('root', { m: {} });
 await b.s('log', async (x) => console.log(x));
 await b.s('getUniqId', () => crypto.randomUUID());
 
-await b.sub('default.set', async (x) => {
+await b.s('default.set', async (x) => {
     const { id, v } = x;
     return { msg: 'update complete', v };
 });
-await b.sub('default.get', async (x) => {
-    return await b.pub('http.post', { event: 'var.get', id: x.id });
+await b.s('default.get', async (x) => {
+    return await b.p('http.post', { event: 'var.get', id: x.id });
 });
-await b.sub('idb.set', async (x) => {
+await b.s('idb.set', async (x) => {
     const { id, v } = x;
     await idb.set(id, v);
 });
-await b.sub('idb.get', async (x) => {
+await b.s('idb.get', async (x) => {
     const { id } = x;
     return await idb.get(id);
 });
-await b.sub('idb.del', async (x) => {
+await b.s('idb.del', async (x) => {
     console.log(x);
 });
 const mem = {};
-await b.sub('mem.set', async (x) => {});
-await b.sub('http.post', async (x) => {
+await b.s('mem.set', async (x) => {});
+await b.s('http.post', async (x) => {
     const { data } = await http.post('/', x);
     return data;
 });
 
-await b.sub('varcraft.set', async (x) => {
+await b.s('varcraft.set', async (x) => {
     x.event = 'var.set';
     return await v(x);
 });
-await b.sub('varcraft.get', async (x) => {
+await b.s('varcraft.get', async (x) => {
     x.event = 'var.get';
     return await v(x);
 });

@@ -1,6 +1,6 @@
 const mkvar = async (bus, type, _) => {
 
-    const id = await bus.pub('getUniqId');
+    const id = await bus.p('getUniqId');
     let v = {
         [_]: { id, new: true }, //[_] is for service data
     };
@@ -22,7 +22,7 @@ export const createVarSetByPath = async (x) => {
     const { bus, repo, path, isNeedStopIfVarNotFound, _, } = x;
     let type = x.type || 'v';
 
-    let v1 = await bus.pub(`${repo}.get`, { id: 'root' });
+    let v1 = await bus.p(`${repo}.get`, { id: 'root' });
     v1[_] = { id: 'root', name: 'root' };
 
     let set = [ v1 ];
@@ -37,7 +37,7 @@ export const createVarSetByPath = async (x) => {
 
         let id = v1.m[name];
         if (id) {
-            v2 = await bus.pub(`${repo}.get`, { id });
+            v2 = await bus.p(`${repo}.get`, { id });
             if (v2) v2[_] = { id };
         }
 
@@ -108,7 +108,7 @@ export const gatherSubVarsIds = async (x) => {
     const getSubVars = async (v) => {
         for (let prop in v.m) {
             const id = v.m[prop];
-            const subV = await bus.pub(`${repo}.get`, { id });
+            const subV = await bus.p(`${repo}.get`, { id });
             subVars.push(id);
 
             if (subV.m) await getSubVars(subV);

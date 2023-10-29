@@ -5,7 +5,7 @@ import {
     prepareForTransfer
 } from './varops.js';
 
-const types = new Set(['b', 'v', 'm', 'l', 'f', 'x']);
+//const types = new Set(['b', 'v', 'm', 'l', 'f', 'x']);
 
 let _;
 let bus;
@@ -15,10 +15,15 @@ const events = {
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {
 
-        console.log(x);
-
         const { id, path, data, type } = x;
         let repo = x.repo || 'default';
+
+        if (id) {
+            console.log(x);
+            //get VAR by id;
+            //await bus.p(`${repo}.set`, { id,  v: prepareForTransfer(v) });
+            return;
+        }
 
         const set = await createVarSetByPath({ bus, repo, path, type, _, });
         if (!set) return;
@@ -30,7 +35,7 @@ const events = {
                 if (!v[_].new) v[_].updated = true;
             }
             if (v[_].new || v[_].updated) {
-                await bus.pub(`${repo}.set`, {
+                await bus.p(`${repo}.set`, {
                     id: v[_].id,
                     v: prepareForTransfer(v)
                 });
@@ -76,26 +81,21 @@ const events = {
         const subVars = await gatherSubVarsIds({ bus, v: v2 });
         const len = Object.keys(subVars).length;
         if (len > 5) {
-            await bus.pub('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
+            await bus.p('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
             return;
         }
         for (let i = 0; i < subVars.length; i++) {
             const id = subVars[i];
-            await bus.pub(`${repo}.del`, { id });
+            await bus.p(`${repo}.del`, { id });
         }
 
-        await bus.pub(`${repo}.del`, { id: v2[_].id });
+        await bus.p(`${repo}.del`, { id: v2[_].id });
 
         delete v1.m[v2[_].name];
-        await bus.pub(`${repo}.set`, {
+        await bus.p(`${repo}.set`, {
             id: v1[_].id,
             v: prepareForTransfer(v1)
         });
-    },
-    'var.getById': async (x) => {
-        const { id } = x;
-        const repo = x.repo || 'repo';
-        return await bus.pub(`${repo}.get`, { id });
     },
     'var.mv': {},
     'var.connect': {},
