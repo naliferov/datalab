@@ -1,86 +1,15 @@
-<!doctype html>
-<html lang=xx>
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>varcraft</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍩</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <style>
     body {
-        font-family: 'Roboto', Arial, sans-serif;
-        font-size: 15px;
+        font-family: 'Roboto', sans-serif;
         margin: 0;
     }
-
-    .shadow {
-        box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
-    }
-
-    .frame {
-        position: absolute;
-        /*top: 30px;*/
-        overflow: hidden;
-    }
-    /* this create small glitches when after start and drag window */
-    .frame.drag {
-        -webkit-touch-callout: none; /* iOS Safari */
-        -webkit-user-select: none;   /* Chrome/Safari/Opera */
-        -khtml-user-select: none;    /* Konqueror */
-        -moz-user-select: none;      /* Firefox */
-        -ms-user-select: none;       /* Internet Explorer/Edge*/
-        user-select: none;
-    }
-
-    .topBar {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        padding: 0.5em 0;
-        background: #e7e7e7;
-        cursor: pointer;
-    }
-    .frame.drag .topBar {
-        cursor: move;
-    }
-    .appTitle {
-        font-weight: bold;
-        white-space: nowrap;
-        margin-left: 5px;
-    }
-    .resizer {
-        position: absolute;
-        min-width: 0.8em;
-        min-height: 0.8em;
-    }
-    .resizeTop {
-        left: 0.5em;
-        right: 0.5em;
-        top: -0.5em;
-        cursor: ns-resize;
-    }
-    .resizeBottom {
-        left: 0.5em;
-        right: 0.5em;
-        bottom: -0.5em;
-        cursor: ns-resize;
-    }
-
-    .vRow {
-        margin-left: 10px;
-    }
-    .vVal {
-        display: inline;
-    }
-    .mapK {
-        display: inline;
-        font-weight: bold;
-    }
-    .mapSep { display: inline; }
 </style>
-<body>
-<script type="module" src="/src/gui/gui.js"></script>
-</body>
+<body><script type="module" src="/src/gui/gui.js"></script></body>
 </html>

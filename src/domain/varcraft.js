@@ -15,6 +15,8 @@ const events = {
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {
 
+        console.log(x);
+
         const { id, path, data, type } = x;
         let repo = x.repo || 'default';
 
@@ -23,7 +25,6 @@ const events = {
 
         for (let i = 0; i < set.length; i++) {
             const v = set[i];
-
             if (v.v) {
                 v.v = data;
                 if (!v[_].new) v[_].updated = true;

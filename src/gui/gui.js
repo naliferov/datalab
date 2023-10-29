@@ -1,6 +1,5 @@
 import { bus as b } from "../domain/bus.js";
 import { varcraft as v } from "../domain/varcraft.js";
-import { op } from "../domain/op.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { dmk } from "../domain/op.js";
@@ -24,9 +23,8 @@ await b.sub('default.set', async (x) => {
     return { msg: 'update complete', v };
 });
 await b.sub('default.get', async (x) => {
-    return await b.pub('http.post', { event: 'var.getById', id: x.id });
+    return await b.pub('http.post', { event: 'var.get', id: x.id });
 });
-
 await b.sub('idb.set', async (x) => {
     const { id, v } = x;
     await idb.set(id, v);
@@ -38,7 +36,6 @@ await b.sub('idb.get', async (x) => {
 await b.sub('idb.del', async (x) => {
     console.log(x);
 });
-
 const mem = {};
 await b.sub('mem.set', async (x) => {});
 await b.sub('http.post', async (x) => {
@@ -46,9 +43,17 @@ await b.sub('http.post', async (x) => {
     return data;
 });
 
+await b.sub('varcraft.set', async (x) => {
+    x.event = 'var.set';
+    return await v(x);
+});
+await b.sub('varcraft.get', async (x) => {
+    x.event = 'var.get';
+    return await v(x);
+});
+
 await v({ event: '_.set', _ });
 await v({ event: 'bus.set', bus: b });
-await op('b', { b: b });
 
 //todo add ability to send events from browser console
 //const result = await v({ event: 'var.set', repo: 'idb', path: ['isDataBrowserShowed'], data: true });
@@ -60,7 +65,7 @@ app.id = 'app';
 doc.body.appendChild(app);
 
 let observer = new MutationObserver((e) => {
-    op('doc.mutated', { data: e });
+    //op('doc.mutated', { data: e });
 });
 observer.observe(doc, {
     subtree: true, childList: true,
@@ -96,7 +101,6 @@ await b.s('doc.ins', async (x) => {
     }
 
     o1ob.appendChild(o2ob);
-
     return o2ob;
 });
 await b.s('doc.mv', async (x) => {});
@@ -105,18 +109,17 @@ await b.s('doc.setStyle', async (x) => {
     for (let k in style) o.style[k] = style[k];
 });
 
-const fr = Object.create(Frame);
-fr.setB(b);
-await fr.init();
-await op('i', { o1: 'app', o2: fr.o });
-
+const frame = Object.create(Frame);
+frame.setB(b);
+await frame.init();
+await b.p('doc.ins', { o1: 'app', o2: frame.o });
 
 
 const dataEditor = Object.create(DataEditor);
 dataEditor.setB(b);
 dataEditor.set_(_);
+await dataEditor.init([]);
 
-const rootData = await v({ event: 'var.get', path: [], depth: 3 });console.log(rootData);
+await b.p('doc.ins', { o1: frame.oShadow, o2: dataEditor.o });
 
-await dataEditor.init(rootData);
-await op('i', { o1: fr.o, o2: dataEditor.o });
+window.onkeydown = (e) => dataEditor.keydown(e);

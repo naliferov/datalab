@@ -1,14 +1,52 @@
+import {bus as b} from "../../../domain/bus.js";
+
 export const DataEditor = {
 
     //tree view, list view, card view
+    marked: null,
+    markedV: null,
 
     setB(b) { this.b = b; },
     set_(_) { this._ = _; },
 
-    async init(data) {
+    async createStyle() {
+
+        const css = `
+div[contenteditable="true"] {
+    outline: none;
+}
+.vRow {
+    margin-left: 10px;
+    color: rgb(55, 53, 47);
+}
+.mapK {
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: inline;
+    font-weight: bold;
+}
+.mapS { display: inline; }
+.vVal {
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: inline;
+}
+
+.mapK.mark,
+.vVal.mark {
+    border: 1px solid rgb(55, 53, 47);
+}
+.mark[contenteditable="true"] {
+    cursor: inherit;
+}
+`;
+        return await this.b.p('doc.mk', { type: 'style', txt: css });
+    },
+
+    async init(path) {
 
         const _ = this._;
-        const simpleT = new Set(['undefined', 'boolean', 'number', 'bigint', 'string']);
+        //const simpleT = new Set(['undefined', 'boolean', 'number', 'bigint', 'string']);
 
         const p = async (event, data) => await this.b.p(event, data);
         //const i = (o2, o1) => o1.appendChild(o2);
@@ -18,57 +56,82 @@ export const DataEditor = {
             return o;
         }
 
-        const rendM = async (id, o, parent) => {
-
+        const rendM = async (o, parent, parentId) => {
             for (let p in o) {
                 const v = o[p];
 
                 const row = await add({ class: 'vRow' }, parent);
-                if (id) row.setAttribute('vid', id);
 
-                await add({ txt: p, class: 'mapK' }, row);
-                await add({ txt: ': ', class: 'mapSep' }, row);
+                const mapK = await add({ txt: p, class: 'mapK' }, row);
+                if (parentId) mapK.setAttribute('parent_vid', parentId);
+                await add({ txt: ': ', class: 'mapS' }, row);
 
-                if (simpleT.has(typeof v)) {
-                    //get entity by id; this is openeble item
-                    await renderV(0, v, row);
-                } else if (v[_]) {
-
+                if (v[_]) {
                     if (v.m) {
-                        await rendM(v[_].id, v.m, row);
+                        await rendM(v.m, row, v[_].id);
                     } else if (v.v) {
-                        await renderV(v[_].id, v.v, row);
+                        await rendV(v.v, row, v[_].id);
                     } else {
-                        console.log('else type of var', v);
+                        console.log('1: Unknown type of var', v);
                     }
-
                 } else {
-                    console.log('Unknown type of VAR', v);
+                    console.log('2: Unknown type of VAR', v);
                 }
             }
         }
-        const renderV = async (id, v, parent) => {
+        const rendV = async (v, parent, id) => {
             let txt = v;
-            if (txt && txt.split) {
-                txt = txt.split('\n')[0];
-            }
-            const val = await add({ txt, class: 'vVal'}, parent);
-            if (id) val.setAttribute('vid', id);
-        }
+            if (txt && txt.split) txt = txt.split('\n')[0];
 
-        const render = async (id, o, parent) => {
+            const val = await add({ txt, class: 'vVal'}, parent);
+            val.setAttribute('vid', id);
+        }
+        const rend = async (o, parent) => {
             if (!o[_]) {
                 console.log('Unknown VAR', o);
                 return;
             }
-            if (o.m) await rendM(o['_id'], o.m, parent);
+            if (o.m) await rendM(o.m, parent, o[_].id);
+            //if (o.l) await rendL(o[_].id, o.m, parent);
         }
 
         this.o = await p('doc.mk', { class: 'dataEditor', style: { border: '1px solid black' } });
+        this.oShadow = this.o.attachShadow({ mode: 'closed' });
+        this.oShadow.appendChild(await this.createStyle());
+        this.oShadow.addEventListener('click', (e) => this.click(e));
 
-        //path instead of root
+        const data = await p('varcraft.get', { path, depth: 3 }); console.log(data);
+        await rend(data, this.oShadow);
+    },
+    click(e) {
+        const classList = e.target.classList;
+        if (!classList.contains('mapK') && !classList.contains('vVal')) {
+            return;
+        }
 
-        await render(null, data, this.o);
+        if (this.marked) this.marked.classList.remove('mark');
+        e.target.classList.add('mark');
+        this.marked = e.target;
+    },
+    async keydown(e) {
+        if (e.key !== 'Enter') return;
+
+        e.preventDefault();
+        if (!this.marked) return;
+
+        const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
+        if (isEnabled) {
+            this.marked.removeAttribute('contenteditable');
+            const v = this.marked.innerText;
+            if (v === this.markedV) return;
+
+            const id = this.marked.getAttribute('vid');
+            await this.b.p('varcraft.set', { id, data: v });
+            return;
+        }
+        this.marked.setAttribute('contenteditable', 'true');
+        this.marked.focus();
+        this.markedV = this.marked.innerText;
     },
 
     async init2() {

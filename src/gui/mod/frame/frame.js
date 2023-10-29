@@ -1,20 +1,80 @@
 export const Frame = {
 
     setB(b) { this.b = b },
+    async createStyle() {
+        const css = `
+    .shadow {
+        box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+    }
+    .frame {
+        position: absolute;
+        /*top: 30px;*/
+        overflow: hidden;
+    }
+    /* this create small glitches when after start and drag window */
+    .frame.drag {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none;   /* Chrome/Safari/Opera */
+        -khtml-user-select: none;    /* Konqueror */
+        -moz-user-select: none;      /* Firefox */
+        -ms-user-select: none;       /* Internet Explorer/Edge*/
+        user-select: none;
+    }
+
+    .topBar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0.5em 0;
+        background: rgba(55, 53, 47, 0.08);
+        cursor: pointer;
+    }
+    .frame.drag .topBar {
+        cursor: move;
+    }
+    .appTitle {
+        font-weight: bold;
+        white-space: nowrap;
+        margin-left: 5px;
+    }
+    .resizer {
+        position: absolute;
+        min-width: 0.8em;
+        min-height: 0.8em;
+    }
+    .resizeTop {
+        left: 0.5em;
+        right: 0.5em;
+        top: -0.5em;
+        cursor: ns-resize;
+    }
+    .resizeBottom {
+        left: 0.5em;
+        right: 0.5em;
+        bottom: -0.5em;
+        cursor: ns-resize;
+    }
+        `;
+        return await this.b.p('doc.mk', { type: 'style', txt: css });
+    },
+
     async init() {
 
         const p = async (event, data) => await this.b.p(event, data);
 
         this.o = await p('doc.mk', { class: ['frame'] });
+        this.oShadow = this.o.attachShadow({ mode: 'closed' });
+        this.oShadow.appendChild(await this.createStyle());
+
         await p('doc.setStyle', { o: this.o, style: {
             minWidth: '100px', minHeight: '100px',
-            background: 'lightgray'
+            background: 'rgb(243 243 243)',
+            position: 'absolute',
         } });
 
         const top = await p('doc.mk', { class: ['topBar'] });
-        await p('doc.ins', { o1: this.o, o2: top });
+        await p('doc.ins', { o1: this.oShadow, o2: top });
         //top.on('pointerdown', (e) => this.topBarDragAndDrop(e));
-
 
         // const closeBtn = new this.O({ class: 'closeBtn' });
         // e('>', [closeBtn, top]);
@@ -30,11 +90,11 @@ export const Frame = {
         //e('>', [title, topBar]);
 
         const resizeTop = await p('doc.mk', { class: ['resizer', 'resizeTop'] });
-        await p('doc.ins', { o1: this.o, o2: resizeTop });
+        await p('doc.ins', { o1: this.oShadow, o2: resizeTop });
         //resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
 
         const nsResizeBottom = await p('doc.mk', { class: ['resizer', 'resizeBottom'] });
-        await p('doc.ins', { o1: this.o, o2: nsResizeBottom });
+        await p('doc.ins', { o1: this.oShadow, o2: nsResizeBottom });
         await p('doc.on', { e: 'pointerdown', o: nsResizeBottom, f: (e) => this.resizeBottom(e) });
 
         //nsResizeBottom.on('pointerdown', (e) => this.resizeBottom(e));

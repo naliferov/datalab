@@ -50,17 +50,21 @@ await bus.sub('http.in', async (x) => {
           type: 'text/html',
         }
       },
+      'var.set': async (x) => {
+        let { msg } = x;
+        let { id, path, v } = msg;
+
+        if (id && v) await bus.pub('default.set', { id, v });
+
+        return { ok: 1 };
+      },
       'var.get': async (x) => {
         let { msg } = x;
         let { id, path, depth } = msg;
-        depth = Number(depth) || 0;
 
+        if (id) return bus.pub('default.get', { id });
         return { test: 1 };
       },
-      'var.getById': async (x) => {
-        const { bus, msg } = x;
-        return bus.pub('default.get', { id: msg.id });
-      }
     }
     if (m[event]) return await m[event](x);
 });
