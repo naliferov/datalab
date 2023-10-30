@@ -1,3 +1,4 @@
+import { x as xFactory } from "../domain/x.js";
 import { bus as b } from "../domain/bus.js";
 import { varcraft as v } from "../domain/varcraft.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
@@ -15,15 +16,17 @@ await idb.open();
 const root = await idb.get('root');
 if (!root) await idb.set('root', { m: {} });
 
+await b.s('get_', async (x) => _);
 await b.s('log', async (x) => console.log(x));
 await b.s('getUniqId', () => crypto.randomUUID());
 
 await b.s('default.set', async (x) => {
     const { id, v } = x;
-    return { msg: 'update complete', v };
+    return await b.p('http.post', { event: 'var.set', id, v });
 });
 await b.s('default.get', async (x) => {
-    return await b.p('http.post', { event: 'var.get', id: x.id });
+    const { id } = x;
+    return await b.p('http.post', { event: 'var.get', id });
 });
 await b.s('idb.set', async (x) => {
     const { id, v } = x;
@@ -33,9 +36,8 @@ await b.s('idb.get', async (x) => {
     const { id } = x;
     return await idb.get(id);
 });
-await b.s('idb.del', async (x) => {
-    console.log(x);
-});
+await b.s('idb.del', async (x) => console.log(x));
+
 const mem = {};
 await b.s('mem.set', async (x) => {});
 await b.s('http.post', async (x) => {
@@ -51,6 +53,9 @@ await b.s('varcraft.get', async (x) => {
     x.event = 'var.get';
     return await v(x);
 });
+
+const x = await xFactory(b);
+//console.log(await x({ [_]: { e: 'getUniqId' } }));
 
 await v({ event: '_.set', _ });
 await v({ event: 'bus.set', bus: b });

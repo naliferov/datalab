@@ -15,26 +15,19 @@ await bus.s('log', async (x) => {
   console.log(x);
 });
 await bus.s('getUniqId', () => ulid());
-
 await bus.s('default.set', async (x) => {
   const { id, v } = x;
   await varRepository.set(id, v);
-
   return { msg: 'update complete', v };
 });
-
 await bus.s('default.get', async (x) => {
   const { id } = x;
-  if (id) {
-    return await varRepository.get(id);
-  }
+  if (id) return await varRepository.get(id);
 });
-
 await bus.s('default.del', async (x) => {
   const { id } = x;
   await varRepository.del(id);
 });
-
 await bus.s('fs.readFile', async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
@@ -53,9 +46,11 @@ await bus.s('http.in', async (x) => {
       'var.set': async (x) => {
         let { msg } = x;
         let { id, path, v } = msg;
+        let repo = x.repo || 'default';
 
-        if (id && v) await bus.p('default.set', { id, v });
-
+        if (id && v) {
+          return await bus.p('default.set', { id, v });
+        }
         return { ok: 1 };
       },
       'var.get': async (x) => {

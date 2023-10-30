@@ -1,5 +1,3 @@
-import {bus as b} from "../../../domain/bus.js";
-
 export const DataEditor = {
 
     //tree view, list view, card view
@@ -15,7 +13,7 @@ export const DataEditor = {
 div[contenteditable="true"] {
     outline: none;
 }
-.vRow {
+.row {
     margin-left: 10px;
     color: rgb(55, 53, 47);
 }
@@ -60,7 +58,7 @@ div[contenteditable="true"] {
             for (let p in o) {
                 const v = o[p];
 
-                const row = await add({ class: 'vRow' }, parent);
+                const row = await add({ class: 'row' }, parent);
 
                 const mapK = await add({ txt: p, class: 'mapK' }, row);
                 if (parentId) mapK.setAttribute('parent_vid', parentId);

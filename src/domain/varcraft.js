@@ -18,10 +18,8 @@ const events = {
         const { id, path, data, type } = x;
         let repo = x.repo || 'default';
 
-        if (id) {
-            console.log(x);
-            //get VAR by id;
-            //await bus.p(`${repo}.set`, { id,  v: prepareForTransfer(v) });
+        if (id) { //update v, if key then update map or list key
+            await bus.p(`${repo}.set`, { id,  v: { v: data } });
             return;
         }
 
