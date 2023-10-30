@@ -1,5 +1,5 @@
 import { x as xFactory } from "../domain/x.js";
-import { bus as b } from "../domain/bus.js";
+import { bus as b } from "../domain/x.js";
 import { varcraft as v } from "../domain/varcraft.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
@@ -22,11 +22,11 @@ await b.s('getUniqId', () => crypto.randomUUID());
 
 await b.s('default.set', async (x) => {
     const { id, v } = x;
-    return await b.p('http.post', { event: 'var.set', id, v });
+    return await b.p('http.post', { event: 'default.set', id, v });
 });
 await b.s('default.get', async (x) => {
     const { id } = x;
-    return await b.p('http.post', { event: 'var.get', id });
+    return await b.p('http.post', { event: 'default.get', id });
 });
 await b.s('idb.set', async (x) => {
     const { id, v } = x;

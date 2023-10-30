@@ -124,7 +124,11 @@ div[contenteditable="true"] {
             if (v === this.markedV) return;
 
             const id = this.marked.getAttribute('vid');
-            await this.b.p('varcraft.set', { id, data: v });
+            if (id) {
+                //await this.b.p('default.set', { id, data: v });
+            }
+            //console.log(id, v, this.markedV);
+
             return;
         }
         this.marked.setAttribute('contenteditable', 'true');

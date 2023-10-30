@@ -129,7 +129,7 @@ export const rqHandler = async (x) => {
         return;
     }
 
-    const out = await bus.p('http.in',{ bus, event, msg });
+    const out = await bus.p('http.in',{ b: bus, event, msg });
     if (!out) {
         rqResponse(rs,'Default response');
         return;

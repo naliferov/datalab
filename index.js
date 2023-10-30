@@ -1,4 +1,4 @@
-import { bus } from "./src/domain/bus.js";
+import { bus } from "./src/domain/x.js";
 import { varcraft as v } from "./src/domain/varcraft.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js";
@@ -15,6 +15,22 @@ await bus.s('log', async (x) => {
   console.log(x);
 });
 await bus.s('getUniqId', () => ulid());
+await bus.s('fs.readFile', async (x) => {
+  const { path } = x;
+  return await fs.readFile(path, 'utf8');
+});
+
+await bus.s('x', async (x) => {
+  //return await fs.readFile(path, 'utf8');
+});
+await bus.s('i', async (x) => {
+  //return await fs.readFile(path, 'utf8');
+});
+await bus.s('o', async (x) => {
+  //return await fs.readFile(path, 'utf8');
+});
+
+
 await bus.s('default.set', async (x) => {
   const { id, v } = x;
   await varRepository.set(id, v);
@@ -28,36 +44,32 @@ await bus.s('default.del', async (x) => {
   const { id } = x;
   await varRepository.del(id);
 });
-await bus.s('fs.readFile', async (x) => {
-  const { path } = x;
-  return await fs.readFile(path, 'utf8');
-});
 
 await bus.s('http.in', async (x) => {
-    const { bus, event, msg } = x;
+    const { b, event, msg } = x;
 
     const m = {
       'default': async () => {
         return {
-          msg: await bus.p('fs.readFile', { path: './src/gui/index.html' }),
+          msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
           type: 'text/html',
         }
       },
-      'var.set': async (x) => {
+      'default.set': async (x) => {
         let { msg } = x;
         let { id, path, v } = msg;
         let repo = x.repo || 'default';
 
         if (id && v) {
-          return await bus.p('default.set', { id, v });
+          return await b.p('default.set', { id, v });
         }
         return { ok: 1 };
       },
-      'var.get': async (x) => {
+      'default.get': async (x) => {
         let { msg } = x;
         let { id, path, depth } = msg;
 
-        if (id) return bus.p('default.get', { id });
+        if (id) return b.p('default.get', { id });
         return { test: 1 };
       },
     }

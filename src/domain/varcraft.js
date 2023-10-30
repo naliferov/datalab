@@ -10,7 +10,7 @@ import {
 let _;
 let bus;
 
-const events = {
+const e = {
     '_.set': (x) => _ = x._,
     'bus.set': (x) => bus = x.bus,
     'var.set': async (x) => {
@@ -120,8 +120,8 @@ const events = {
 export const varcraft = async x => {
     const { event } = x;
 
-    if (!events[event]) {
+    if (!e[event]) {
         return `Command [${event}] not found`;
     }
-    return await events[event](x);
+    return await e[event](x);
 }
