@@ -55,7 +55,9 @@ await b.s('varcraft.get', async (x) => {
 });
 
 const x = await xFactory(b);
-//console.log(await x({ [_]: { e: 'getUniqId' } }));
+console.log(await x({ [_]: { e: 'getUniqId' } }));
+
+//console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
 
 await v({ event: '_.set', _ });
 await v({ event: 'bus.set', bus: b });

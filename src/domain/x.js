@@ -1,16 +1,20 @@
 export const x = async (b) => {
 
     const _ = await b.p('get_');
+    const f = {};
 
     return async (x) => {
-        if (x[_].x === undefined) {
-            return await b.p(x[_].e, x);
+        if (x[_].x) { //pub, output
+            return await f[x[_].x](x);
         }
-        if (x[_].x) {
-            return await b.s(x[_].e, x[_].f);
+        if (x[_].y) { //sub, input
+            f[x[_].y] = x[_].f;
         }
     }
 }
+
+//publish
+x({ [_]: { X: 'x' } });
 
 export const bus = {
     handlers: {},
