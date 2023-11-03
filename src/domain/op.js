@@ -2,10 +2,9 @@ export const set = async (x) => {
     const { path, type } = x;
     let data = x.v;
     let repo = x.repo || 'default';
+    let { _, b, createVarSet, prepareForTransfer } = x[x._];
 
-    let { b, _, createVarSet, prepareForTransfer } = x[x._];
-
-    const set = await createVarSet({ b, repo, path, type, _, });
+    const set = await createVarSet({ _, b, repo, path, type });
     if (!set) return;
 
     for (let i = 0; i < set.length; i++) {
@@ -15,11 +14,7 @@ export const set = async (x) => {
             if (!v[_].new) v[_].updated = true;
         }
         if (v[_].new || v[_].updated) {
-            await b.p('set', {
-                repo,
-                id: v[_].id,
-                v: prepareForTransfer(v)
-            });
+            await b.p('set', { repo, id: v[_].id, v: prepareForTransfer(v) });
         }
     }
 
@@ -28,13 +23,13 @@ export const set = async (x) => {
 
 export const get = async (x) => {
     let { path, depth } = x;
+    let repo = x.repo || 'default';
     let { b, _, createVarSet, gatherVarData } = x[x._];
 
     if (!depth && depth !== 0) depth = 0;
-    let repo = x.repo || 'default';
 
     const set = await createVarSet({
-        b, repo, path, _,
+        _, b, repo, path,
         isNeedStopIfVarNotFound: true,
     });
 
@@ -47,14 +42,15 @@ export const get = async (x) => {
 }
 
 export const del = async (x) => {
-    const { _, b, path } = x;
+    const { path } = x;
     let repo = x.repo || 'default';
-    let { createVarSet, gatherSubVarsIds, prepareForTransfer } = x[_];
+    let { b, _, createVarSet, gatherSubVarsIds, prepareForTransfer } = x[x._];
 
     const set = await createVarSet({
         _, b, repo, path,
         isNeedStopIfVarNotFound: true,
     });
+
     if (!set || set.length < 2) {
         console.log('log', { msg: 'Var set not found' });
         return;
@@ -66,21 +62,18 @@ export const del = async (x) => {
     const subVars = await gatherSubVarsIds({ b, v: v2 });
     const len = Object.keys(subVars).length;
     if (len > 5) {
-        await b.p('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
+        await b.p('log', { msg: `Try to delete ${len} keys at once` });
         return;
     }
     for (let i = 0; i < subVars.length; i++) {
         const id = subVars[i];
-        await b.p(`${repo}.del`, { id });
+        await b.p('del', { id });
     }
 
-    await b.p(`${repo}.del`, { id: v2[_].id });
+    await b.p('del', { id: v2[_].id });
 
     delete v1.m[v2[_].name];
-    await b.p('set', {
-        id: v1[_].id,
-        v: prepareForTransfer(v1)
-    });
+    await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
 }
 
 const mkvar = async (bus, type, _) => {
@@ -184,7 +177,7 @@ export const gatherVarData = async (x) => {
 
 export const gatherSubVarsIds = async (x) => {
 
-    const { bus, repo, v } = x;
+    const { b, repo, v } = x;
 
     if (!v.m) return {};
 
@@ -193,7 +186,7 @@ export const gatherSubVarsIds = async (x) => {
     const getSubVars = async (v) => {
         for (let prop in v.m) {
             const id = v.m[prop];
-            const subV = await bus.p(`${repo}.get`, { id });
+            const subV = await b.p(`${repo}.get`, { id });
             subVars.push(id);
 
             if (subV.m) await getSubVars(subV);

@@ -1,6 +1,6 @@
 import { X, b } from "./src/domain/x.js";
 import {
-  get, set, del, createVarSet, gatherVarData, prepareForTransfer
+  get, set, del, createVarSet, gatherVarData, gatherSubVarsIds, prepareForTransfer
 } from "./src/domain/op.js";
 import { promises as fs } from "node:fs";
 import { parseCliArgs } from "./src/transport/cli.js"; //todo move to op
@@ -10,7 +10,7 @@ import { ulid } from "ulid";
 const _ = Symbol('sys');
 
 const x = X(_);
-b.set_(_); //todo remove and get this from x['get_'];
+b.set_(_);
 b.setX(x);
 
 await b.s('log', async (x) => {
@@ -32,7 +32,6 @@ await b.s('set', async (x) => {
   const { id, path, v } = x;
   if (id) {
     await varRepository.set(id, v);
-
   } else if (path) {
     x._ = _;
     x[_] = { b, _, createVarSet, prepareForTransfer };
@@ -51,9 +50,17 @@ await b.s('get', async (x) => {
     return await get(x);
   }
 });
-await b.s('default.del', async (x) => {
-  const { id } = x;
-  await varRepository.del(id);
+await b.s('del', async (x) => {
+  const { id, path } = x;
+
+  if (id) return await varRepository.del(id);
+  if (path) {
+    const _ = await b.p('get_');
+
+    x._ = _;
+    x[_] = { b, _, createVarSet, gatherSubVarsIds, prepareForTransfer };
+    return await del(x);
+  }
 });
 
 await b.s('transport', async (x) => {
@@ -119,17 +126,15 @@ const eventMap = {
     return await b.p('set', { path: pathToArr(path), v, type });
   },
   'del': async (arg) => {
-    if (!arg[1]) {
-      console.error('path is empty');
-      return;
+    const path = arg[1];
+    if (!path) {
+      console.error('path is empty'); return;
     }
-    return await v({
-      event: 'var.del',
-      path: pathToArr(arg[1])
-    });
+    return await b.p('del', { path: pathToArr(arg[1]) });
   },
   'server.start': async (arg) => {
 
+    //todo refactor
     const x = {
       server: (await import('node:http')).createServer({
         requestTimeout: 30000,
@@ -139,7 +144,7 @@ const eventMap = {
     const { rqHandler } = await import('./src/transport/http.js');
 
     x.server.on('request', async (rq, rs) => {
-      await rqHandler({ bus: b, rq, rs, fs, serveFS: true });
+      await rqHandler({ b, rq, rs, fs, serveFS: true });
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
