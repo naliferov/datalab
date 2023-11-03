@@ -1,51 +1,62 @@
-import { bus } from "./src/domain/x.js";
-import { varcraft as v } from "./src/domain/varcraft.js";
+import { X, b } from "./src/domain/x.js";
+import {
+  get, set, del, createVarSet, gatherVarData, prepareForTransfer
+} from "./src/domain/op.js";
 import { promises as fs } from "node:fs";
-import { parseCliArgs } from "./src/transport/cli.js";
-import { pathToArr } from "./src/util/util.js";
+import { parseCliArgs } from "./src/transport/cli.js"; //todo move to op
+import { pathToArr } from "./src/util/util.js"; //todo move to op
 import { ulid } from "ulid";
 
 const _ = Symbol('sys');
 
-await bus.s('log', async (x) => {
+const x = X(_);
+b.set_(_); //todo remove and get this from x['get_'];
+b.setX(x);
+
+await b.s('log', async (x) => {
   if (typeof x === 'object') {
     console.log(x.msg);
     return;
   }
   console.log(x);
 });
-await bus.s('getUniqId', () => ulid());
-await bus.s('fs.readFile', async (x) => {
+
+await b.s('get_', () => _);
+await b.s('getUniqId', () => ulid());
+await b.s('fs.readFile', async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
 });
 
-await bus.s('x', async (x) => {
-  //return await fs.readFile(path, 'utf8');
-});
-await bus.s('i', async (x) => {
-  //return await fs.readFile(path, 'utf8');
-});
-await bus.s('o', async (x) => {
-  //return await fs.readFile(path, 'utf8');
-});
+await b.s('set', async (x) => {
+  const { id, path, v } = x;
+  if (id) {
+    await varRepository.set(id, v);
 
-
-await bus.s('default.set', async (x) => {
-  const { id, v } = x;
-  await varRepository.set(id, v);
+  } else if (path) {
+    x._ = _;
+    x[_] = { b, _, createVarSet, prepareForTransfer };
+    await set(x);
+  }
   return { msg: 'update complete', v };
 });
-await bus.s('default.get', async (x) => {
-  const { id } = x;
+await b.s('get', async (x) => {
+  const { id, path, depth } = x;
   if (id) return await varRepository.get(id);
+  if (path && depth !== undefined) {
+    const _ = await b.p('get_');
+
+    x._ = _;
+    x[_] = { b, _, createVarSet, gatherVarData };
+    return await get(x);
+  }
 });
-await bus.s('default.del', async (x) => {
+await b.s('default.del', async (x) => {
   const { id } = x;
   await varRepository.del(id);
 });
 
-await bus.s('http.in', async (x) => {
+await b.s('transport', async (x) => {
     const { b, event, msg } = x;
 
     const m = {
@@ -55,62 +66,59 @@ await bus.s('http.in', async (x) => {
           type: 'text/html',
         }
       },
-      'default.set': async (x) => {
+      'set': async (x) => {
         let { msg } = x;
         let { id, path, v } = msg;
         let repo = x.repo || 'default';
 
         if (id && v) {
-          return await b.p('default.set', { id, v });
+          return await b.p('set', { id, v });
         }
         return { ok: 1 };
       },
-      'default.get': async (x) => {
+      'get': async (x) => {
         let { msg } = x;
         let { id, path, depth } = msg;
 
-        if (id) return b.p('default.get', { id });
+        if (id) return b.p('get', { id });
         return { test: 1 };
       },
     }
     if (m[event]) return await m[event](x);
 });
 
-await v({ event: '_.set', _ });
-await v({ event: 'bus.set', bus });
-
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const varStorage = new FsStorage('./state', fs);
 
-const { VarRepository } = await import('./src/domain/varRepository.js');
-let varRepository = new VarRepository(varStorage);
+const { Repository } = await import('./src/domain/repository.js');
+let varRepository = new Repository(varStorage);
 
 const root = await varRepository.get('root');
 if (!root) await varRepository.set('root', { m: {} });
 
-
 const eventMap = {
-  'var.get': async (arg) => {
+
+  'get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
     const depth = Number(arg[2]) || 0;
-
-    return await v({ event: 'var.get', path, depth });
+    return await b.p('get', { path, depth });
   },
-  'var.set': async (arg) => {
-    if (!arg[1]) {
+  'set': async (arg) => {
+    const path = arg[1];
+    if (!path) {
       console.error('path is empty');
       return;
     }
-    if (!arg[2]) {
+    const v = arg[2];
+    if (!v) {
       console.error('data is empty');
       return;
     }
-    return await v({
-      event: 'var.set', path: pathToArr(arg[1]),
-      data: arg[2], type: arg[3],
-    });
+    const type = arg[3];
+
+    return await b.p('set', { path: pathToArr(path), v, type });
   },
-  'var.del': async (arg) => {
+  'del': async (arg) => {
     if (!arg[1]) {
       console.error('path is empty');
       return;
@@ -131,7 +139,7 @@ const eventMap = {
     const { rqHandler } = await import('./src/transport/http.js');
 
     x.server.on('request', async (rq, rs) => {
-      await rqHandler({ bus, rq, rs, fs, serveFS: true });
+      await rqHandler({ bus: b, rq, rs, fs, serveFS: true });
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },

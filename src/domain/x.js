@@ -1,63 +1,40 @@
-export const x = async (b) => {
+export const X = (symbol) => {
 
-    const _ = await b.p('get_');
+    let _ = symbol;
     const f = {};
 
     return async (x) => {
-        if (x[_].x) { //pub, output
+        if (x[_].x) {
             return await f[x[_].x](x);
         }
-        if (x[_].y) { //sub, input
+        if (x[_].y) {
             f[x[_].y] = x[_].f;
         }
     }
 }
 
-//publish
-x({ [_]: { X: 'x' } });
+export const b = {
+    setX(x) { this.x = x; },
+    set_(_) { this._ = _; },
 
-export const bus = {
-    handlers: {},
-    async pub(event, data) {
-        if (!this.handlers[event]) return;
-        return await this.handlers[event](data);
+    async p(e, data) {
+        const _ = this._;
+        return await this.x({ [_]: { x: e }, ...data });
     },
-    async p(event, data) { return await this.pub(event, data); },
-    async sub(event, handler) {
-        if (this.handlers[event]) {
-            await this.pub('log', { msg: `Handler for event [${event}] already set.` });
-        }
-        this.handlers[event] = handler;
+    async s(e, f) {
+        const _ = this._;
+        await this.x({ [_]: { y: e, f } });
     },
-    async s(event, handler) { return await this.sub(event, handler); },
 }
 
-const i = async (x) => {
-
+export const set = async (x) => {
     const { b, id, path, data, type } = x;
-    let repo = x.repo || 'default';
-
-    if (id) { //update v, if key then update map or list key
-        await b.p(`${repo}.set`, { id,  v: { v: data } });
-        return;
-    }
-
-    const set = await createVarSetByPath({ bus: b, repo, path, type, _, });
-    if (!set) return;
-
-    for (let i = 0; i < set.length; i++) {
-        const v = set[i];
-        if (v.v) {
-            v.v = data;
-            if (!v[_].new) v[_].updated = true;
-        }
-        if (v[_].new || v[_].updated) {
-            await b.p(`${repo}.set`, {
-                id: v[_].id,
-                v: prepareForTransfer(v)
-            });
-        }
-    }
-
-    return set.at(-1);
 };
+
+export const get = (x) => {
+
+}
+
+export const del = (x) => {
+
+}

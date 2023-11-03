@@ -1,10 +1,229 @@
+export const set = async (x) => {
+    const { path, type } = x;
+    let data = x.v;
+    let repo = x.repo || 'default';
+
+    let { b, _, createVarSet, prepareForTransfer } = x[x._];
+
+    const set = await createVarSet({ b, repo, path, type, _, });
+    if (!set) return;
+
+    for (let i = 0; i < set.length; i++) {
+        const v = set[i];
+        if (v.v) {
+            v.v = data;
+            if (!v[_].new) v[_].updated = true;
+        }
+        if (v[_].new || v[_].updated) {
+            await b.p('set', {
+                repo,
+                id: v[_].id,
+                v: prepareForTransfer(v)
+            });
+        }
+    }
+
+    return set.at(-1);
+}
+
+export const get = async (x) => {
+    let { path, depth } = x;
+    let { b, _, createVarSet, gatherVarData } = x[x._];
+
+    if (!depth && depth !== 0) depth = 0;
+    let repo = x.repo || 'default';
+
+    const set = await createVarSet({
+        b, repo, path, _,
+        isNeedStopIfVarNotFound: true,
+    });
+
+    if (!set) return;
+
+    const v = set.at(-1);
+    if (!v) return;
+
+    return await gatherVarData({ b, repo, v, depth, _ });
+}
+
+export const del = async (x) => {
+    const { _, b, path } = x;
+    let repo = x.repo || 'default';
+    let { createVarSet, gatherSubVarsIds, prepareForTransfer } = x[_];
+
+    const set = await createVarSet({
+        _, b, repo, path,
+        isNeedStopIfVarNotFound: true,
+    });
+    if (!set || set.length < 2) {
+        console.log('log', { msg: 'Var set not found' });
+        return;
+    }
+
+    const v1 = set.at(-2);
+    const v2 = set.at(-1);
+
+    const subVars = await gatherSubVarsIds({ b, v: v2 });
+    const len = Object.keys(subVars).length;
+    if (len > 5) {
+        await b.p('log', { msg: `Try to delete ${ Object.keys(subVars).length } keys at once` });
+        return;
+    }
+    for (let i = 0; i < subVars.length; i++) {
+        const id = subVars[i];
+        await b.p(`${repo}.del`, { id });
+    }
+
+    await b.p(`${repo}.del`, { id: v2[_].id });
+
+    delete v1.m[v2[_].name];
+    await b.p('set', {
+        id: v1[_].id,
+        v: prepareForTransfer(v1)
+    });
+}
+
+const mkvar = async (bus, type, _) => {
+
+    const id = await bus.p('getUniqId');
+    let v = {
+        [_]: { id, new: true }, //[_] is for service data
+    };
+    v._id = id;
+
+    if (type === 'b') v.b = {};
+    else if (type === 'v') v.v = true;
+    else if (type === 'm') v.m = {};
+    else if (type === 'l') v.l = [];
+    else if (type === 'f') v.f = {};
+    else if (type === 'x') v.x = {};
+    else throw new Error(`Unknown type [${type}]`);
+
+    return v;
+}
+
+export const createVarSet = async (x) => {
+
+    const { b, repo, path, isNeedStopIfVarNotFound, _, } = x;
+    let type = x.type || 'v';
+
+    let v1 = await b.p('get', { id: 'root' });
+    v1[_] = { id: 'root', name: 'root' };
+
+    let set = [ v1 ];
+    if (path[0] === 'root') return set;
+
+    for (let i = 0; i < path.length; i++) {
+        const name = path[i];
+        if (!name) return;
+
+        const v1 = set.at(-1);
+        let v2;
+
+        let id = v1.m[name];
+        if (id) {
+            v2 = await b.p('get', { id });
+            if (v2) v2[_] = { id };
+        }
+
+        if (!v2) {
+            if (isNeedStopIfVarNotFound) return;
+
+            const varType = (i === path.length - 1) ? type : 'm';
+            v2 = await mkvar(b, varType, _);
+
+            v1.m[name] = v2[_].id;
+            if (!v1[_].new) v1[_].updated = true;
+        }
+        v2[_].name = name;
+
+        set.push(v2);
+    }
+
+    return set;
+}
+
+export const gatherVarData = async (x) => {
+
+    const { bus, repo, v, depth, _ } = x;
+
+    const data = {
+        _id: v[_].id,
+        [_]: { id: v[_].id },
+    };
+    if (v.v) data.v = v.v;
+
+    if (!v.m) return data;
+
+    data.m = {};
+
+    //todo make function for gatherMapData;
+    for (let p in v.m) {
+
+        const id = v.m[p];
+        if (!id) return;
+
+        if (depth === 0) {
+            data.m[p] = id;
+            continue;
+        }
+        const v2 = await bus.p('get', { id });
+        if (v2) {
+            v2._id = id;
+            v2[_] = { id };
+        }
+
+        if (v2.v) {
+            data.m[p] = v2;
+        } else if (v2.m) {
+            data.m[p] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
+        }
+    }
+    return data;
+}
+
+export const gatherSubVarsIds = async (x) => {
+
+    const { bus, repo, v } = x;
+
+    if (!v.m) return {};
+
+    const subVars = [];
+
+    const getSubVars = async (v) => {
+        for (let prop in v.m) {
+            const id = v.m[prop];
+            const subV = await bus.p(`${repo}.get`, { id });
+            subVars.push(id);
+
+            if (subV.m) await getSubVars(subV);
+        }
+    }
+    await getSubVars(v);
+
+    return subVars;
+}
+
+export const prepareForTransfer = (v) => {
+    const d = {};
+
+    if (v.v) d.v = v.v;
+    if (v.m) d.m = v.m;
+    if (v.l) d.l = v.l;
+    if (v.f) d.f = v.f;
+    if (v.x) d.x = v.x;
+
+    return d;
+}
+
+
 export const toRight = (o, targetO) => {
     const { x, y, width } = targetO.getSize();
     o.absolute();
     o.setPosition(x + width + 10, y);
 }
 
-//const varRepository = new VarRepository(new NetStorage(bus));
+//const varRepository = new Repository(new NetStorage(bus));
 //separate style from pure logic
 
 export const mkOb = (x) => {

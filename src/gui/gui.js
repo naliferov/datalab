@@ -1,6 +1,5 @@
-import { x as xFactory } from "../domain/x.js";
-import { bus as b } from "../domain/x.js";
-import { varcraft as v } from "../domain/varcraft.js";
+import { X, b } from "../domain/x.js";
+import { varcraft as v } from "../domain/path.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { dmk } from "../domain/op.js";
@@ -9,6 +8,10 @@ import { IndexedDb } from "/src/storage/indexedDb.js";
 
 const _ = Symbol('sys');
 
+const x = X(_);
+b.set_(_);
+b.setX(x);
+
 const http = new HttpClient;
 const idb = new IndexedDb;
 await idb.open();
@@ -16,18 +19,22 @@ await idb.open();
 const root = await idb.get('root');
 if (!root) await idb.set('root', { m: {} });
 
-await b.s('get_', async (x) => _);
 await b.s('log', async (x) => console.log(x));
 await b.s('getUniqId', () => crypto.randomUUID());
 
-await b.s('default.set', async (x) => {
+await b.s('set', async (x) => {
     const { id, v } = x;
-    return await b.p('http.post', { event: 'default.set', id, v });
+    return await b.p('transport', { event: 'set', id, v });
 });
-await b.s('default.get', async (x) => {
+await b.s('get', async (x) => {
     const { id } = x;
-    return await b.p('http.post', { event: 'default.get', id });
+    return await b.p('transport', { event: 'get', id });
 });
+await b.s('del', async (x) => {});
+await b.s('mv', async (x) => {
+    console.log(x);
+});
+
 await b.s('idb.set', async (x) => {
     const { id, v } = x;
     await idb.set(id, v);
@@ -40,7 +47,7 @@ await b.s('idb.del', async (x) => console.log(x));
 
 const mem = {};
 await b.s('mem.set', async (x) => {});
-await b.s('http.post', async (x) => {
+await b.s('transport', async (x) => {
     const { data } = await http.post('/', x);
     return data;
 });
@@ -54,8 +61,8 @@ await b.s('varcraft.get', async (x) => {
     return await v(x);
 });
 
-const x = await xFactory(b);
-console.log(await x({ [_]: { e: 'getUniqId' } }));
+//const r = await x({ [_]: { x: 'x' }, id: 'varId', v: { v: 'someVARData'} });
+//console.log( await x({ [_]: { x: 'getUniqId' } }) );
 
 //console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
 

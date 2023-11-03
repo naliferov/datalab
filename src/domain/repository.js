@@ -1,4 +1,4 @@
-export class VarRepository {
+export class Repository {
     constructor(varStorage) {
         this.varStorage = varStorage;
     }

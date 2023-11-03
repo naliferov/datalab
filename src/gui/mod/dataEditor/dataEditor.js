@@ -120,17 +120,23 @@ div[contenteditable="true"] {
         const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
         if (isEnabled) {
             this.marked.removeAttribute('contenteditable');
+
             const v = this.marked.innerText;
             if (v === this.markedV) return;
 
             const id = this.marked.getAttribute('vid');
             if (id) {
-                //await this.b.p('default.set', { id, data: v });
+                await this.b.p('set', { id, v: { v } });
+                return;
             }
-            //console.log(id, v, this.markedV);
-
+            const parentId = this.marked.getAttribute('parent_vid')
+            if (parentId) {
+                await this.b.p('mv', { id: parentId, oldKey: this.markedV, newKey: v });
+                return;
+            }
             return;
         }
+
         this.marked.setAttribute('contenteditable', 'true');
         this.marked.focus();
         this.markedV = this.marked.innerText;
