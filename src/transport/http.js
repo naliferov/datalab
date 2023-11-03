@@ -101,7 +101,7 @@ const rqResponse = (rs, v, contentType) => {
 }
 export const rqHandler = async (x) => {
 
-    const { bus, rq, rs, fs } = x;
+    const { b, rq, rs, fs } = x;
     //todo add one time listener to socket
     // rq.socket.on('error', (e) => {
     //     bus.pub('log', { msg: 'rq socker err', e });
@@ -129,7 +129,7 @@ export const rqHandler = async (x) => {
         return;
     }
 
-    const out = await bus.p('transport',{ b: bus, event, msg });
+    const out = await b.p('transport',{ b: b, event, msg });
     if (!out) {
         rqResponse(rs,'Default response');
         return;

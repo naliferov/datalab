@@ -1,8 +1,11 @@
 import { X, b } from "../domain/x.js";
-import { varcraft as v } from "../domain/path.js";
+import {
+    get, set, del, createVarSet, gatherVarData, gatherSubVarsIds, prepareForTransfer,
+    dmk
+} from "../domain/op.js";
+
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
-import { dmk } from "../domain/op.js";
 import { HttpClient } from "/src/transport/http.js";
 import { IndexedDb } from "/src/storage/indexedDb.js";
 

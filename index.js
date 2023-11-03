@@ -1,10 +1,9 @@
 import { X, b } from "./src/domain/x.js";
 import {
-  get, set, del, createVarSet, gatherVarData, gatherSubVarsIds, prepareForTransfer
+  get, set, del, createVarSet, gatherVarData,
+  gatherSubVarsIds, parseCliArgs, prepareForTransfer, pathToArr
 } from "./src/domain/op.js";
 import { promises as fs } from "node:fs";
-import { parseCliArgs } from "./src/transport/cli.js"; //todo move to op
-import { pathToArr } from "./src/util/util.js"; //todo move to op
 import { ulid } from "ulid";
 
 const _ = Symbol('sys');
