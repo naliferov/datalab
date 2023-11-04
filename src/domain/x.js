@@ -14,9 +14,12 @@ export const X = (symbol) => {
 }
 
 export const b = {
-    setX(x) { this.x = x; },
-    set_(_) { this._ = _; },
-
+    setX(x) {
+        this.x = x;
+    },
+    set_(_) {
+        this._ = _;
+    },
     async p(e, data) {
         const _ = this._;
         return await this.x({ [_]: { x: e }, ...data });
@@ -25,16 +28,4 @@ export const b = {
         const _ = this._;
         await this.x({ [_]: { y: e, f } });
     },
-}
-
-export const set = async (x) => {
-    const { b, id, path, data, type } = x;
-};
-
-export const get = (x) => {
-
-}
-
-export const del = (x) => {
-
 }

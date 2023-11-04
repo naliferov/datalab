@@ -15,7 +15,6 @@ const x = X(_);
 b.set_(_);
 b.setX(x);
 
-const http = new HttpClient;
 const idb = new IndexedDb;
 await idb.open();
 
@@ -23,15 +22,40 @@ const root = await idb.get('root');
 if (!root) await idb.set('root', { m: {} });
 
 await b.s('log', async (x) => console.log(x));
+await b.s('get_', () => _);
 await b.s('getUniqId', () => crypto.randomUUID());
+await b.s('transport', async (x) => {
+    const { data } = await (new HttpClient).post('/', x);
+    return data;
+});
 
 await b.s('set', async (x) => {
-    const { id, v } = x;
-    return await b.p('transport', { event: 'set', id, v });
+    const { id, path, v } = x;
+
+    if (id) {
+        await b.p('transport', { event: 'set', id, v });
+        return;
+    }
+    if (path) {
+        x._ = _;
+        x[_] = { b, _, createVarSet, prepareForTransfer };
+        await set(x);
+    }
+    return { msg: 'update complete', v };
 });
+
 await b.s('get', async (x) => {
-    const { id } = x;
-    return await b.p('transport', { event: 'get', id });
+    const { id, path, depth } = x;
+
+    if (id) {
+        return await b.p('transport', { event: 'get', id });
+    }
+    if (path && depth !== undefined) {
+        const _ = await b.p('get_');
+        x._ = _;
+        x[_] = { b, _, createVarSet, gatherVarData };
+        return await get(x);
+    }
 });
 await b.s('del', async (x) => {});
 await b.s('mv', async (x) => {
@@ -50,27 +74,11 @@ await b.s('idb.del', async (x) => console.log(x));
 
 const mem = {};
 await b.s('mem.set', async (x) => {});
-await b.s('transport', async (x) => {
-    const { data } = await http.post('/', x);
-    return data;
-});
-
-await b.s('varcraft.set', async (x) => {
-    x.event = 'var.set';
-    return await v(x);
-});
-await b.s('varcraft.get', async (x) => {
-    x.event = 'var.get';
-    return await v(x);
-});
 
 //const r = await x({ [_]: { x: 'x' }, id: 'varId', v: { v: 'someVARData'} });
 //console.log( await x({ [_]: { x: 'getUniqId' } }) );
 
 //console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
-
-await v({ event: '_.set', _ });
-await v({ event: 'bus.set', bus: b });
 
 //todo add ability to send events from browser console
 //const result = await v({ event: 'var.set', repo: 'idb', path: ['isDataBrowserShowed'], data: true });

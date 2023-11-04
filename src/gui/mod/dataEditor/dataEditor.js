@@ -98,7 +98,7 @@ div[contenteditable="true"] {
         this.oShadow.appendChild(await this.createStyle());
         this.oShadow.addEventListener('click', (e) => this.click(e));
 
-        const data = await p('varcraft.get', { path, depth: 3 }); console.log(data);
+        const data = await p('get', { path, depth: 3 }); console.log(data);
         await rend(data, this.oShadow);
     },
     click(e) {

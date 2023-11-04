@@ -138,7 +138,7 @@ export const createVarSet = async (x) => {
 
 export const gatherVarData = async (x) => {
 
-    const { bus, repo, v, depth, _ } = x;
+    const { b, repo, v, depth, _ } = x;
 
     const data = {
         _id: v[_].id,
@@ -150,7 +150,7 @@ export const gatherVarData = async (x) => {
 
     data.m = {};
 
-    //todo make function for gatherMapData;
+    //todo make function for gather List;
     for (let p in v.m) {
 
         const id = v.m[p];
@@ -160,7 +160,7 @@ export const gatherVarData = async (x) => {
             data.m[p] = id;
             continue;
         }
-        const v2 = await bus.p('get', { id });
+        const v2 = await b.p('get', { id });
         if (v2) {
             v2._id = id;
             v2[_] = { id };
@@ -169,7 +169,7 @@ export const gatherVarData = async (x) => {
         if (v2.v) {
             data.m[p] = v2;
         } else if (v2.m) {
-            data.m[p] = await gatherVarData({ bus, repo, v: v2, depth: depth - 1, _ });
+            data.m[p] = await gatherVarData({ b, repo, v: v2, depth: depth - 1, _ });
         }
     }
     return data;

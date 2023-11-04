@@ -12,6 +12,9 @@ const x = X(_);
 b.set_(_);
 b.setX(x);
 
+//const memRepo = {}; move this to state
+//const fsRepo = {}; //move this to state
+
 await b.s('log', async (x) => {
   if (typeof x === 'object') {
     console.log(x.msg);
@@ -20,6 +23,7 @@ await b.s('log', async (x) => {
   console.log(x);
 });
 
+await b.s('log', async (x) => console.log(x));
 await b.s('get_', () => _);
 await b.s('getUniqId', () => ulid());
 await b.s('fs.readFile', async (x) => {
@@ -29,9 +33,9 @@ await b.s('fs.readFile', async (x) => {
 
 await b.s('set', async (x) => {
   const { id, path, v } = x;
-  if (id) {
-    await varRepository.set(id, v);
-  } else if (path) {
+
+  if (id) await defaultRepo.set(id, v);
+  else if (path) {
     x._ = _;
     x[_] = { b, _, createVarSet, prepareForTransfer };
     await set(x);
@@ -40,10 +44,10 @@ await b.s('set', async (x) => {
 });
 await b.s('get', async (x) => {
   const { id, path, depth } = x;
-  if (id) return await varRepository.get(id);
+
+  if (id) return await defaultRepo.get(id);
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
-
     x._ = _;
     x[_] = { b, _, createVarSet, gatherVarData };
     return await get(x);
@@ -52,10 +56,9 @@ await b.s('get', async (x) => {
 await b.s('del', async (x) => {
   const { id, path } = x;
 
-  if (id) return await varRepository.del(id);
+  if (id) return await defaultRepo.del(id);
   if (path) {
     const _ = await b.p('get_');
-
     x._ = _;
     x[_] = { b, _, createVarSet, gatherSubVarsIds, prepareForTransfer };
     return await del(x);
@@ -94,13 +97,10 @@ await b.s('transport', async (x) => {
 });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
-const varStorage = new FsStorage('./state', fs);
+const defaultRepo = new FsStorage('./state', fs);
 
-const { Repository } = await import('./src/domain/repository.js');
-let varRepository = new Repository(varStorage);
-
-const root = await varRepository.get('root');
-if (!root) await varRepository.set('root', { m: {} });
+const root = await defaultRepo.get('root');
+if (!root) await defaultRepo.set('root', { m: {} });
 
 const eventMap = {
 
