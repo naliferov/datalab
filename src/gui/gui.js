@@ -1,7 +1,6 @@
-import { X, b } from "../domain/x.js";
 import {
-    get, set, del, createPath, gatherVarData, gatherSubVarsIds, prepareForTransfer, dmk
-} from "../domain/op.js";
+    X, b, get, set, del, createPath, gatherVarData, gatherSubVarsIds, prepareForTransfer, dmk
+} from "../domain/x.js";
 
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";

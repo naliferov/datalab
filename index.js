@@ -1,8 +1,7 @@
-import { X, b } from "./src/domain/x.js";
 import {
-  get, set, del, createPath, gatherVarData,
+  X, b, get, set, del, createPath, gatherVarData,
   gatherSubVarsIds, parseCliArgs, prepareForTransfer, pathToArr
-} from "./src/domain/op.js";
+} from "./src/domain/x.js";
 import { promises as fs } from "node:fs";
 import { ulid } from "ulid";
 
