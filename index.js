@@ -1,6 +1,6 @@
 import { X, b } from "./src/domain/x.js";
 import {
-  get, set, del, createVarSet, gatherVarData,
+  get, set, del, createPath, gatherVarData,
   gatherSubVarsIds, parseCliArgs, prepareForTransfer, pathToArr
 } from "./src/domain/op.js";
 import { promises as fs } from "node:fs";
@@ -12,15 +12,19 @@ const x = X(_);
 b.set_(_);
 b.setX(x);
 
-//const memRepo = {}; move this to state
-//const fsRepo = {}; //move this to state
-
 await b.s('log', async (x) => {
   if (typeof x === 'object') {
     console.log(x.msg);
     return;
   }
   console.log(x);
+});
+
+await b.s('x', async (x) => {
+  const { op, id, path, v } = x;
+  if (op === 'g') {}
+  else if (op === 's') {}
+  else if (op === 'd') {}
 });
 
 await b.s('log', async (x) => console.log(x));
@@ -37,7 +41,7 @@ await b.s('set', async (x) => {
   if (id) await defaultRepo.set(id, v);
   else if (path) {
     x._ = _;
-    x[_] = { b, _, createVarSet, prepareForTransfer };
+    x[_] = { b, _, createPath, prepareForTransfer };
     await set(x);
   }
   return { msg: 'update complete', v };
@@ -49,7 +53,7 @@ await b.s('get', async (x) => {
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { b, _, createVarSet, gatherVarData };
+    x[_] = { b, _, createPath, gatherVarData };
     return await get(x);
   }
 });
@@ -60,29 +64,31 @@ await b.s('del', async (x) => {
   if (path) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { b, _, createVarSet, gatherSubVarsIds, prepareForTransfer };
+    x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
+    return await del(x);
+  }
+});
+await b.s('mv', async (x) => {
+  const { id, path } = x;
+
+  if (id) return await defaultRepo.del(id);
+  if (path) {
+    const _ = await b.p('get_');
+    x._ = _;
+    x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
     return await del(x);
   }
 });
 
 await b.s('transport', async (x) => {
-    const { b, event, msg } = x;
+    const { b, msg } = x;
 
     const m = {
-      'default': async () => {
-        return {
-          msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
-          type: 'text/html',
-        }
-      },
       'set': async (x) => {
         let { msg } = x;
         let { id, path, v } = msg;
-        let repo = x.repo || 'default';
 
-        if (id && v) {
-          return await b.p('set', { id, v });
-        }
+        if (id && v) return await b.p('set', { id, v });
         return { ok: 1 };
       },
       'get': async (x) => {
@@ -93,7 +99,15 @@ await b.s('transport', async (x) => {
         return { test: 1 };
       },
     }
-    if (m[event]) return await m[event](x);
+
+    if (m[msg.x]) {
+      return await m[msg.x](x);
+    } else {
+      return {
+        msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
+        type: 'text/html',
+      }
+    }
 });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
@@ -102,13 +116,7 @@ const defaultRepo = new FsStorage('./state', fs);
 const root = await defaultRepo.get('root');
 if (!root) await defaultRepo.set('root', { m: {} });
 
-const eventMap = {
-
-  'get': async (arg) => {
-    const path = arg[1] ? pathToArr(arg[1]) : [];
-    const depth = Number(arg[2]) || 0;
-    return await b.p('get', { path, depth });
-  },
+const e = {
   'set': async (arg) => {
     const path = arg[1];
     if (!path) {
@@ -124,6 +132,11 @@ const eventMap = {
 
     return await b.p('set', { path: pathToArr(path), v, type });
   },
+  'get': async (arg) => {
+    const path = arg[1] ? pathToArr(arg[1]) : [];
+    const depth = Number(arg[2]) || 0;
+    return await b.p('get', { path, depth });
+  },
   'del': async (arg) => {
     const path = arg[1];
     if (!path) {
@@ -133,32 +146,30 @@ const eventMap = {
   },
   'server.start': async (arg) => {
 
-    //todo refactor
+    //todo refactor this for more control
     const x = {
-      server: (await import('node:http')).createServer({
-        requestTimeout: 30000,
-      }),
+      server: (await import('node:http')).createServer({ requestTimeout: 30000 }),
       port: arg[1] || 8080,
     }
     const { rqHandler } = await import('./src/transport/http.js');
 
+    x.server.on('clientError', (err, socket) => {
+      console.log(err);
+      if (err.code === 'ECONNRESET' || !socket.writable) {
+        return;
+      }
+      socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+    });
     x.server.on('request', async (rq, rs) => {
       await rqHandler({ b, rq, rs, fs, serveFS: true });
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
+};
+
+const args = parseCliArgs((await import('node:process')).default.argv);
+if (e[args[0]]) {
+  console.log(await e[args[0]](args) ?? 'No input after execute cmd.');
+} else {
+  console.log('Command not found');
 }
-
-const runCliEvent = async () => {
-  const process = (await import('node:process')).default;
-  const cliArgs = parseCliArgs(process.argv);
-
-  if (!eventMap[cliArgs[0]]) {
-    console.log('Command not found');
-    return;
-  }
-  const r = await eventMap[cliArgs[0]](cliArgs);
-  if (r) console.log(r);
-}
-
-await runCliEvent();

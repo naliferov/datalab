@@ -122,14 +122,7 @@ export const rqHandler = async (x) => {
     const body = await rqParseBody(rq);
     const msg = body ?? query;
 
-    const event = body.event ?? 'default';
-
-    if (!isLocal && event !== 'var.get' && event !== 'default') {
-        rqResponse(rs,'Forbidden');
-        return;
-    }
-
-    const out = await b.p('transport',{ b: b, event, msg });
+    const out = await b.p('transport', { b, msg });
     if (!out) {
         rqResponse(rs,'Default response');
         return;

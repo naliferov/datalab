@@ -17,22 +17,22 @@ div[contenteditable="true"] {
     margin-left: 10px;
     color: rgb(55, 53, 47);
 }
-.mapK {
+.key {
     cursor: pointer;
     border: 1px solid transparent;
     display: inline;
     font-weight: bold;
 }
-.mapS { display: inline; }
-.vVal {
+.sep { display: inline; }
+.val {
     cursor: pointer;
     border: 1px solid transparent;
     display: inline;
 }
 
-.mapK.mark,
-.vVal.mark {
-    border: 1px solid rgb(55, 53, 47);
+.key.mark,
+.val.mark {
+    border: 1px solid rgb(148 148 148);
 }
 .mark[contenteditable="true"] {
     cursor: inherit;
@@ -60,9 +60,9 @@ div[contenteditable="true"] {
 
                 const row = await add({ class: 'row' }, parent);
 
-                const mapK = await add({ txt: p, class: 'mapK' }, row);
-                if (parentId) mapK.setAttribute('parent_vid', parentId);
-                await add({ txt: ': ', class: 'mapS' }, row);
+                const key = await add({ txt: p, class: 'key' }, row);
+                if (parentId) key.setAttribute('parent_vid', parentId);
+                await add({ txt: ': ', class: 'sep' }, row);
 
                 if (v[_]) {
                     if (v.m) {
@@ -81,7 +81,7 @@ div[contenteditable="true"] {
             let txt = v;
             if (txt && txt.split) txt = txt.split('\n')[0];
 
-            const val = await add({ txt, class: 'vVal'}, parent);
+            const val = await add({ txt, class: 'val'}, parent);
             val.setAttribute('vid', id);
         }
         const rend = async (o, parent) => {
@@ -94,18 +94,20 @@ div[contenteditable="true"] {
         }
 
         this.o = await p('doc.mk', { class: 'dataEditor', style: { border: '1px solid black' } });
-        this.oShadow = this.o.attachShadow({ mode: 'closed' });
+        this.oShadow = this.o.attachShadow({ mode: 'open' });
         this.oShadow.appendChild(await this.createStyle());
         this.oShadow.addEventListener('click', (e) => this.click(e));
+        this.oShadow.addEventListener('contextmenu', (e) => this.handleContextmenu(e));
 
         const data = await p('get', { path, depth: 3 }); console.log(data);
         await rend(data, this.oShadow);
     },
     click(e) {
         const classList = e.target.classList;
-        if (!classList.contains('mapK') && !classList.contains('vVal')) {
+        if (!classList.contains('key') && !classList.contains('val')) {
             return;
         }
+        e.preventDefault();
 
         if (this.marked) this.marked.classList.remove('mark');
         e.target.classList.add('mark');
@@ -129,6 +131,7 @@ div[contenteditable="true"] {
                 await this.b.p('set', { id, v: { v } });
                 return;
             }
+
             const parentId = this.marked.getAttribute('parent_vid')
             if (parentId) {
                 await this.b.p('mv', { id: parentId, oldKey: this.markedV, newKey: v });
@@ -141,40 +144,189 @@ div[contenteditable="true"] {
         this.marked.focus();
         this.markedV = this.marked.innerText;
     },
+        //this.openedPaths = s.e('localState.get', 'openedPaths');
+        //if (this.openedPaths) {
+    handleContextmenu(e) {
+        e.preventDefault();
 
-    async init2() {
-        //this.http = new (await s.op('sys.httpClient'));
-        this.nodes = new Map;
+        const isDataK = e.target.classList.contains('key');
+        const isDataV = e.target.classList.contains('val');
+        if (!isDataK && !isDataV) return;
 
-        const v = await s.f('sys.gui.view');
-        this.v = new v({ class: 'dataBrowser' });
+        console.log('key or val');
+        return;
 
-        //todo replace dataNode with streams?
-        const DataNode = await s.f('sys.apps.GUI.dataNode');
-        this.node = DataNode;
-        const DataBrowserNode = await s.f('sys.apps.dataBrowserNode');
-        this.outlinerNode = DataBrowserNode;
-
-        const dataNode = new DataNode(s);
-        const dataBrowserNode = new DataBrowserNode;
-        await dataBrowserNode.init(dataNode, true, this);
-
-        dataBrowserNode.removeSubNodesShift();
-        e('>', [dataBrowserNode, this.v]);
-
-        this.openedPaths = s.e('localState.get', 'openedPaths');
-        if (this.openedPaths) {
-            this.openedPaths = JSON.parse(this.openedPaths);
-        } else {
-            this.openedPaths = {};
+        //const node = this.getOutlinerNodeById(e.target.getAttribute('outliner_node_id'));
+        const v = s.f('sys.gui.view');
+        const createBtn = (txt) => {
+            return new v({ txt, class: ['btn', 'contextMenu', 'white', 'hoverGray'] });
         }
 
-        //todo clear this.openedPaths which not exists in "s"
-        this.addNode(dataBrowserNode);
-        await dataBrowserNode.open(this.openedPaths);
+        const popup = s.sys.popup;
+        let submenu;
+        const removeSubmenu = () => {
+            if (!submenu) return;
+            submenu.clear();
+            submenu = null;
+        }
 
-        this.buffer = null;
+        let oBtn = createBtn('Open with');
+        let openWithBtn = oBtn;
+        oBtn.on('pointerenter', async () => {
+            removeSubmenu();
+            submenu = new (s.f('sys.apps.GUI.popup'));
+            window.e('app.addViewElement', submenu);
+
+            const apps = s.sys.apps;
+            //todo const authorizedUserApps = s.users[user].apps;
+
+            for (let name in apps) {
+                if (name === 'GUI') continue;
+                let appBtn = createBtn(name);
+                appBtn.on('click', () => {
+                    window.e('openNode', { appPath: `sys.apps.${name}`, outlinerNode: node });
+                    popup.clear();
+                });
+                window.e('>', [appBtn, submenu]);
+            }
+            submenu.putRightTo(openWithBtn);
+        });
+        window.e('>', [oBtn, popup]);
+
+
+        if (typeof data === 'object' && data !== null) {
+            oBtn = createBtn('Add item');
+            oBtn.on('pointerenter', removeSubmenu);
+            oBtn.on('click', () => {
+
+                if (Array.isArray(data)) {
+                    data.push('item' + data.length + 1);
+                } else {
+                    let c = 0;
+                    while (1) {
+                        c++;
+                        const k = 'newKey' + c; const v = 'newValue';
+                        if (data[k]) continue;
+
+                        data[k] = v;
+                        const dataNode = new this.node;
+                        dataNode.setPath([...node.getPath(), k]);
+                        s.e('state.update', { dataNode, data: v });
+                        break;
+                    }
+                }
+
+                node.reopen();
+                popup.clear();
+            });
+            window.e('>', [oBtn, popup]);
+        }
+
+        oBtn = createBtn('Copy');
+        oBtn.on('click', () => {
+            this.buffer = { mode: 'copy', node };
+            popup.clear();
+        });
+        oBtn.on('pointerenter', removeSubmenu);
+        window.e('>', [oBtn, popup]);
+
+        oBtn = createBtn('Cut');
+        oBtn.on('click', () => {
+            this.buffer = { mode: 'cut', node };
+            popup.clear();
+        });
+        oBtn.on('pointerenter', removeSubmenu);
+        window.e('>', [oBtn, popup]);
+
+        if (this.buffer) {
+            oBtn = createBtn('Paste');
+            oBtn.on('click', async () => {
+                if (!this.buffer) return;
+
+                const contextNodeData = node.getDataNode().getData();
+                if (!s.f('sys.isObject', contextNodeData) && !Array.isArray(contextNodeData)) return;
+
+                const bufOurlinerNode = this.buffer.outlinerNode;
+                const dataPath = bufOurlinerNode.getPath();
+
+                const dataNodeCopy = new this.node;
+                //todo in case of array we don't need to set key. just push to array
+                dataNodeCopy.setPath([...node.getPath(), dataPath.at(-1)]);
+
+                const data = structuredClone(bufOurlinerNode.getDataNode().getData());
+                s.e('state.update', { dataNode: dataNodeCopy, data });
+                if (this.buffer.mode === 'cut') {
+                    await s.e('state.del', { outlinerNode: bufOurlinerNode });
+                }
+
+                this.buffer = null;
+                node.reopen(); //todo remember opened nodes
+                popup.clear();
+            });
+            oBtn.on('pointerenter', removeSubmenu);
+            window.e('>', [oBtn, popup]);
+        }
+
+        oBtn = createBtn('Duplicate');
+        oBtn.on('click', async () => {
+            await this.duplicate(node);
+            popup.clear();
+        });
+        oBtn.on('pointerenter', removeSubmenu);
+        window.e('>', [oBtn, popup]);
+
+        oBtn = createBtn('Console log');
+        oBtn.on('pointerenter', removeSubmenu);
+        oBtn.on('click', () => {
+            s.l(dataNode);
+            popup.clear();
+        });
+        window.e('>', [oBtn, popup]);
+
+        oBtn = createBtn('Console path');
+        oBtn.on('pointerenter', removeSubmenu);
+        oBtn.on('click', () => {
+            s.l(node.getPath());
+            popup.clear();
+        });
+        window.e('>', [oBtn, popup]);
+
+        oBtn = createBtn('Convert type to');
+        let convertTypeBtn = oBtn;
+        oBtn.on('pointerenter', () => {
+            removeSubmenu();
+            submenu = new (s.f('sys.apps.GUI.popup'));
+            window.e('app.addViewElement', submenu);
+
+            const types = ['Bool', 'String', 'Object', 'Array'];
+            types.forEach(t => {
+                let btn = createBtn(t);
+                btn.on('click', () => {
+                    let data;
+                    if (t === 'Array') data = [];
+                    else if (t === 'Bool') {
+                        data = dataNode.getData() === 'false' ? false : true;
+                    }
+                    else if (t === 'Object') data = {};
+                    else if (t === 'String') data = 'str';
+                    else if (data === undefined) return;
+                    s.e('state.update', { outlinerNode: node, data });
+
+                    node.getParent().reopen();
+                    popup.clear();
+                });
+                window.e('>', [btn, submenu]);
+            });
+            submenu.putRightTo(convertTypeBtn);
+
+        });
+        window.e('>', [oBtn, popup]);
+
+        popup.onClear(() => removeSubmenu());
+        popup.putRightToPointer({ x: e.clientX, y: e.clientY });
     }
+
+
     // addNode(node) {
     //     this.nodes.set(node.getId(), node);
     // }
@@ -339,185 +491,5 @@ div[contenteditable="true"] {
     //             addOpenedNode(node);
     //         }
     //     }
-    // }
-
-    // handleContextmenu(e) {
-    //     e.preventDefault();
-    //
-    //     const isDataK = e.target.classList.contains('dataKey');
-    //     const isDataV = e.target.classList.contains('dataValue');
-    //     if (!isDataK && !isDataV) return;
-    //
-    //     const node = this.getOutlinerNodeById(e.target.getAttribute('outliner_node_id'));
-    //     const dataNode = node.getDataNode();
-    //     const data = dataNode.getData();
-    //
-    //     const v = s.f('sys.gui.view');
-    //     const createBtn = (txt) => {
-    //         return new v({ txt, class: ['btn', 'contextMenu', 'white', 'hoverGray'] });
-    //     }
-    //
-    //     const popup = s.sys.popup;
-    //     let submenu;
-    //     const removeSubmenu = () => {
-    //         if (!submenu) return;
-    //         submenu.clear();
-    //         submenu = null;
-    //     }
-    //
-    //     let oBtn = createBtn('Open with');
-    //     let openWithBtn = oBtn;
-    //     oBtn.on('pointerenter', async () => {
-    //         removeSubmenu();
-    //         submenu = new (s.f('sys.apps.GUI.popup'));
-    //         window.e('app.addViewElement', submenu);
-    //
-    //         const apps = s.sys.apps;
-    //         //todo const authorizedUserApps = s.users[user].apps;
-    //
-    //         for (let name in apps) {
-    //             if (name === 'GUI') continue;
-    //             let appBtn = createBtn(name);
-    //             appBtn.on('click', () => {
-    //                 window.e('openNode', { appPath: `sys.apps.${name}`, outlinerNode: node });
-    //                 popup.clear();
-    //             });
-    //             window.e('>', [appBtn, submenu]);
-    //         }
-    //         submenu.putRightTo(openWithBtn);
-    //     });
-    //     window.e('>', [oBtn, popup]);
-    //
-    //
-    //     if (typeof data === 'object' && data !== null) {
-    //         oBtn = createBtn('Add item');
-    //         oBtn.on('pointerenter', removeSubmenu);
-    //         oBtn.on('click', () => {
-    //
-    //             if (Array.isArray(data)) {
-    //                 data.push('item' + data.length + 1);
-    //             } else {
-    //                 let c = 0;
-    //                 while (1) {
-    //                     c++;
-    //                     const k = 'newKey' + c; const v = 'newValue';
-    //                     if (data[k]) continue;
-    //
-    //                     data[k] = v;
-    //                     const dataNode = new this.node;
-    //                     dataNode.setPath([...node.getPath(), k]);
-    //                     s.e('state.update', { dataNode, data: v });
-    //                     break;
-    //                 }
-    //             }
-    //
-    //             node.reopen();
-    //             popup.clear();
-    //         });
-    //         window.e('>', [oBtn, popup]);
-    //     }
-    //
-    //     oBtn = createBtn('Copy');
-    //     oBtn.on('click', () => {
-    //         this.buffer = { mode: 'copy', node };
-    //         popup.clear();
-    //     });
-    //     oBtn.on('pointerenter', removeSubmenu);
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     oBtn = createBtn('Cut');
-    //     oBtn.on('click', () => {
-    //         this.buffer = { mode: 'cut', node };
-    //         popup.clear();
-    //     });
-    //     oBtn.on('pointerenter', removeSubmenu);
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     if (this.buffer) {
-    //         oBtn = createBtn('Paste');
-    //         oBtn.on('click', async () => {
-    //             if (!this.buffer) return;
-    //
-    //             const contextNodeData = node.getDataNode().getData();
-    //             if (!s.f('sys.isObject', contextNodeData) && !Array.isArray(contextNodeData)) return;
-    //
-    //             const bufOurlinerNode = this.buffer.outlinerNode;
-    //             const dataPath = bufOurlinerNode.getPath();
-    //
-    //             const dataNodeCopy = new this.node;
-    //             //todo in case of array we don't need to set key. just push to array
-    //             dataNodeCopy.setPath([...node.getPath(), dataPath.at(-1)]);
-    //
-    //             const data = structuredClone(bufOurlinerNode.getDataNode().getData());
-    //             s.e('state.update', { dataNode: dataNodeCopy, data });
-    //             if (this.buffer.mode === 'cut') {
-    //                 await s.e('state.del', { outlinerNode: bufOurlinerNode });
-    //             }
-    //
-    //             this.buffer = null;
-    //             node.reopen(); //todo remember opened nodes
-    //             popup.clear();
-    //         });
-    //         oBtn.on('pointerenter', removeSubmenu);
-    //         window.e('>', [oBtn, popup]);
-    //     }
-    //
-    //     oBtn = createBtn('Duplicate');
-    //     oBtn.on('click', async () => {
-    //         await this.duplicate(node);
-    //         popup.clear();
-    //     });
-    //     oBtn.on('pointerenter', removeSubmenu);
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     oBtn = createBtn('Console log');
-    //     oBtn.on('pointerenter', removeSubmenu);
-    //     oBtn.on('click', () => {
-    //         s.l(dataNode);
-    //         popup.clear();
-    //     });
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     oBtn = createBtn('Console path');
-    //     oBtn.on('pointerenter', removeSubmenu);
-    //     oBtn.on('click', () => {
-    //         s.l(node.getPath());
-    //         popup.clear();
-    //     });
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     oBtn = createBtn('Convert type to');
-    //     let convertTypeBtn = oBtn;
-    //     oBtn.on('pointerenter', () => {
-    //         removeSubmenu();
-    //         submenu = new (s.f('sys.apps.GUI.popup'));
-    //         window.e('app.addViewElement', submenu);
-    //
-    //         const types = ['Bool', 'String', 'Object', 'Array'];
-    //         types.forEach(t => {
-    //             let btn = createBtn(t);
-    //             btn.on('click', () => {
-    //                 let data;
-    //                 if (t === 'Array') data = [];
-    //                 else if (t === 'Bool') {
-    //                     data = dataNode.getData() === 'false' ? false : true;
-    //                 }
-    //                 else if (t === 'Object') data = {};
-    //                 else if (t === 'String') data = 'str';
-    //                 else if (data === undefined) return;
-    //                 s.e('state.update', { outlinerNode: node, data });
-    //
-    //                 node.getParent().reopen();
-    //                 popup.clear();
-    //             });
-    //             window.e('>', [btn, submenu]);
-    //         });
-    //         submenu.putRightTo(convertTypeBtn);
-    //
-    //     });
-    //     window.e('>', [oBtn, popup]);
-    //
-    //     popup.onClear(() => removeSubmenu());
-    //     popup.putRightToPointer({ x: e.clientX, y: e.clientY });
     // }
 }

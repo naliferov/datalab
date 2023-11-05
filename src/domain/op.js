@@ -2,9 +2,9 @@ export const set = async (x) => {
     const { path, type } = x;
     let data = x.v;
     let repo = x.repo || 'default';
-    let { _, b, createVarSet, prepareForTransfer } = x[x._];
+    let { _, b, createPath, prepareForTransfer } = x[x._];
 
-    const set = await createVarSet({ _, b, repo, path, type });
+    const set = await createPath({ _, b, repo, path, type });
     if (!set) return;
 
     for (let i = 0; i < set.length; i++) {
@@ -24,11 +24,11 @@ export const set = async (x) => {
 export const get = async (x) => {
     let { path, depth } = x;
     let repo = x.repo || 'default';
-    let { b, _, createVarSet, gatherVarData } = x[x._];
+    let { b, _, createPath, gatherVarData } = x[x._];
 
     if (!depth && depth !== 0) depth = 0;
 
-    const set = await createVarSet({
+    const set = await createPath({
         _, b, repo, path,
         isNeedStopIfVarNotFound: true,
     });
@@ -44,9 +44,9 @@ export const get = async (x) => {
 export const del = async (x) => {
     const { path } = x;
     let repo = x.repo || 'default';
-    let { b, _, createVarSet, gatherSubVarsIds, prepareForTransfer } = x[x._];
+    let { b, _, createPath, gatherSubVarsIds, prepareForTransfer } = x[x._];
 
-    const set = await createVarSet({
+    const set = await createPath({
         _, b, repo, path,
         isNeedStopIfVarNotFound: true,
     });
@@ -95,7 +95,7 @@ const mkvar = async (bus, type, _) => {
     return v;
 }
 
-export const createVarSet = async (x) => {
+export const createPath = async (x) => {
 
     const { b, repo, path, isNeedStopIfVarNotFound, _, } = x;
     let type = x.type || 'v';
@@ -136,6 +136,7 @@ export const createVarSet = async (x) => {
     return set;
 }
 
+//rename to getDeeper
 export const gatherVarData = async (x) => {
 
     const { b, repo, v, depth, _ } = x;

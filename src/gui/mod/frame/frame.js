@@ -2,6 +2,16 @@ export const Frame = {
 
     setB(b) { this.b = b },
     async createStyle() {
+
+    // .topBar {
+    //         width: 100%;
+    //         display: flex;
+    //         align-items: center;
+    //         padding: 0.5em 0;
+    //         background: rgba(55, 53, 47, 0.08);
+    //         cursor: pointer;
+    //     }
+
         const css = `
     .shadow {
         box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
@@ -21,14 +31,7 @@ export const Frame = {
         user-select: none;
     }
 
-    .topBar {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        padding: 0.5em 0;
-        background: rgba(55, 53, 47, 0.08);
-        cursor: pointer;
-    }
+    
     .frame.drag .topBar {
         cursor: move;
     }
@@ -63,12 +66,12 @@ export const Frame = {
         const p = async (event, data) => await this.b.p(event, data);
 
         this.o = await p('doc.mk', { class: ['frame'] });
-        this.oShadow = this.o.attachShadow({ mode: 'closed' });
+        this.oShadow = this.o.attachShadow({ mode: 'open' });
         this.oShadow.appendChild(await this.createStyle());
 
         await p('doc.setStyle', { o: this.o, style: {
             minWidth: '100px', minHeight: '100px',
-            background: 'rgb(243 243 243)',
+            //background: 'rgb(243 243 243)',
             position: 'absolute',
         } });
 

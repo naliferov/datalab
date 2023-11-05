@@ -1,25 +1,17 @@
 import { X, b } from "../domain/x.js";
 import {
-    get, set, del, createVarSet, gatherVarData, gatherSubVarsIds, prepareForTransfer,
-    dmk
+    get, set, del, createPath, gatherVarData, gatherSubVarsIds, prepareForTransfer, dmk
 } from "../domain/op.js";
 
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
-import { IndexedDb } from "/src/storage/indexedDb.js";
 
 const _ = Symbol('sys');
 
 const x = X(_);
 b.set_(_);
 b.setX(x);
-
-const idb = new IndexedDb;
-await idb.open();
-
-const root = await idb.get('root');
-if (!root) await idb.set('root', { m: {} });
 
 await b.s('log', async (x) => console.log(x));
 await b.s('get_', () => _);
@@ -33,12 +25,12 @@ await b.s('set', async (x) => {
     const { id, path, v } = x;
 
     if (id) {
-        await b.p('transport', { event: 'set', id, v });
+        await b.p('transport', { x: 'set', id, v });
         return;
     }
     if (path) {
         x._ = _;
-        x[_] = { b, _, createVarSet, prepareForTransfer };
+        x[_] = { b, _, createPath, prepareForTransfer };
         await set(x);
     }
     return { msg: 'update complete', v };
@@ -48,12 +40,12 @@ await b.s('get', async (x) => {
     const { id, path, depth } = x;
 
     if (id) {
-        return await b.p('transport', { event: 'get', id });
+        return await b.p('transport', { x: 'get', id });
     }
     if (path && depth !== undefined) {
         const _ = await b.p('get_');
         x._ = _;
-        x[_] = { b, _, createVarSet, gatherVarData };
+        x[_] = { b, _, createPath, gatherVarData };
         return await get(x);
     }
 });
@@ -62,27 +54,8 @@ await b.s('mv', async (x) => {
     console.log(x);
 });
 
-await b.s('idb.set', async (x) => {
-    const { id, v } = x;
-    await idb.set(id, v);
-});
-await b.s('idb.get', async (x) => {
-    const { id } = x;
-    return await idb.get(id);
-});
-await b.s('idb.del', async (x) => console.log(x));
-
-const mem = {};
-await b.s('mem.set', async (x) => {});
-
-//const r = await x({ [_]: { x: 'x' }, id: 'varId', v: { v: 'someVARData'} });
-//console.log( await x({ [_]: { x: 'getUniqId' } }) );
-
 //console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
 
-//todo add ability to send events from browser console
-//const result = await v({ event: 'var.set', repo: 'idb', path: ['isDataBrowserShowed'], data: true });
-//console.log(result);
 
 const doc = globalThis.document;
 const app = doc.createElement('div');
