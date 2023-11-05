@@ -1,17 +1,29 @@
 export const X = (symbol) => {
 
-    let _ = symbol;
+    const _ = symbol;
     const f = {};
 
     return async (x) => {
         if (x[_].x) {
             return await f[x[_].x](x);
         }
-        if (x[_].y) {
-            f[x[_].y] = x[_].f;
-        }
+        if (x[_].y) f[x[_].y] = x[_].f;
     }
 }
+
+export const U = (X, symbol) => {
+
+    const _ = symbol;
+
+    return async (x) => {
+        if (x.x) {
+            return await X({ [_]: { x: x.x }});
+        }
+        if (x.y) {
+            return await X({ [_]: { y: x.y, f: x.f }});
+        }
+    }
+};
 
 export const b = {
     setX(x) {
@@ -26,7 +38,7 @@ export const b = {
     },
     async s(e, f) {
         const _ = this._;
-        await this.x({ [_]: { y: e, f } });
+        return await this.x({ [_]: { y: e, f } });
     },
 }
 
@@ -56,7 +68,7 @@ export const set = async (x) => {
 export const get = async (x) => {
     let { path, depth } = x;
     let repo = x.repo || 'default';
-    let { b, _, createPath, gatherVarData } = x[x._];
+    let { b, _, createPath, gatherVarData } = x._;
 
     if (!depth && depth !== 0) depth = 0;
 

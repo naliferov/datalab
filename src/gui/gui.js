@@ -1,7 +1,7 @@
 import {
-    X, b, get, set, del, createPath, gatherVarData, gatherSubVarsIds, prepareForTransfer, dmk
+    X, U, b, get, set, del, createPath, gatherVarData,
+    gatherSubVarsIds, prepareForTransfer, dmk
 } from "../domain/x.js";
-
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
@@ -9,6 +9,8 @@ import { HttpClient } from "/src/transport/http.js";
 const _ = Symbol('sys');
 
 const x = X(_);
+const u = U(x, _);
+
 b.set_(_);
 b.setX(x);
 
@@ -28,13 +30,11 @@ await b.s('set', async (x) => {
         return;
     }
     if (path) {
-        x._ = _;
-        x[_] = { b, _, createPath, prepareForTransfer };
+        x._ = { b, _, createPath, prepareForTransfer };
         await set(x);
     }
     return { msg: 'update complete', v };
 });
-
 await b.s('get', async (x) => {
     const { id, path, depth } = x;
 
@@ -43,18 +43,20 @@ await b.s('get', async (x) => {
     }
     if (path && depth !== undefined) {
         const _ = await b.p('get_');
-        x._ = _;
-        x[_] = { b, _, createPath, gatherVarData };
+        x._ = { b, _, createPath, gatherVarData };
         return await get(x);
     }
 });
 await b.s('del', async (x) => {});
 await b.s('mv', async (x) => {
-    console.log(x);
+    const _ = await b.p('get_');
+    const data = { ...x, x: 'mv' };
+    delete data[_];
+
+    return await b.p('transport', data);
 });
 
 //console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
-
 
 const doc = globalThis.document;
 const app = doc.createElement('div');

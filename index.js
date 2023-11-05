@@ -1,5 +1,5 @@
 import {
-  X, b, get, set, del, createPath, gatherVarData,
+  X, U, b, get, set, del, createPath, gatherVarData,
   gatherSubVarsIds, parseCliArgs, prepareForTransfer, pathToArr
 } from "./src/domain/x.js";
 import { promises as fs } from "node:fs";
@@ -8,6 +8,8 @@ import { ulid } from "ulid";
 const _ = Symbol('sys');
 
 const x = X(_);
+const u = U(x, _);
+
 b.set_(_);
 b.setX(x);
 
@@ -26,32 +28,31 @@ await b.s('x', async (x) => {
   else if (op === 'd') {}
 });
 
-await b.s('log', async (x) => console.log(x));
-await b.s('get_', () => _);
-await b.s('getUniqId', () => ulid());
-await b.s('fs.readFile', async (x) => {
+await u({ y: 'log', f: async (x) => console.log(x) });
+await u({ y: 'get_', f: () => _ });
+await u({ y: 'getUniqId', f: () => ulid() });
+await u({ y: 'fs.readFile', f: async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
-});
+} });
 
-await b.s('set', async (x) => {
+await u({ y: 'set', f: async (x) => {
   const { id, path, v } = x;
 
   if (id) await defaultRepo.set(id, v);
   else if (path) {
-    x._ = _;
+    const _ = await b.p('get_');
     x[_] = { b, _, createPath, prepareForTransfer };
     await set(x);
   }
   return { msg: 'update complete', v };
-});
+} });
 await b.s('get', async (x) => {
   const { id, path, depth } = x;
 
   if (id) return await defaultRepo.get(id);
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
-    x._ = _;
     x[_] = { b, _, createPath, gatherVarData };
     return await get(x);
   }
@@ -61,21 +62,21 @@ await b.s('del', async (x) => {
 
   if (id) return await defaultRepo.del(id);
   if (path) {
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
-    return await del(x);
+    // const _ = await b.p('get_');
+    // x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
+    // return await del(x);
   }
 });
 await b.s('mv', async (x) => {
-  const { id, path } = x;
+  const { id, oldKey, newKey, delSource } = x;
 
-  if (id) return await defaultRepo.del(id);
-  if (path) {
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
-    return await del(x);
+  const _ = await b.p('get_');
+  const v = await b.p('get', { id });
+
+  if (v.m && oldKey && newKey && v.m[oldKey]) {
+    v.m[newKey] = v.m[oldKey];
+    delete v.m[oldKey];
+    await b.p('set', { id, v })
   }
 });
 
@@ -94,18 +95,20 @@ await b.s('transport', async (x) => {
         let { msg } = x;
         let { id, path, depth } = msg;
 
-        if (id) return b.p('get', { id });
+        if (id) return await b.p('get', { id });
         return { test: 1 };
       },
+      'mv': async (x) => {
+        let { msg } = x;
+        return await b.p('mv', msg);
+      }
     }
 
-    if (m[msg.x]) {
-      return await m[msg.x](x);
-    } else {
-      return {
-        msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
-        type: 'text/html',
-      }
+    if (m[msg.x]) return await m[msg.x](x);
+
+    return {
+      msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
+      type: 'text/html',
     }
 });
 
@@ -168,7 +171,7 @@ const e = {
 
 const args = parseCliArgs((await import('node:process')).default.argv);
 if (e[args[0]]) {
-  console.log(await e[args[0]](args) ?? 'No input after execute cmd.');
+  console.log(await e[args[0]](args) ?? '');
 } else {
   console.log('Command not found');
 }

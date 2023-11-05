@@ -131,7 +131,6 @@ div[contenteditable="true"] {
                 await this.b.p('set', { id, v: { v } });
                 return;
             }
-
             const parentId = this.marked.getAttribute('parent_vid')
             if (parentId) {
                 await this.b.p('mv', { id: parentId, oldKey: this.markedV, newKey: v });

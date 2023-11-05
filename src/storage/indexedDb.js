@@ -2,7 +2,6 @@ export class IndexedDb {
 
     open() {
         return new Promise((resolve, reject) => {
-
             const openRequest = indexedDB.open('varcraft');
             openRequest.onerror = () => {
                 reject(openRequest.error);
