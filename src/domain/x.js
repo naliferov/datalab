@@ -68,7 +68,8 @@ export const set = async (x) => {
 export const get = async (x) => {
     let { path, depth } = x;
     let repo = x.repo || 'default';
-    let { b, _, createPath, gatherVarData } = x._;
+
+    let { b, _, createPath, gatherVarData } = x[x._];
 
     if (!depth && depth !== 0) depth = 0;
 
@@ -82,7 +83,7 @@ export const get = async (x) => {
     const v = set.at(-1);
     if (!v) return;
 
-    return await gatherVarData({ b, repo, v, depth, _ });
+    return await gatherVarData({ b, _, repo, v, depth });
 }
 
 export const del = async (x) => {
@@ -104,6 +105,7 @@ export const del = async (x) => {
     const v2 = set.at(-1);
 
     const subVars = await gatherSubVarsIds({ b, v: v2 });
+
     const len = Object.keys(subVars).length;
     if (len > 5) {
         await b.p('log', { msg: `Try to delete ${len} keys at once` });
@@ -157,6 +159,11 @@ export const createPath = async (x) => {
         const v1 = set.at(-1);
         let v2;
 
+        if (!v1.m && !v1.l) {
+            console.log(`v1 hasn't m or l prop for getting name [${name}]`);
+            return;
+        }
+
         let id = v1.m[name];
         if (id) {
             v2 = await b.p('get', { id });
@@ -172,6 +179,7 @@ export const createPath = async (x) => {
             v1.m[name] = v2[_].id;
             if (!v1[_].new) v1[_].updated = true;
         }
+
         v2[_].name = name;
 
         set.push(v2);
@@ -195,7 +203,6 @@ export const gatherVarData = async (x) => {
 
     data.m = {};
 
-    //todo make function for gather List;
     for (let p in v.m) {
 
         const id = v.m[p];
@@ -222,7 +229,7 @@ export const gatherVarData = async (x) => {
 
 export const gatherSubVarsIds = async (x) => {
 
-    const { b, repo, v } = x;
+    const { b, v } = x;
 
     if (!v.m) return {};
 
@@ -231,7 +238,7 @@ export const gatherSubVarsIds = async (x) => {
     const getSubVars = async (v) => {
         for (let prop in v.m) {
             const id = v.m[prop];
-            const subV = await b.p(`${repo}.get`, { id });
+            const subV = await b.p('get', { id });
             subVars.push(id);
 
             if (subV.m) await getSubVars(subV);
@@ -245,6 +252,7 @@ export const gatherSubVarsIds = async (x) => {
 export const prepareForTransfer = (v) => {
     const d = {};
 
+    if (v.b) d.b = v.b;
     if (v.v) d.v = v.v;
     if (v.m) d.m = v.m;
     if (v.l) d.l = v.l;

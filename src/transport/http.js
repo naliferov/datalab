@@ -81,7 +81,11 @@ const rqAuthenticate = (rq) => {
 }
 const rqResponse = (rs, v, contentType) => {
     const send = (value, type) => {
-        rs.writeHead(200, { 'Content-Type': type }).end(value);
+        try {
+            rs.writeHead(200, { 'Content-Type': type }).end(value);
+        } catch (e) {
+            console.log('error sending response');
+        }
     }
 
     if (!v) {
@@ -102,10 +106,11 @@ const rqResponse = (rs, v, contentType) => {
 export const rqHandler = async (x) => {
 
     const { b, rq, rs, fs } = x;
-    //todo add one time listener to socket
-    // rq.socket.on('error', (e) => {
-    //     bus.pub('log', { msg: 'rq socker err', e });
-    // });
+     rq.on('error', (e) => {
+         rq.destroy();
+         rqResponse(rs,'rq error');
+         bus.pub('log', { msg: 'rq socker err', e });
+     });
 
     const ip = rq.socket.remoteAddress;
     const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
