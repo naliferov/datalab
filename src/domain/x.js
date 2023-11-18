@@ -7,7 +7,9 @@ export const X = (symbol) => {
         if (x[_].x) {
             return await f[x[_].x](x);
         }
-        if (x[_].y) f[x[_].y] = x[_].f;
+        if (x[_].y) {
+            f[x[_].y] = x[_].f;
+        }
     }
 }
 
@@ -17,7 +19,7 @@ export const U = (X, symbol) => {
 
     return async (x) => {
         if (x.x) {
-            return await X({ [_]: { x: x.x }});
+            return await X({ [_]: { x: x.x }, ...x });
         }
         if (x.y) {
             return await X({ [_]: { y: x.y, f: x.f }});

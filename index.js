@@ -16,14 +16,6 @@ const u = U(x, _);
 b.set_(_);
 b.setX(x);
 
-await b.s('log', async (x) => {
-  if (typeof x === 'object') {
-    console.log(x.msg);
-    return;
-  }
-  console.log(x);
-});
-
 await b.s('x', async (x) => {
   const { op, id, path, v } = x;
   if (op === 'g') { }
@@ -31,7 +23,13 @@ await b.s('x', async (x) => {
   else if (op === 'd') { }
 });
 
-await u({ y: 'log', f: async (x) => console.log(x) });
+await u({ y: 'log', f: async (x) => {
+  if (typeof x === 'object') {
+    console.log(x.msg);
+    return;
+  }
+  console.log(x);
+} });
 await u({ y: 'get_', f: () => _ });
 await u({ y: 'getUniqId', f: () => ulid() });
 await u({
@@ -41,8 +39,7 @@ await u({
   }
 });
 
-await u({
-  y: 'set', f: async (x) => {
+await b.s('set', async (x) => {
     const { id, path, v } = x;
 
     if (id) await defaultRepo.set(id, v);
@@ -54,7 +51,6 @@ await u({
       await set(x);
     }
     return { msg: 'update complete', v };
-  }
 });
 
 await b.s('get', async (x) => {
@@ -87,7 +83,7 @@ await b.s('mv', async (x) => {
   const _ = await b.p('get_');
   const v = await b.p('get', { id });
 
-  if (v.m && oldKey && newKey && v.m[oldKey]) {
+  if (oldKey && newKey && v.m && v.m[oldKey]) {
     v.m[newKey] = v.m[oldKey];
     delete v.m[oldKey];
     await b.p('set', { id, v })
