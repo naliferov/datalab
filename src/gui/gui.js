@@ -1,7 +1,6 @@
 import {
-    X, U, b, get, set, del, createPath, gatherVarData,
-    gatherSubVarsIds, prepareForTransfer, dmk
-} from "../domain/x.js";
+    X, U, b, get, set, del, createPath, gatherVarData, prepareForTransfer, dmk
+} from "../module/x.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
@@ -43,16 +42,17 @@ await b.s('get', async (x) => {
     }
     if (path && depth !== undefined) {
         const _ = await b.p('get_');
-        x._ = { b, _, createPath, gatherVarData };
+        x._ = _;
+        x[_] = { b, _, createPath, gatherVarData };
         return await get(x);
     }
 });
-await b.s('del', async (x) => {});
+await b.s('del', async (x) => {
+
+});
 await b.s('mv', async (x) => {
     const _ = await b.p('get_');
     const data = { ...x, x: 'mv' };
-    delete data[_];
-
     return await b.p('transport', data);
 });
 

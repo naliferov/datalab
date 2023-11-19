@@ -6,7 +6,7 @@ import {
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
-} from "./src/domain/x.js";
+} from "./src/module/x.js";
 
 const _ = Symbol('sys');
 
@@ -177,6 +177,10 @@ const e = {
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
+  //todo add basic integrating testing
+  //'test': async (arg) => {
+    //test set, get what settled, and del, after del check get is return nothing
+  //},
 };
 
 const args = parseCliArgs((await import('node:process')).default.argv);

@@ -311,11 +311,8 @@ const on = (id, eventName, callback) => {
     //dom.addEventListener(eventName, callback);
 }
 
-const m = () => {
-
-}
 export const dmk = (d, x) => {
-    const { id, type, txt } = x;
+    const { id, type, txt, css } = x;
 
     const o = d.createElement(type || 'div');
     if (txt) o.innerText = txt;

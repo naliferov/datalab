@@ -10,6 +10,7 @@ export const DataEditor = {
     async createStyle() {
 
         const css = `
+        
 div[contenteditable="true"] {
     outline: none;
 }
@@ -93,7 +94,7 @@ div[contenteditable="true"] {
             //if (o.l) await rendL(o[_].id, o.m, parent);
         }
 
-        this.o = await p('doc.mk', { class: 'dataEditor', style: { border: '1px solid black' } });
+        this.o = await p('doc.mk', { class: 'dataEditor' } );
         this.oShadow = this.o.attachShadow({ mode: 'open' });
         this.oShadow.appendChild(await this.createStyle());
         this.oShadow.addEventListener('click', (e) => this.click(e));

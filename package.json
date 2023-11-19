@@ -1,6 +1,4 @@
 {
   "type": "module",
-  "dependencies": {
-    "ulid": "^2.3.0"
-  }
+  "dependencies": { "ulid": "^2.3.0" }
 }
