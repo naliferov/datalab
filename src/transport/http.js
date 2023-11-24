@@ -108,8 +108,7 @@ export const rqHandler = async (x) => {
     const { b, rq, rs, fs } = x;
      rq.on('error', (e) => {
          rq.destroy();
-         rqResponse(rs,'rq error');
-         bus.pub('log', { msg: 'rq socker err', e });
+         b.p('log', { msg: 'rq socker err', e });
      });
 
     const ip = rq.socket.remoteAddress;

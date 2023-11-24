@@ -15,6 +15,7 @@ export const X = (symbol) => {
 
 export const U = (X, symbol) => {
 
+    //todo use X and get_ to get symbol
     const _ = symbol;
 
     return async (x) => {
@@ -32,6 +33,7 @@ export const b = {
         this.x = x;
     },
     set_(_) {
+        //todo use X to get symbol
         this._ = _;
     },
     async p(e, data) {
@@ -71,7 +73,7 @@ export const get = async (x) => {
     let { path, depth } = x;
     let repo = x.repo || 'default';
 
-    let { b, _, createPath, gatherVarData } = x[x._];
+    let { b, _, createPath, getVarData } = x[x._];
 
     if (!depth && depth !== 0) depth = 0;
 
@@ -85,13 +87,13 @@ export const get = async (x) => {
     const v = set.at(-1);
     if (!v) return;
 
-    return await gatherVarData({ b, _, repo, v, depth });
+    return await getVarData({ b, _, repo, v, depth });
 }
 
 export const del = async (x) => {
     const { path } = x;
     let repo = x.repo || 'default';
-    let { b, _, createPath, gatherSubVarsIds, prepareForTransfer } = x[x._];
+    let { b, _, createPath, getVarIds, prepareForTransfer } = x[x._];
 
     const set = await createPath({
         _, b, repo, path,
@@ -106,15 +108,15 @@ export const del = async (x) => {
     const v1 = set.at(-2);
     const v2 = set.at(-1);
 
-    const subVars = await gatherSubVarsIds({ b, v: v2 });
+    const varIds = await getVarIds({ b, v: v2 });
 
-    const len = Object.keys(subVars).length;
+    const len = Object.keys(varIds).length;
     if (len > 5) {
         await b.p('log', { msg: `Try to delete ${len} keys at once` });
         return;
     }
-    for (let i = 0; i < subVars.length; i++) {
-        const id = subVars[i];
+    for (let i = 0; i < varIds.length; i++) {
+        const id = varIds[i];
         await b.p('del', { id });
     }
 
@@ -145,7 +147,7 @@ const mkvar = async (bus, type, _) => {
 
 export const createPath = async (x) => {
 
-    const { b, repo, path, isNeedStopIfVarNotFound, _, } = x;
+    const { b, path, isNeedStopIfVarNotFound, _, } = x;
     let type = x.type || 'v';
 
     let v1 = await b.p('get', { id: 'root' });
@@ -191,9 +193,9 @@ export const createPath = async (x) => {
 }
 
 //rename to getDeeper
-export const gatherVarData = async (x) => {
+export const getVarData = async (x) => {
 
-    const { b, repo, v, depth, _ } = x;
+    const { b, v, depth, _ } = x;
 
     const data = {
         _id: v[_].id,
@@ -223,13 +225,13 @@ export const gatherVarData = async (x) => {
         if (v2.v) {
             data.m[p] = v2;
         } else if (v2.m) {
-            data.m[p] = await gatherVarData({ b, repo, v: v2, depth: depth - 1, _ });
+            data.m[p] = await getVarData({ b, v: v2, depth: depth - 1, _ });
         }
     }
     return data;
 }
 
-export const gatherSubVarsIds = async (x) => {
+export const getVarIds = async (x) => {
 
     const { b, v } = x;
 
@@ -327,9 +329,9 @@ const dragAndDrop = () => {
 
 }
 
-// const setAtr (d, k, v) => {
-//
-// }
+const setAtr = (d, k, v) => {
+
+}
 
 export const parseCliArgs = cliArgs => {
     const args = {};

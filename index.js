@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import { ulid } from "ulid";
 import {
   U, X, b, set, get, del,
-  createPath, gatherVarData, gatherSubVarsIds,
+  createPath, getVarData, getVarIds,
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
@@ -16,12 +16,7 @@ const u = U(x, _);
 b.set_(_);
 b.setX(x);
 
-await b.s('x', async (x) => {
-  const { op, id, path, v } = x;
-  if (op === 'g') { }
-  else if (op === 's') { }
-  else if (op === 'd') { }
-});
+//await b.s('x', async (x) => {});
 
 await u({ y: 'log', f: async (x) => {
   if (typeof x === 'object') {
@@ -32,11 +27,9 @@ await u({ y: 'log', f: async (x) => {
 } });
 await u({ y: 'get_', f: () => _ });
 await u({ y: 'getUniqId', f: () => ulid() });
-await u({
-  y: 'fs.readFile', f: async (x) => {
+await b.s('fs.readFile', async (x) => {
     const { path } = x;
     return await fs.readFile(path, 'utf8');
-  }
 });
 
 await b.s('set', async (x) => {
@@ -46,7 +39,7 @@ await b.s('set', async (x) => {
     else if (path) {
       const _ = await b.p('get_');
       x._ = _;
-      x[_] = { b, _, createPath, prepareForTransfer };
+      x[_] = { _, b, createPath, prepareForTransfer };
 
       await set(x);
     }
@@ -60,7 +53,7 @@ await b.s('get', async (x) => {
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { b, _, createPath, gatherVarData };
+    x[_] = { _, b, createPath, getVarData };
 
     return await get(x);
   }
@@ -72,12 +65,12 @@ await b.s('del', async (x) => {
   if (path) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { b, _, createPath, gatherSubVarsIds, prepareForTransfer };
+    x[_] = { _, b, createPath, getVarIds, prepareForTransfer };
 
     return await del(x);
   }
 });
-await b.s('mv', async (x) => {
+await b.s('cp', async (x) => {
   const { id, oldKey, newKey, delSource } = x;
 
   const _ = await b.p('get_');
@@ -90,9 +83,10 @@ await b.s('mv', async (x) => {
   }
 });
 
-await b.s('transport', async (x) => {
+await b.s('port', async (x) => {
   const { b, msg } = x;
 
+  //todo remove this switch and make direct execute of X
   const m = {
     'set': async (x) => {
       let { msg } = x;
@@ -106,11 +100,12 @@ await b.s('transport', async (x) => {
       let { id, path, depth } = msg;
 
       if (id) return await b.p('get', { id });
-      return { test: 1 };
+      return { ok: 1 };
     },
-    'mv': async (x) => {
+    'cp': async (x) => {
       let { msg } = x;
-      return await b.p('mv', msg);
+      await b.p('cp', msg);
+      return { ok: 1 };
     }
   }
 

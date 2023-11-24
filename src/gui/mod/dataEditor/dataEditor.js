@@ -10,13 +10,20 @@ export const DataEditor = {
     async createStyle() {
 
         const css = `
-        
+.container {
+    padding: 10px;
+    color: rgb(55, 53, 47);
+}
+.header {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
 div[contenteditable="true"] {
     outline: none;
 }
 .row {
     margin-left: 10px;
-    color: rgb(55, 53, 47);
 }
 .key {
     cursor: pointer;
@@ -45,10 +52,7 @@ div[contenteditable="true"] {
     async init(path) {
 
         const _ = this._;
-        //const simpleT = new Set(['undefined', 'boolean', 'number', 'bigint', 'string']);
-
         const p = async (event, data) => await this.b.p(event, data);
-        //const i = (o2, o1) => o1.appendChild(o2);
         const add = async (data, parent) => {
             const o = await p('doc.mk', data);
             parent.appendChild(o);
@@ -100,8 +104,14 @@ div[contenteditable="true"] {
         this.oShadow.addEventListener('click', (e) => this.click(e));
         this.oShadow.addEventListener('contextmenu', (e) => this.handleContextmenu(e));
 
+        const container = await p('doc.mk', { class: 'container' } );
+        this.oShadow.appendChild(container);
+
+        const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' } );
+        container.appendChild(header);
+
         const data = await p('get', { path, depth: 3 }); console.log(data);
-        await rend(data, this.oShadow);
+        await rend(data, container);
     },
     click(e) {
         const classList = e.target.classList;
@@ -110,11 +120,26 @@ div[contenteditable="true"] {
         }
         e.preventDefault();
 
-        if (this.marked) this.marked.classList.remove('mark');
+        if (this.marked) {
+            this.marked.classList.remove('mark');
+        }
         e.target.classList.add('mark');
         this.marked = e.target;
     },
     async keydown(e) {
+
+        const unmark = () => {
+            this.marked.classList.remove('mark');
+            this.marked.removeAttribute('contenteditable');
+        }
+
+        if (e.key === 'Escape') {
+            if (this.marked.innerText !== this.markedV) {
+                this.marked.innerText = this.markedV;
+            }
+            unmark();
+            return;
+        }
         if (e.key !== 'Enter') return;
 
         e.preventDefault();
@@ -122,10 +147,15 @@ div[contenteditable="true"] {
 
         const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
         if (isEnabled) {
-            this.marked.removeAttribute('contenteditable');
 
             const v = this.marked.innerText;
             if (v === this.markedV) return;
+            if (!v) {
+                alert('No value is set.');
+                return;
+            }
+
+            unmark();
 
             const id = this.marked.getAttribute('vid');
             if (id) {
@@ -134,7 +164,7 @@ div[contenteditable="true"] {
             }
             const parentId = this.marked.getAttribute('parent_vid')
             if (parentId) {
-                await this.b.p('mv', { id: parentId, oldKey: this.markedV, newKey: v });
+                await this.b.p('cp', { id: parentId, oldKey: this.markedV, newKey: v });
                 return;
             }
             return;
@@ -144,8 +174,6 @@ div[contenteditable="true"] {
         this.marked.focus();
         this.markedV = this.marked.innerText;
     },
-        //this.openedPaths = s.e('localState.get', 'openedPaths');
-        //if (this.openedPaths) {
     handleContextmenu(e) {
         e.preventDefault();
 
@@ -153,7 +181,7 @@ div[contenteditable="true"] {
         const isDataV = e.target.classList.contains('val');
         if (!isDataK && !isDataV) return;
 
-        console.log('key or val');
+        console.log('key or val context menu');
         return;
 
         //const node = this.getOutlinerNodeById(e.target.getAttribute('outliner_node_id'));
@@ -324,12 +352,11 @@ div[contenteditable="true"] {
 
         popup.onClear(() => removeSubmenu());
         popup.putRightToPointer({ x: e.clientX, y: e.clientY });
+    },
+
+    addNode(node) {
+        //this.nodes.set(node.getId(), node);
     }
-
-
-    // addNode(node) {
-    //     this.nodes.set(node.getId(), node);
-    // }
     // removeNode(id) {
     //     this.nodes.delete(id);
     // }

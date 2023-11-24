@@ -1,5 +1,5 @@
 import {
-    X, U, b, get, set, del, createPath, gatherVarData, prepareForTransfer, dmk
+    X, U, b, get, set, del, createPath, getVarData, prepareForTransfer, dmk
 } from "../module/x.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
@@ -8,7 +8,6 @@ import { HttpClient } from "/src/transport/http.js";
 const _ = Symbol('sys');
 
 const x = X(_);
-const u = U(x, _);
 
 b.set_(_);
 b.setX(x);
@@ -16,16 +15,17 @@ b.setX(x);
 await b.s('log', async (x) => console.log(x));
 await b.s('get_', () => _);
 await b.s('getUniqId', () => crypto.randomUUID());
-await b.s('transport', async (x) => {
+await b.s('port', async (x) => {
     const { data } = await (new HttpClient).post('/', x);
     return data;
 });
+//todo receive updates from backend;
 
 await b.s('set', async (x) => {
     const { id, path, v } = x;
 
     if (id) {
-        await b.p('transport', { x: 'set', id, v });
+        await b.p('port', { x: 'set', id, v });
         return;
     }
     if (path) {
@@ -38,39 +38,29 @@ await b.s('get', async (x) => {
     const { id, path, depth } = x;
 
     if (id) {
-        return await b.p('transport', { x: 'get', id });
+        return await b.p('port', { x: 'get', id });
     }
     if (path && depth !== undefined) {
         const _ = await b.p('get_');
         x._ = _;
-        x[_] = { b, _, createPath, gatherVarData };
+        x[_] = { b, _, createPath, getVarData };
         return await get(x);
     }
 });
 await b.s('del', async (x) => {
 
 });
-await b.s('mv', async (x) => {
+await b.s('cp', async (x) => {
     const _ = await b.p('get_');
-    const data = { ...x, x: 'mv' };
-    return await b.p('transport', data);
+    delete x[_];
+    x.x = 'cp';
+    return await b.p('port', x);
 });
-
-//console.log(await x({ [_]: { e: 'i' }, id: 'varId', v: { v: 'dataOfVAR'} }));
 
 const doc = globalThis.document;
 const app = doc.createElement('div');
 app.id = 'app';
 doc.body.appendChild(app);
-
-let observer = new MutationObserver((e) => {
-    //op('doc.mutated', { data: e });
-});
-observer.observe(doc, {
-    subtree: true, childList: true,
-    attributes: true, attributeOldValue: true,
-    characterData: true, characterDataOldValue: true
-});
 
 await b.s('doc.mk', async (x) => {
     if (!x.id) x.id = await b.p('getUniqId');
