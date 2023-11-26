@@ -126,25 +126,6 @@ export const del = async (x) => {
     await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
 }
 
-const mkvar = async (bus, type, _) => {
-
-    const id = await bus.p('getUniqId');
-    let v = {
-        [_]: { id, new: true }, //[_] is for service data
-    };
-    v._id = id;
-
-    if (type === 'b') v.b = {};
-    else if (type === 'v') v.v = true;
-    else if (type === 'm') v.m = {};
-    else if (type === 'l') v.l = [];
-    else if (type === 'f') v.f = {};
-    else if (type === 'x') v.x = {};
-    else throw new Error(`Unknown type [${type}]`);
-
-    return v;
-}
-
 export const createPath = async (x) => {
 
     const { b, path, isNeedStopIfVarNotFound, _, } = x;
@@ -192,15 +173,30 @@ export const createPath = async (x) => {
     return set;
 }
 
+const mkvar = async (bus, type, _) => {
+
+    const id = await bus.p('getUniqId');
+    let v = {
+        [_]: { id, new: true }
+    };
+
+    if (type === 'b') v.b = {};
+    else if (type === 'v') v.v = true;
+    else if (type === 'm') v.m = {};
+    else if (type === 'l') v.l = [];
+    else if (type === 'f') v.f = {};
+    else if (type === 'x') v.x = {};
+    else throw new Error(`Unknown type [${type}]`);
+
+    return v;
+}
+
 //rename to getDeeper
 export const getVarData = async (x) => {
 
     const { b, v, depth, _ } = x;
 
-    const data = {
-        _id: v[_].id,
-        [_]: { id: v[_].id },
-    };
+    const data = { [_]: { id: v[_].id } };
     if (v.v) data.v = v.v;
 
     if (!v.m) return data;
@@ -218,7 +214,6 @@ export const getVarData = async (x) => {
         }
         const v2 = await b.p('get', { id });
         if (v2) {
-            v2._id = id;
             v2[_] = { id };
         }
 
@@ -266,73 +261,6 @@ export const prepareForTransfer = (v) => {
     return d;
 }
 
-
-export const toRight = (o, targetO) => {
-    const { x, y, width } = targetO.getSize();
-    o.absolute();
-    o.setPosition(x + width + 10, y);
-}
-
-//const varRepository = new Repository(new NetStorage(bus));
-//separate style from pure logic
-
-export const mkOb = (x) => {
-    //todo opObject //dataObj // tick, add, subtract
-    //o, msg, num, list, symbol, comment
-    const data = {
-        txt: x.txt,
-        event: {
-            //can attach any custom handler with specific connection mechanics build in UI.
-            //click: () => {}
-        },
-    }
-    if (x.style) data.style = x.style;
-
-    return data;
-}
-
-//tick, add, subtract, move and etc.
-export const mkOp = {
-    txt: '+',
-    style: {
-        display: 'inline-block',
-        cursor: 'pointer',
-        'fontWeight': 'bold',
-        margin: '1em'
-    },
-    // event: {
-    //     click: async (e) => {
-    //         const o = createOb();
-    //         await op({ event: 'o.add', o: o });
-    //     }
-    // }
-};
-
-const on = (id, eventName, callback) => {
-    //add event to id!
-    //dom.addEventListener(eventName, callback);
-}
-
-export const dmk = (d, x) => {
-    const { id, type, txt, css } = x;
-
-    const o = d.createElement(type || 'div');
-    if (txt) o.innerText = txt;
-
-    const classD = x['class'];
-    if (classD) {
-        o.className = Array.isArray(classD) ? classD.join(' ') : classD;
-    }
-    return o;
-}
-const dragAndDrop = () => {
-
-}
-
-const setAtr = (d, k, v) => {
-
-}
-
 export const parseCliArgs = cliArgs => {
     const args = {};
     let num = 0;
@@ -358,3 +286,79 @@ export const parseCliArgs = cliArgs => {
 };
 
 export const pathToArr = path => Array.isArray(path) ? path : path.split('.');
+
+
+//GUI
+export const dmk = (d, x) => {
+    const { id, type, txt, events, css } = x;
+
+    const o = d.createElement(type || 'div');
+    if (txt) o.innerText = txt;
+
+    const classD = x['class'];
+    if (classD) {
+        o.className = Array.isArray(classD) ? classD.join(' ') : classD;
+    }
+    if (events) for (let k in events) o.addEventListener(k, events[k]);
+    if (css) for (let k in css) o.style[k] = css[k];
+
+    return o;
+}
+
+export const getSize = (o) => {
+    let sizes = o.getBoundingClientRect();
+    let scrollX = window.scrollX;
+    let scrollY = window.scrollY;
+
+    return {
+        height: sizes.height,
+        width: sizes.width,
+
+        top: sizes.top + scrollY,
+        bottom: sizes.bottom + scrollY,
+        left: sizes.left + scrollX,
+        right: sizes.right + scrollX,
+        x: sizes.x + scrollX,
+        y: sizes.y + scrollY,
+    }
+}
+
+export const mkOb = (x) => {
+    //todo opObject //dataObj // tick, add, subtract
+    //o, msg, num, list, symbol, comment
+    const data = {
+        txt: x.txt,
+        event: {
+            //can attach any custom handler with specific connection mechanics build in UI.
+            //click: () => {}
+        },
+    }
+    if (x.style) data.style = x.style;
+
+    return data;
+}
+
+export const mkOp = {
+    txt: '+',
+    style: {
+        display: 'inline-block',
+        cursor: 'pointer',
+        'fontWeight': 'bold',
+        margin: '1em'
+    },
+    // event: {
+    //     click: async (e) => {
+    //         const o = createOb();
+    //         await op({ event: 'o.add', o: o });
+    //     }
+    // }
+};
+
+const on = (id, eventName, callback) => {
+    //add event to id!
+    //dom.addEventListener(eventName, callback);
+}
+
+const dragAndDrop = () => {
+
+}

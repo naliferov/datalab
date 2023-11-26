@@ -22,7 +22,11 @@ const rqParseBody = async (rq, limitMb = 12) => {
             }
             b.push(chunk);
         });
-        rq.on('error', err => reject(err));
+        rq.on('error', err => {
+            rq.destroy();
+            b.p('log', { msg: 'rq socker err', e });
+            reject(err)
+        });
         rq.on('end', () => {
             b = Buffer.concat(b);
 
@@ -126,7 +130,7 @@ export const rqHandler = async (x) => {
     const body = await rqParseBody(rq);
     const msg = body ?? query;
 
-    const out = await b.p('transport', { b, msg });
+    const out = await b.p('port', { b, msg });
     if (!out) {
         rqResponse(rs,'Default response');
         return;

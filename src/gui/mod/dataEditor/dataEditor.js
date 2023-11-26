@@ -1,9 +1,5 @@
 export const DataEditor = {
 
-    //tree view, list view, card view
-    marked: null,
-    markedV: null,
-
     setB(b) { this.b = b; },
     set_(_) { this._ = _; },
 
@@ -19,6 +15,19 @@ export const DataEditor = {
     font-size: 18px;
     margin-bottom: 8px;
 }
+.menu {
+    position: absolute;
+    background: lightgray;
+    min-width: 100px;
+}
+.menuBtn {
+    cursor: pointer;
+    padding: 1px 7px;
+}
+.menuBtn:hover {
+    background: #ababab;
+}
+
 div[contenteditable="true"] {
     outline: none;
 }
@@ -55,7 +64,7 @@ div[contenteditable="true"] {
         const p = async (event, data) => await this.b.p(event, data);
         const add = async (data, parent) => {
             const o = await p('doc.mk', data);
-            parent.appendChild(o);
+            parent.append(o);
             return o;
         }
 
@@ -100,31 +109,43 @@ div[contenteditable="true"] {
 
         this.o = await p('doc.mk', { class: 'dataEditor' } );
         this.oShadow = this.o.attachShadow({ mode: 'open' });
-        this.oShadow.appendChild(await this.createStyle());
-        this.oShadow.addEventListener('click', (e) => this.click(e));
+        this.oShadow.append(await this.createStyle());
         this.oShadow.addEventListener('contextmenu', (e) => this.handleContextmenu(e));
 
         const container = await p('doc.mk', { class: 'container' } );
-        this.oShadow.appendChild(container);
+        this.oShadow.append(container);
+        this.container = container;
 
         const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' } );
-        container.appendChild(header);
+        container.append(header);
 
-        const data = await p('get', { path, depth: 3 }); console.log(data);
+        const data = await p('get', { path, depth: 5 }); console.log(data);
         await rend(data, container);
     },
-    click(e) {
-        const classList = e.target.classList;
-        if (!classList.contains('key') && !classList.contains('val')) {
-            return;
-        }
-        e.preventDefault();
+    async createRowInRow(row, k, v) {
+        //const newRow = await add({ class: 'row' }, parent);
 
-        if (this.marked) {
-            this.marked.classList.remove('mark');
+        //const key = await add({ txt: p, class: 'key' }, newRow);
+        //if (parentId) key.setAttribute('parent_vid', parentId);
+        //await add({ txt: ': ', class: 'sep' }, newRow);
+    },
+    remark(t) {
+        if (this.marked) this.marked.classList.remove('mark');
+        t.classList.add('mark');
+        this.marked = t;
+    },
+    click(e) {
+        const path = e.composedPath();
+        const classList = path[0].classList;
+
+        if (this.menu && !path.includes(this.menu)) {
+            this.menu.remove();
         }
-        e.target.classList.add('mark');
-        this.marked = e.target;
+
+        if (!classList.contains('key') && !classList.contains('val')) return;
+
+        e.preventDefault();
+        this.remark(path[0]);
     },
     async keydown(e) {
 
@@ -147,7 +168,6 @@ div[contenteditable="true"] {
 
         const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
         if (isEnabled) {
-
             const v = this.marked.innerText;
             if (v === this.markedV) return;
             if (!v) {
@@ -174,23 +194,58 @@ div[contenteditable="true"] {
         this.marked.focus();
         this.markedV = this.marked.innerText;
     },
-    handleContextmenu(e) {
+    async handleContextmenu(e) {
         e.preventDefault();
+        const t = e.target;
 
-        const isDataK = e.target.classList.contains('key');
-        const isDataV = e.target.classList.contains('val');
+        const isDataK = t.classList.contains('key');
+        const isDataV = t.classList.contains('val');
         if (!isDataK && !isDataV) return;
 
-        console.log('key or val context menu');
-        return;
+        this.remark(t);
 
-        //const node = this.getOutlinerNodeById(e.target.getAttribute('outliner_node_id'));
-        const v = s.f('sys.gui.view');
-        const createBtn = (txt) => {
-            return new v({ txt, class: ['btn', 'contextMenu', 'white', 'hoverGray'] });
+        const _ = this._;
+        const p = async (event, data) => await this.b.p(event, data);
+        const mkBtn = async (txt, fn) => {
+            return await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
         }
 
-        const popup = s.sys.popup;
+        const containerSize = await p('doc.getSize', { o: this.container });
+
+        if (this.menu) this.menu.remove();
+        const menu = await p('doc.mk', { class: 'menu', css: {
+            left: (e.clientX - containerSize.x) + 'px',
+            top: (e.clientY - containerSize.y) + 'px',
+        } } );
+        this.menu = menu;
+        this.container.append(menu);
+
+        //todo expand collapse stream;
+        let btn = await mkBtn('Open', (e) => {
+            console.log(e);
+        });
+        this.menu.append(btn);
+        btn = await mkBtn('Add', (e) => {
+            if (!this.marked || !this.marked.classList.contains('key')) {
+                return;
+            }
+
+            const next = this.marked.nextSibling.nextSibling;
+            if (!next || !next.classList.contains('row')) return;
+
+            //appent new row in this row this.marked.parentNode);
+
+            //put new row in next
+        });
+        this.menu.append(btn);
+
+        btn = await mkBtn('Remove', (e) => console.log(e));
+        this.menu.append(btn);
+        btn = await mkBtn('Copy', (e) => console.log(e));
+        this.menu.append(btn);
+
+        return;
+
         let submenu;
         const removeSubmenu = () => {
             if (!submenu) return;

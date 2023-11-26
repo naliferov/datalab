@@ -96,23 +96,6 @@ export class O {
     }
     getSize() { return this.getSizesAbsolute(); }
     getSizes() { return this.dom.getBoundingClientRect() }
-    getSizesAbsolute() {
-        let sizes = this.dom.getBoundingClientRect();
-        let scrollX = window.scrollX;
-        let scrollY = window.scrollY;
-
-        return {
-            height: sizes.height,
-            width: sizes.width,
-
-            top: sizes.top + scrollY,
-            bottom: sizes.bottom + scrollY,
-            left: sizes.left + scrollX,
-            right: sizes.right + scrollX,
-            x: sizes.x + scrollX,
-            y: sizes.y + scrollY,
-        }
-    }
 
     getChildren() { return this.dom.children }
     getChildrenCount() { return this.dom.children.length }

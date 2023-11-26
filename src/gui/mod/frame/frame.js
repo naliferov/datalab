@@ -13,6 +13,9 @@ export const Frame = {
     //     }
 
         const css = `
+    .container {
+    
+    }
     .shadow {
         box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
     }
@@ -31,7 +34,6 @@ export const Frame = {
         user-select: none;
     }
 
-    
     .frame.drag .topBar {
         cursor: move;
     }
@@ -65,15 +67,14 @@ export const Frame = {
 
         const p = async (event, data) => await this.b.p(event, data);
 
-        this.o = await p('doc.mk', { class: ['frame'] });
+        this.o = await p('doc.mk', { class: ['frame'], css: {
+                minWidth: '100px', minHeight: '100px', position: 'absolute',
+                marginTop: '300px'
+            }
+        });
+
         this.oShadow = this.o.attachShadow({ mode: 'open' });
         this.oShadow.appendChild(await this.createStyle());
-
-        await p('doc.setStyle', { o: this.o, style: {
-            minWidth: '100px', minHeight: '100px',
-            //background: 'rgb(243 243 243)',
-            position: 'absolute',
-        } });
 
         const top = await p('doc.mk', { class: ['topBar'] });
         await p('doc.ins', { o1: this.oShadow, o2: top });
@@ -91,6 +92,8 @@ export const Frame = {
 
         //const title = new v({ txt: this.app.getTitle(), class: 'appTitle' });
         //e('>', [title, topBar]);
+
+        return;
 
         const resizeTop = await p('doc.mk', { class: ['resizer', 'resizeTop'] });
         await p('doc.ins', { o1: this.oShadow, o2: resizeTop });

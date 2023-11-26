@@ -1,5 +1,5 @@
 import {
-    X, U, b, get, set, del, createPath, getVarData, prepareForTransfer, dmk
+    X, b, get, set, del, createPath, getVarData, prepareForTransfer, dmk, getSize
 } from "../module/x.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
@@ -93,6 +93,10 @@ await b.s('doc.ins', async (x) => {
     return o2ob;
 });
 await b.s('doc.mv', async (x) => {});
+await b.s('doc.getSize', async (x) => {
+    const { o } = x;
+    return getSize(o);
+});
 await b.s('doc.setStyle', async (x) => {
     const { o, style } = x;
     for (let k in style) o.style[k] = style[k];
@@ -112,3 +116,4 @@ await dataEditor.init([]);
 await b.p('doc.ins', { o1: frame.oShadow, o2: dataEditor.o });
 
 window.onkeydown = (e) => dataEditor.keydown(e);
+window.onclick = (e) => dataEditor.click(e);
