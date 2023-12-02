@@ -254,6 +254,7 @@ div[contenteditable="true"] {
       console.log(e);
     });
     this.menu.append(btn);
+
     btn = await mkBtn('Add', async (e) => {
       if (!this.marked || !this.isX1(this.marked)) return;
 
@@ -262,7 +263,9 @@ div[contenteditable="true"] {
       if (!x2 || !x2.classList.contains('x2')) return;
       if (x2.classList.contains('v')) return;
 
-      //await this.b.p('set', { id, v: { v } });
+      const id = x1.getAttribute('vid');
+      const v = await p('set', { id, k: 'newKey', v: { v: 'newValue' } });
+      console.log(v);
 
       //set value on backend and set this value to key in vid
       //after this enter value
@@ -271,7 +274,7 @@ div[contenteditable="true"] {
         x1: 'newKey',
         x2: { v: 'newValue' },
         parentVid: x1.getAttribute('parent_vid'),
-        vid: x1.getAttribute('vid'),
+        vid: 'new created v ID',
       });
       x2.append(xx);
 

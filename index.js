@@ -36,7 +36,18 @@ await b.s('set', async (x) => {
 
     if (id && k && v) {
 
-      console.log(id, k, v);
+      const vById = await b.p('get', { id });
+      if (!vById) return { ok: 0, msg:  'V not found' };
+
+      if (vById.m) {
+        const newVId = await b.p('getUniqId');
+        await defaultRepo.set(newVId, v);
+
+        vById.m[k] = newVId;
+        await defaultRepo.set(id, vById);
+
+        return { id, k, v, newVId };
+      }
 
     } else if (id) {
       await defaultRepo.set(id, v);
@@ -90,32 +101,7 @@ await b.s('cp', async (x) => {
 
 await b.s('port', async (x) => {
   const { b, msg } = x;
-
-  //todo remove this switch and make direct execute of X
-  const m = {
-    'set': async (x) => {
-      let { msg } = x;
-      let { id, path, v } = msg;
-
-      if (id && v) return await b.p('set', { id, v });
-      return { ok: 1 };
-    },
-    'get': async (x) => {
-      let { msg } = x;
-      let { id, path, depth } = msg;
-
-      if (id) return await b.p('get', { id });
-      return { ok: 1 };
-    },
-    'cp': async (x) => {
-      let { msg } = x;
-      await b.p('cp', msg);
-      return { ok: 1 };
-    }
-  }
-
-  if (m[msg.x]) return await m[msg.x](x);
-
+  if (msg.x) return await b.p(msg.x, msg);
   return {
     msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
     type: 'text/html',

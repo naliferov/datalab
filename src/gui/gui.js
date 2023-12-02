@@ -28,15 +28,13 @@ await b.s('port', async (x) => {
 //todo receive updates from backend;
 
 await b.s('set', async (x) => {
-  const { id, path, v } = x;
+  const { id, path, k, v } = x;
 
-  if (id) {
-    await b.p('port', { x: 'set', id, v });
-    return;
+  if (id && k && v) {
+    return await b.p('port', { x: 'set', id, k, v });
   }
-  if (path) {
-    x._ = { b, _, createPath, prepareForTransfer };
-    await set(x);
+  if (id) {
+    return await b.p('port', { x: 'set', id, v });
   }
   return { msg: 'update complete', v };
 });
