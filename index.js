@@ -32,16 +32,22 @@ await b.s('fs.readFile', async (x) => {
 });
 
 await b.s('set', async (x) => {
-    const { id, path, v } = x;
+    const { id, path, k, v } = x;
 
-    if (id) await defaultRepo.set(id, v);
-    else if (path) {
+    if (id && k && v) {
+
+      console.log(id, k, v);
+
+    } else if (id) {
+      await defaultRepo.set(id, v);
+    } else if (path) {
       const _ = await b.p('get_');
       x._ = _;
       x[_] = { _, b, createPath, prepareForTransfer };
 
       await set(x);
     }
+
     return { msg: 'update complete', v };
 });
 
