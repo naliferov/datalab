@@ -121,6 +121,9 @@ div[contenteditable="true"] {
   isX1(t) {
     return t.classList.contains('x1');
   },
+  isVal(t) {
+    return t.classList.contains('val');
+  },
   async mkXX(x) {
 
     const { x1, x2, parentVid, vid } = x;
@@ -169,8 +172,12 @@ div[contenteditable="true"] {
     const t = path[0];
     const classList = t.classList;
 
-    if (this.menu && !path.includes(this.menu)) {
-      this.menu.remove();
+    if (this.menu) {
+      if (!path.includes(this.menu)) {
+        this.menu.remove();
+        this.unmark();
+      }
+    } else {
       this.unmark();
     }
 
@@ -199,23 +206,24 @@ div[contenteditable="true"] {
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
     if (isEnabled) {
+      this.marked.removeAttribute('contenteditable');
+
       const v = this.marked.innerText;
       if (v === this.markedV) return;
       if (!v) {
         alert('No value is set.'); return;
       }
 
-      unmark();
+      const isX1 = this.isX1(this.marked);
+      const isVal = this.isVal(this.marked);
 
-      const id = this.marked.getAttribute('vid');
-      if (id) {
-        await this.b.p('set', { id, v: { v } });
-        return;
-      }
-      const parentId = this.marked.getAttribute('parent_vid')
-      if (parentId) {
+      if (isX1) {
+        const parentId = this.marked.getAttribute('parent_vid');
         await this.b.p('cp', { id: parentId, oldKey: this.markedV, newKey: v });
-        return;
+      }
+      else if (isVal) {
+        const id = this.marked.getAttribute('vid');
+        await this.b.p('set', { id, v: { v } });
       }
       return;
     }

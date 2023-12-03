@@ -35,7 +35,6 @@ await b.s('set', async (x) => {
     const { id, path, k, v } = x;
 
     if (id && k && v) {
-
       const vById = await b.p('get', { id });
       if (!vById) return { ok: 0, msg:  'V not found' };
 
@@ -48,8 +47,10 @@ await b.s('set', async (x) => {
 
         return { id, k, v, newVId };
       }
+      return { msg: 'Not found "m" in vById', vById };
+    }
 
-    } else if (id) {
+    if (id) {
       await defaultRepo.set(id, v);
     } else if (path) {
       const _ = await b.p('get_');
