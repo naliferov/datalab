@@ -91,9 +91,18 @@ export const get = async (x) => {
 }
 
 export const del = async (x) => {
-  const { path } = x;
+  const { path, id, k } = x;
   let repo = x.repo || 'default';
   let { _, b, createPath, getVarIds, prepareForTransfer } = x[x._];
+
+  if (id && k) {
+    const v = await b.p('get', { id });
+    if (!v) {
+      return { msg: 'v not found' };
+    }
+    console.log(id, k, v);
+    return;
+  }
 
   const set = await createPath({
     _, b, repo, path,
@@ -115,6 +124,7 @@ export const del = async (x) => {
     await b.p('log', { msg: `Try to delete ${len} keys at once` });
     return;
   }
+
   for (let i = 0; i < varIds.length; i++) {
     const id = varIds[i];
     await b.p('del', { id });

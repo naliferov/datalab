@@ -4,8 +4,7 @@ import {
   dmk,
   get,
   getSize,
-  getVarData, prepareForTransfer,
-  set
+  getVarData
 } from "../module/x.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
@@ -52,7 +51,10 @@ await b.s('get', async (x) => {
   }
 });
 await b.s('del', async (x) => {
-
+  const _ = await b.p('get_');
+  delete x[_];
+  x.x = 'del';
+  return await b.p('port', x);
 });
 await b.s('cp', async (x) => {
   const _ = await b.p('get_');

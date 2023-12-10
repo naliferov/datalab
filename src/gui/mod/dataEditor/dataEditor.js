@@ -50,10 +50,13 @@ div[contenteditable="true"] {
 
 .x1.mark,
 .val.mark {
-    border: 1px solid rgb(148 148 148);
+    background: lightblue;
 }
-.mark[contenteditable="true"] {
+.x1[contenteditable="true"],
+.val[contenteditable="true"]
+ {
     cursor: inherit;
+    border: 1px solid rgb(148 148 148);
 }
 `;
     return await this.b.p('doc.mk', { type: 'style', txt: css });
@@ -125,7 +128,6 @@ div[contenteditable="true"] {
     return t.classList.contains('val');
   },
   async mkXX(x) {
-
     const { x1, x2, parentVid, vid } = x;
 
     const r = await this.b.p('doc.mk', { class: 'xx' });
@@ -159,6 +161,9 @@ div[contenteditable="true"] {
   async mkRowV(v) {
     return await this.b.p('doc.mk', { txt: v, class: 'val' });
   },
+  mark() {
+    if (this.marked) this.marked.classList.add('mark');
+  },
   unmark() {
     if (this.marked) this.marked.classList.remove('mark');
   },
@@ -189,16 +194,11 @@ div[contenteditable="true"] {
   },
   async keydown(e) {
 
-    const unmark = () => {
-      this.marked.classList.remove('mark');
-      this.marked.removeAttribute('contenteditable');
-    }
-
     if (e.key === 'Escape') {
       if (this.marked.innerText !== this.markedV) {
         this.marked.innerText = this.markedV;
       }
-      unmark();
+      this.unmark();
       return;
     }
     if (e.key !== 'Enter' || !this.marked) return;
@@ -206,6 +206,7 @@ div[contenteditable="true"] {
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
     if (isEnabled) {
+      this.mark();
       this.marked.removeAttribute('contenteditable');
 
       const v = this.marked.innerText;
@@ -228,6 +229,7 @@ div[contenteditable="true"] {
       return;
     }
 
+    this.unmark();
     this.marked.setAttribute('contenteditable', 'true');
     this.marked.focus();
     this.markedV = this.marked.innerText;
@@ -239,7 +241,6 @@ div[contenteditable="true"] {
     const isX1 = t.classList.contains('x1');
     const isV = t.classList.contains('val');
     if (!isX1 && !isV) return;
-    if (this.isRoot(t)) return;
 
     this.remark(t);
 
@@ -258,25 +259,20 @@ div[contenteditable="true"] {
     this.container.append(menu);
 
     //todo expand, collapse, structural stream;
-    let btn = await mkBtn('Open', (e) => {
-      console.log(e);
-    });
-    this.menu.append(btn);
+    let btn = await mkBtn('Open', (e) => console.log(e));
+    //this.menu.append(btn);
 
     btn = await mkBtn('Add', async (e) => {
       if (!this.marked || !this.isX1(this.marked)) return;
 
       const x1 = this.marked;
-      const x2 = x1.nextSibling.nextSibling;
+      const x2 = x1.nextSibling?.nextSibling;
       if (!x2 || !x2.classList.contains('x2')) return;
       if (x2.classList.contains('v')) return;
 
       const id = x1.getAttribute('vid');
       const v = await p('set', { id, k: 'newKey', v: { v: 'newValue' } });
       console.log(v);
-
-      //set value on backend and set this value to key in vid
-      //after this enter value
 
       const xx = await this.mkXX({
         x1: 'newKey',
@@ -290,7 +286,22 @@ div[contenteditable="true"] {
     });
     this.menu.append(btn);
 
-    btn = await mkBtn('Remove', (e) => console.log(e));
+    if (this.isRoot(t)) return;
+
+    btn = await mkBtn('Remove', async (e) => {
+      if (!this.marked || !this.isX1(this.marked)) return;
+
+      const x1 = this.marked;
+      const id = x1.getAttribute('parent_vid');
+      const k = x1.innerText;
+
+      if (!id || !k) return;
+      this.menu.remove();
+
+      const v = await this.b.p('del', { id, k });
+      console.log(v);
+      x1.parentNode.remove();
+    });
     this.menu.append(btn);
     btn = await mkBtn('Copy', (e) => console.log(e));
     this.menu.append(btn);

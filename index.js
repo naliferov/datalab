@@ -1,11 +1,15 @@
 import { promises as fs } from "node:fs";
 import { ulid } from "ulid";
 import {
-  U, X, b, set, get, del,
-  createPath, getVarData, getVarIds,
+  U, X, b,
+  createPath,
+  del,
+  get,
+  getVarData, getVarIds,
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
+  set,
 } from "./src/module/x.js";
 
 const _ = Symbol('sys');
@@ -17,50 +21,54 @@ b.set_(_);
 b.setX(x);
 //await b.s('x', async (x) => {});
 
-await u({ y: 'log', f: async (x) => {
-  if (typeof x === 'object') {
-    console.log(x.msg);
-    return;
+await u({
+  y: 'log', f: async (x) => {
+    if (typeof x === 'object') {
+      console.log(x.msg);
+      return;
+    }
+    console.log(x);
   }
-  console.log(x);
-} });
+});
 await u({ y: 'get_', f: () => _ });
 await u({ y: 'getUniqId', f: () => ulid() });
 await b.s('fs.readFile', async (x) => {
-    const { path } = x;
-    return await fs.readFile(path, 'utf8');
+  const { path } = x;
+  return await fs.readFile(path, 'utf8');
 });
 
 await b.s('set', async (x) => {
-    const { id, path, k, v } = x;
+  const { id, path, k, v } = x;
 
-    if (id && k && v) {
-      const vById = await b.p('get', { id });
-      if (!vById) return { ok: 0, msg:  'V not found' };
+  if (id && k && v) {
+    const vById = await b.p('get', { id });
+    if (!vById) return { ok: 0, msg: 'V not found' };
 
-      if (vById.m) {
-        const newVId = await b.p('getUniqId');
-        await defaultRepo.set(newVId, v);
+    if (vById.m) {
+      if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
 
-        vById.m[k] = newVId;
-        await defaultRepo.set(id, vById);
+      const newVId = await b.p('getUniqId');
+      await defaultRepo.set(newVId, v);
 
-        return { id, k, v, newVId };
-      }
-      return { msg: 'Not found "m" in vById', vById };
+      vById.m[k] = newVId;
+      await defaultRepo.set(id, vById);
+
+      return { id, k, v, newVId };
     }
+    return { msg: 'Not found "m" in vById', vById };
+  }
 
-    if (id) {
-      await defaultRepo.set(id, v);
-    } else if (path) {
-      const _ = await b.p('get_');
-      x._ = _;
-      x[_] = { _, b, createPath, prepareForTransfer };
+  if (id) {
+    await defaultRepo.set(id, v);
+  } else if (path) {
+    const _ = await b.p('get_');
+    x._ = _;
+    x[_] = { _, b, createPath, prepareForTransfer };
 
-      await set(x);
-    }
+    await set(x);
+  }
 
-    return { msg: 'update complete', v };
+  return { msg: 'update complete', v };
 });
 
 await b.s('get', async (x) => {
@@ -76,7 +84,14 @@ await b.s('get', async (x) => {
   }
 });
 await b.s('del', async (x) => {
-  const { id, path } = x;
+  const { id, path, k } = x;
+
+  if (id && k) {
+    x._ = _;
+    x[_] = { _, b, createPath, getVarIds, prepareForTransfer };
+    await del(x);
+    return { msg: 'delete complete' };
+  }
 
   if (id) return await defaultRepo.del(id);
   if (path) {
@@ -166,7 +181,7 @@ const e = {
   },
   //todo add basic integrating testing
   //'test': async (arg) => {
-    //test set, get what settled, and del, after del check get is return nothing
+  //test set, get what settled, and del, after del check get is return nothing
   //},
 };
 
