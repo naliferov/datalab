@@ -97,10 +97,28 @@ export const del = async (x) => {
 
   if (id && k) {
     const v = await b.p('get', { id });
-    if (!v) {
-      return { msg: 'v not found' };
+    if (!v) return { msg: 'v not found' };
+    if (!v.m && !v.l) return { msg: 'v is not map and not list' };
+
+    const isMap = Boolean(v.m);
+
+    const targetId = v.m ? v.m[k] : v.l[k];
+    if (!targetId) return { msg: `v is not contains key [${k}]` };
+
+    const targetV = await b.p('get', { id: targetId });
+    const varIds = await getVarIds({ b, v: targetV });
+
+    console.log('del', id, k, targetV, targetId);
+    for (let i = 0; i < varIds.length; i++) {
+      const id = varIds[i];
+      await b.p('del', { id });
+      console.log(id);
     }
-    console.log(id, k, v);
+
+    await b.p('del', { id: targetId });
+    if (isMap) delete v.m[k];
+    await b.p('set', { id, v: prepareForTransfer(v) });
+
     return;
   }
 
@@ -135,6 +153,10 @@ export const del = async (x) => {
   delete v1.m[v2[_].name];
   await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
 }
+
+export const delVarWithSubVars = (x) => {
+  const { v, k } = x;
+};
 
 export const createPath = async (x) => {
 
@@ -251,6 +273,7 @@ export const getVarIds = async (x) => {
       subVars.push(id);
 
       if (subV.m) await getSubVars(subV);
+      if (subV.l) await getSubVars(subV);
     }
   }
   await getSubVars(v);

@@ -198,7 +198,8 @@ div[contenteditable="true"] {
       if (this.marked.innerText !== this.markedV) {
         this.marked.innerText = this.markedV;
       }
-      this.unmark();
+      this.marked.removeAttribute('contenteditable');
+      this.mark();
       return;
     }
     if (e.key !== 'Enter' || !this.marked) return;
@@ -206,8 +207,8 @@ div[contenteditable="true"] {
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
     if (isEnabled) {
-      this.mark();
       this.marked.removeAttribute('contenteditable');
+      this.mark();
 
       const v = this.marked.innerText;
       if (v === this.markedV) return;
