@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import { ulid } from "ulid";
 import {
   U, X, b,
-  createPath,
+  createSet,
   del,
   get,
   getVarData, getVarIds,
@@ -13,10 +13,8 @@ import {
 } from "./src/module/x.js";
 
 const _ = Symbol('sys');
-
 const x = X(_);
 const u = U(x, _);
-
 b.set_(_);
 b.setX(x);
 //await b.s('x', async (x) => {});
@@ -38,7 +36,7 @@ await b.s('fs.readFile', async (x) => {
 });
 
 await b.s('set', async (x) => {
-  const { id, path, k, v } = x;
+  const { id, path, k, ok, v } = x;
 
   if (id && k && v) {
     const vById = await b.p('get', { id });
@@ -47,11 +45,14 @@ await b.s('set', async (x) => {
     if (vById.m) {
       if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
 
+      if (!ok) return { msg: `oKey is empty` };
+      if (!vById.o) return { msg: `v.o is not found by [${id}]` };
+
       const newVId = await b.p('getUniqId');
-      await defaultRepo.set(newVId, v);
+      await repo.set(newVId, v);
 
       vById.m[k] = newVId;
-      await defaultRepo.set(id, vById);
+      await repo.set(id, vById);
 
       return { id, k, v, newVId };
     }
@@ -59,11 +60,11 @@ await b.s('set', async (x) => {
   }
 
   if (id) {
-    await defaultRepo.set(id, v);
+    await repo.set(id, v);
   } else if (path) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { _, b, createPath, prepareForTransfer };
+    x[_] = { _, b, createSet, prepareForTransfer };
 
     await set(x);
   }
@@ -74,34 +75,35 @@ await b.s('set', async (x) => {
 await b.s('get', async (x) => {
   const { id, path, depth } = x;
 
-  if (id) return await defaultRepo.get(id);
+  if (id) return await repo.get(id);
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { _, b, createPath, getVarData };
+    x[_] = { _, b, createSet, getVarData };
 
     return await get(x);
   }
 });
+
 await b.s('del', async (x) => {
   const { id, path, k } = x;
 
   if (id && k) {
     x._ = _;
-    x[_] = { _, b, createPath, getVarIds, prepareForTransfer };
-    await del(x);
-    return { msg: 'delete complete' };
+    x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
+    return await del(x) ?? { msg: 'delete complete' };
   }
 
-  if (id) return await defaultRepo.del(id);
+  if (id) return await repo.del(id);
   if (path) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { _, b, createPath, getVarIds, prepareForTransfer };
+    x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
 
     return await del(x);
   }
 });
+
 await b.s('cp', async (x) => {
   const { id, oldKey, newKey, delSource } = x;
 
@@ -124,11 +126,16 @@ await b.s('port', async (x) => {
   }
 });
 
-const { FsStorage } = await import('./src/storage/fsStorage.js');
-const defaultRepo = new FsStorage('./state', fs);
+await b.s('import', async x => 100);
+await b.s('export', async x => 100);
 
-const root = await defaultRepo.get('root');
-if (!root) await defaultRepo.set('root', { m: {} });
+const { FsStorage } = await import('./src/storage/fsStorage.js');
+const repo = new FsStorage('./state', fs);
+
+const root = await repo.get('root');
+if (!root) await repo.set('root', { m: {} });
+
+
 
 const e = {
   'set': async (arg) => {
@@ -169,9 +176,7 @@ const e = {
 
     x.server.on('clientError', (err, socket) => {
       console.log(err);
-      if (err.code === 'ECONNRESET' || !socket.writable) {
-        return;
-      }
+      if (err.code === 'ECONNRESET' || !socket.writable) return;
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
     x.server.on('request', async (rq, rs) => {

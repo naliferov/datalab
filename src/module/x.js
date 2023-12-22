@@ -15,7 +15,6 @@ export const X = (symbol) => {
 
 export const U = (X, symbol) => {
 
-  //todo use X and get_ to get symbol
   const _ = symbol;
 
   return async (x) => {
@@ -29,13 +28,8 @@ export const U = (X, symbol) => {
 };
 
 export const b = {
-  setX(x) {
-    this.x = x;
-  },
-  set_(_) {
-    //todo use X to get symbol
-    this._ = _;
-  },
+  setX(x) { this.x = x; },
+  set_(_) { this._ = _; },
   async p(e, data) {
     const _ = this._;
     return await this.x({ [_]: { x: e }, ...data });
@@ -50,9 +44,9 @@ export const set = async (x) => {
   const { path, type } = x;
   let data = x.v;
   let repo = x.repo || 'default';
-  let { _, b, createPath, prepareForTransfer } = x[x._];
+  let { _, b, createSet, prepareForTransfer } = x[x._];
 
-  const set = await createPath({ _, b, repo, path, type });
+  const set = await createSet({ _, b, repo, path, type });
   if (!set) return;
 
   for (let i = 0; i < set.length; i++) {
@@ -73,11 +67,11 @@ export const get = async (x) => {
   let { path, depth } = x;
   let repo = x.repo || 'default';
 
-  let { _, b, createPath, getVarData } = x[x._];
+  let { _, b, createSet, getVarData } = x[x._];
 
   if (!depth && depth !== 0) depth = 0;
 
-  const set = await createPath({
+  const set = await createSet({
     _, b, repo, path,
     isNeedStopIfVarNotFound: true,
   });
@@ -91,9 +85,10 @@ export const get = async (x) => {
 }
 
 export const del = async (x) => {
-  const { path, id, k } = x;
+
+  const { path, id, k, ok } = x;
   let repo = x.repo || 'default';
-  let { _, b, createPath, getVarIds, prepareForTransfer } = x[x._];
+  let { _, b, createSet, prepareForTransfer } = x[x._];
 
   if (id && k) {
     const v = await b.p('get', { id });
@@ -102,30 +97,31 @@ export const del = async (x) => {
 
     const isMap = Boolean(v.m);
 
-    const targetId = v.m ? v.m[k] : v.l[k];
+    const targetId = isMap ? v.m[k] : v.l[k];
     if (!targetId) return { msg: `v is not contains key [${k}]` };
 
     const targetV = await b.p('get', { id: targetId });
-    const varIds = await getVarIds({ b, v: targetV });
+    if (!targetV) return { msg: `targetV not found by [${targetId}]` };
+    targetV[_] = { id: targetId };
 
-    console.log('del', id, k, targetV, targetId);
-    for (let i = 0; i < varIds.length; i++) {
-      const id = varIds[i];
-      await b.p('del', { id });
-      console.log(id);
+    if (isMap) {
+      if (!ok) return { msg: `oKey is empty` };
+      if (!v.o) return { msg: `v.o is not found by [${id}]` };
+      if (!v.o[ok]) return { msg: `v.o[oKey] is not found by key [${ok}]` };
     }
 
-    await b.p('del', { id: targetId });
-    if (isMap) delete v.m[k];
-    await b.p('set', { id, v: prepareForTransfer(v) });
+    if (await delWithSubVars({ _, b, v: targetV })) {
 
+      if (isMap) {
+        delete v.m[k];
+        v.o.splice(ok, 1);
+      }
+      await b.p('set', { id, v: prepareForTransfer(v) });
+    }
     return;
   }
 
-  const set = await createPath({
-    _, b, repo, path,
-    isNeedStopIfVarNotFound: true,
-  });
+  const set = await createSet({ _, b, repo, path, isNeedStopIfVarNotFound: true });
 
   if (!set || set.length < 2) {
     console.log('log', { msg: 'Var set not found' });
@@ -135,30 +131,38 @@ export const del = async (x) => {
   const v1 = set.at(-2);
   const v2 = set.at(-1);
 
-  const varIds = await getVarIds({ b, v: v2 });
-
-  const len = Object.keys(varIds).length;
-  if (len > 5) {
-    await b.p('log', { msg: `Try to delete ${len} keys at once` });
+  const v2ID = v1.m[v2[_].name];
+  if (!v2ID) {
+    console.log('log', { msg: `key [${v2[_].name}] not found in v1` });
     return;
   }
+  if (await delWithSubVars({ _, b, v: v2 })) {
+    delete v1.m[v2[_].name];
+    v1.o = v1.o.filter(id => id !== v2ID);
+
+    await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
+  }
+}
+
+export const delWithSubVars = async (x) => {
+  const { _, b, v } = x;
+
+  const varIds = await getVarIds({ b, v }); console.log(varIds);
+
+  const len = Object.keys(varIds).length;
+  if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
   for (let i = 0; i < varIds.length; i++) {
     const id = varIds[i];
     await b.p('del', { id });
   }
+  console.log('del', v[_].id);
+  await b.p('del', { id: v[_].id });
 
-  await b.p('del', { id: v2[_].id });
-
-  delete v1.m[v2[_].name];
-  await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
-}
-
-export const delVarWithSubVars = (x) => {
-  const { v, k } = x;
+  return true;
 };
 
-export const createPath = async (x) => {
+export const createSet = async (x) => {
 
   const { b, path, isNeedStopIfVarNotFound, _, } = x;
   let type = x.type || 'v';
@@ -190,10 +194,13 @@ export const createPath = async (x) => {
     if (!v2) {
       if (isNeedStopIfVarNotFound) return;
 
-      const varType = (i === path.length - 1) ? type : 'm';
-      v2 = await mkvar(b, varType, _);
+      const vType = (i === path.length - 1) ? type : 'm';
+      v2 = await mkvar(b, vType, _);
 
       v1.m[name] = v2[_].id;
+      if (!v1.o) v1.o = [];
+      v1.o.push(v2[_].id);
+
       if (!v1[_].new) v1[_].updated = true;
     }
 
@@ -214,7 +221,10 @@ const mkvar = async (b, type, _) => {
 
   if (type === 'b') v.b = {};
   else if (type === 'v') v.v = true;
-  else if (type === 'm') v.m = {};
+  else if (type === 'm') {
+    v.m = {};
+    v.o = [];
+  }
   else if (type === 'l') v.l = [];
   else if (type === 'f') v.f = {};
   else if (type === 'x') v.x = {};
@@ -288,6 +298,7 @@ export const prepareForTransfer = (v) => {
   if (v.v) d.v = v.v;
   if (v.m) d.m = v.m;
   if (v.l) d.l = v.l;
+  if (v.o) d.o = v.o;
   if (v.f) d.f = v.f;
   if (v.x) d.x = v.x;
 

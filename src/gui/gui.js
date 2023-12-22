@@ -1,6 +1,6 @@
 import {
   X, b,
-  createPath,
+  createSet,
   dmk,
   get,
   getSize,
@@ -11,9 +11,7 @@ import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
 
 const _ = Symbol('sys');
-
 const x = X(_);
-
 b.set_(_);
 b.setX(x);
 
@@ -46,7 +44,7 @@ await b.s('get', async (x) => {
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;
-    x[_] = { b, _, createPath, getVarData };
+    x[_] = { b, _, createSet, getVarData };
     return await get(x);
   }
 });

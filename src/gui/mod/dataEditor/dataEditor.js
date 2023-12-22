@@ -72,33 +72,27 @@ div[contenteditable="true"] {
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
         const xx = await this.mkXX({
-          x1: p,
-          x2: v,
-          parentVid,
-          vid: v[_].id
+          x1: p, x2: v,
+          parentVid, vid: v[_].id
         });
         parentXX.children[2].append(xx);
 
         if (v.m) await rendM(v.m, xx, v[_].id);
         else if (v.l || v.v) { }
-        else {
-          console.log('1: Unknown type of var', v);
-        }
+        else console.log('1: Unknown type of var', v);
       }
     }
     const rendL = async () => { }
-
     const rend = async (o, parent) => {
       if (!o[_]) {
         console.log('Unknown VAR', o);
         return;
       }
       if (o.m) await rendM(o.m, parent, o[_].id);
-      //if (o.l) await rendL(o.l, parent, parent);
+      if (o.l) await rendL(o.l, parent, o[_].id);
     }
 
     const p = async (event, data) => await this.b.p(event, data);
-
     this.o = await p('doc.mk', { class: 'dataEditor' });
 
     this.oShadow = this.o.attachShadow({ mode: 'open' });
@@ -293,13 +287,27 @@ div[contenteditable="true"] {
       if (!this.marked || !this.isX1(this.marked)) return;
 
       const x1 = this.marked;
-      const id = x1.getAttribute('parent_vid');
+      const id = x1.getAttribute('vid');
+      const parentId = x1.getAttribute('parent_vid');
       const k = x1.innerText;
 
-      if (!id || !k) return;
+      const xxList = x1.parentNode.parentNode.children;
+      let oKey;
+
+      for (let i = 0; i < xxList.length; i++) {
+        const xx = xxList[i];
+        const x1Element = xx.children[0];
+        if (id === x1Element.getAttribute('vid')) oKey = i;
+      }
+      if (oKey === undefined) {
+        console.log('oKey not found');
+        return;
+      }
+
+      if (!parentId || !k) return;
       this.menu.remove();
 
-      const v = await this.b.p('del', { id, k });
+      const v = await this.b.p('del', { id: parentId, k, oKey });
       console.log(v);
       x1.parentNode.remove();
     });
