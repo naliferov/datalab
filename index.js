@@ -38,24 +38,38 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { id, path, k, ok, v } = x;
 
+  //todo orderSet
+  // if (ok > vById.length - 1) {
+  //   vById.o.push(ok);
+  // } else {
+  //   const vMove = vById.o.splice(fromIndex, 1)[0];
+  //   arr.splice(toIndex, 0, vMove);
+  // }
+
   if (id && k && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'V not found' };
 
     if (vById.m) {
-      if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
 
-      if (!ok) return { msg: `oKey is empty` };
+      if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
       if (!vById.o) return { msg: `v.o is not found by [${id}]` };
+      if (ok === undefined) return { msg: `ok is empty` };
 
       const newVId = await b.p('getUniqId');
-      await repo.set(newVId, v);
-
       vById.m[k] = newVId;
+
+      if (ok > vById.length - 1) {
+        vById.o.push(ok);
+      } else {
+        vById.o.splice(ok, 0, newVId);
+      }
+      await repo.set(newVId, v);
       await repo.set(id, vById);
 
       return { id, k, v, newVId };
     }
+
     return { msg: 'Not found "m" in vById', vById };
   }
 
@@ -65,7 +79,6 @@ await b.s('set', async (x) => {
     const _ = await b.p('get_');
     x._ = _;
     x[_] = { _, b, createSet, prepareForTransfer };
-
     await set(x);
   }
 
@@ -86,7 +99,7 @@ await b.s('get', async (x) => {
 });
 
 await b.s('del', async (x) => {
-  const { id, path, k } = x;
+  const { id, path, k, ok } = x;
 
   if (id && k) {
     x._ = _;

@@ -25,15 +25,9 @@ await b.s('port', async (x) => {
 //todo receive updates from backend;
 
 await b.s('set', async (x) => {
-  const { id, path, k, v } = x;
-
-  if (id && k && v) {
-    return await b.p('port', { x: 'set', id, k, v });
-  }
-  if (id) {
-    return await b.p('port', { x: 'set', id, v });
-  }
-  return { msg: 'update complete', v };
+  const _ = await b.p('get_');
+  delete x[_];
+  return await b.p('port', { ...x, x: 'set' });
 });
 await b.s('get', async (x) => {
   const { id, path, depth } = x;

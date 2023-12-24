@@ -247,6 +247,7 @@ div[contenteditable="true"] {
       class: 'menu', css: {
         left: (e.clientX - containerSize.x) + 'px',
         top: (e.clientY - containerSize.y) + 'px',
+        padding: '5px',
       }
     });
     if (this.menu) this.menu.remove();
@@ -255,8 +256,6 @@ div[contenteditable="true"] {
 
     //todo expand, collapse, structural stream;
     let btn = await mkBtn('Open', (e) => console.log(e));
-    //this.menu.append(btn);
-
     btn = await mkBtn('Add', async (e) => {
       if (!this.marked || !this.isX1(this.marked)) return;
 
@@ -265,21 +264,25 @@ div[contenteditable="true"] {
       if (!x2 || !x2.classList.contains('x2')) return;
       if (x2.classList.contains('v')) return;
 
-      const id = x1.getAttribute('vid');
-      const v = await p('set', { id, k: 'newKey', v: { v: 'newValue' } });
-      console.log(v);
-
+      const ok = x2.children.length;
+      const v = { v: 'newValue' };
       const xx = await this.mkXX({
-        x1: 'newKey',
-        x2: { v: 'newValue' },
+        x1: 'newKey', x2: v,
         parentVid: x1.getAttribute('parent_vid'),
-        vid: 'new created v ID',
+        vid: 'vid stub',
       });
       x2.append(xx);
+
+      const id = x1.getAttribute('vid');
+      const response = await p('set', { id, k: 'newKey', ok, v });
+      console.log(response);
+
+      //todo after create set right vid;
 
       this.menu.remove();
     });
     this.menu.append(btn);
+
 
     if (this.isRoot(t)) return;
 
@@ -292,23 +295,22 @@ div[contenteditable="true"] {
       const k = x1.innerText;
 
       const xxList = x1.parentNode.parentNode.children;
-      let oKey;
+      let ok;
 
       for (let i = 0; i < xxList.length; i++) {
         const xx = xxList[i];
         const x1Element = xx.children[0];
-        if (id === x1Element.getAttribute('vid')) oKey = i;
+        if (id === x1Element.getAttribute('vid')) ok = i;
       }
-      if (oKey === undefined) {
-        console.log('oKey not found');
+      if (ok === undefined) {
+        console.log('ok not found');
         return;
       }
 
       if (!parentId || !k) return;
       this.menu.remove();
 
-      const v = await this.b.p('del', { id: parentId, k, oKey });
-      console.log(v);
+      const v = await this.b.p('del', { id: parentId, k, ok }); console.log(v);
       x1.parentNode.remove();
     });
     this.menu.append(btn);

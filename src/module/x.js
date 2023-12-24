@@ -105,7 +105,7 @@ export const del = async (x) => {
     targetV[_] = { id: targetId };
 
     if (isMap) {
-      if (!ok) return { msg: `oKey is empty` };
+      if (ok === undefined) return { msg: `oKey is empty` };
       if (!v.o) return { msg: `v.o is not found by [${id}]` };
       if (!v.o[ok]) return { msg: `v.o[oKey] is not found by key [${ok}]` };
     }
