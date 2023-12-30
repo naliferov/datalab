@@ -38,13 +38,16 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { id, path, k, ok, v } = x;
 
-  if (id && ok && Array.isArray(ok)) {
+  if (id && ok && typeof ok === 'object') {
     const vById = await b.p('get', { id });
-    if (!vById) return { ok: 0, msg: 'V not found' };
+    if (!vById) return { ok: 0, msg: 'v not found' };
+    if (!vById.o) return { ok: 0, msg: 'v.o not found' };
     const { from, to } = ok;
 
-    const element = vById.o.splice(from, 1)[0];
-    vById.o.splice(to, 0, element);
+    const item = vById.o.splice(from, 1)[0];
+    vById.o.splice(to, 0, item);
+    await repo.set(id, vById);
+
     return { id, ok };
   }
 
@@ -62,9 +65,9 @@ await b.s('set', async (x) => {
       vById.m[k] = newVid;
 
       if (ok > vById.length - 1) {
-        vById.o.push(newVid);
+        vById.o.push(k);
       } else {
-        vById.o.splice(ok, 0, newVid);
+        vById.o.splice(ok, 0, k);
       }
       await repo.set(newVid, v);
       await repo.set(id, vById);

@@ -82,10 +82,11 @@ div[contenteditable="true"] {
           x1: k, x2: v,
           parentVid, vid: v[_].id
         });
-        parentXX.children[2].append(xx);
+        this.xxInterface(parentXX).x2.append(xx);
 
         if (v.m) await rendM(v, xx, v[_].id);
-        else if (v.l || v.v) { }
+        else if (v.l) {}
+        else if (v.v) {}
         else console.log('1: Unknown type of var', v);
       }
     }
@@ -158,15 +159,22 @@ div[contenteditable="true"] {
       x2: children[2],
     }
   },
-  isRoot(t) {
-    return t.getAttribute('vid') === 'root'
+  getOrderKeyOfX1(x1) {
+    if (!this.isX1(x1)) return;
+
+    const id = x1.getAttribute('vid');
+    const XXs = x1.parentNode.parentNode.children;
+
+    for (let i = 0; i < XXs.length; i++) {
+      const x1 = this.xxInterface(XXs[i]).x1;
+      if (id === x1.getAttribute('vid')) {
+        return i;
+      }
+    }
   },
-  isX1(t) {
-    return t.classList.contains('x1');
-  },
-  isVal(t) {
-    return t.classList.contains('val');
-  },
+  isRoot(t) { return t.getAttribute('vid') === 'root' },
+  isX1(t) { return t.classList.contains('x1'); },
+  isVal(t) { return t.classList.contains('val'); },
   mark() {
     if (this.marked) this.marked.classList.add('mark');
   },
@@ -297,6 +305,29 @@ div[contenteditable="true"] {
 
     if (this.isRoot(t)) return;
 
+    const mv = async (dir) => {
+      const x1 = this.marked;
+      if (!this.isX1(x1)) return;
+
+      const parentId = x1.getAttribute('parent_vid');
+      let k = this.getOrderKeyOfX1(x1);
+      if (k === undefined) { console.log('ok not found'); return; }
+      if (dir === 'up' && !x1.parentNode.previousSibling) return;
+      if (dir === 'down' && !x1.parentNode.nextSibling) return;
+
+      const ok = {
+        from: k,
+        to: dir === 'up' ? --k : ++k
+      };
+      const v = await this.b.p('set', { id: parentId, ok }); console.log(v);
+
+      if (dir === 'up') x1.parentNode.previousSibling.before(x1.parentNode);
+      else x1.parentNode.nextSibling.after(x1.parentNode);
+    }
+    btn = await mkBtn('Move up', async (e) => await mv('up'));
+    this.menu.append(btn);
+    btn = await mkBtn('Move down', async (e) => await mv('down'));
+    this.menu.append(btn);
     btn = await mkBtn('Copy', (e) => console.log(e));
     this.menu.append(btn);
 
@@ -308,18 +339,8 @@ div[contenteditable="true"] {
       const parentId = x1.getAttribute('parent_vid');
       const k = x1.innerText;
 
-      const xxList = x1.parentNode.parentNode.children;
-      let ok;
-
-      for (let i = 0; i < xxList.length; i++) {
-        const xx = xxList[i];
-        const x1Element = xx.children[0];
-        if (id === x1Element.getAttribute('vid')) ok = i;
-      }
-      if (ok === undefined) {
-        console.log('ok not found');
-        return;
-      }
+      let ok = this.getOrderKeyOfX1(x1);
+      if (ok === undefined) { console.log('ok not found'); return; }
 
       if (!parentId || !k) return;
       this.menu.remove();

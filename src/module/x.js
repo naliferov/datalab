@@ -233,7 +233,6 @@ const mkvar = async (b, type, _) => {
   return v;
 }
 
-//rename to getDeeper
 export const getVarData = async (x) => {
 
   const { b, v, depth, _ } = x;
@@ -304,6 +303,9 @@ export const prepareForTransfer = (v) => {
   return d;
 }
 
+// UTILS //
+export const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+export const pathToArr = path => Array.isArray(path) ? path : path.split('.');
 export const parseCliArgs = cliArgs => {
   const args = {};
   let num = 0;
@@ -328,10 +330,7 @@ export const parseCliArgs = cliArgs => {
   return args;
 };
 
-export const pathToArr = path => Array.isArray(path) ? path : path.split('.');
-
-
-//GUI
+// GUI //
 export const dmk = (d, x) => {
   const { id, type, txt, events, css } = x;
 
