@@ -13,7 +13,6 @@ export const Frame = {
     //     }
 
     const css = `
-    .container {}
     .shadow {
         box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
     }
@@ -70,19 +69,18 @@ export const Frame = {
         minWidth: '100px', minHeight: '100px', position: 'absolute',
       }
     });
-
     this.oShadow = this.o.attachShadow({ mode: 'open' });
     this.oShadow.appendChild(await this.createStyle());
 
     const top = await p('doc.mk', { class: ['topBar'] });
     await p('doc.ins', { o1: this.oShadow, o2: top });
 
-    this.container = await p('doc.mk', { class: 'container' });
-    this.oShadow.appendChild(this.container);
+    //this.container = await p('doc.mk', { class: 'container' });
+    //this.oShadow.appendChild(this.container);
 
     const slot = await p('doc.mk', { type: 'slot' });
     slot.setAttribute('name', 'content');
-    this.container.append(slot);
+    this.oShadow.append(slot);
 
     //top.on('pointerdown', (e) => this.topBarDragAndDrop(e));
 

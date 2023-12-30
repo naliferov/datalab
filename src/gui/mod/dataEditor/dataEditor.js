@@ -32,7 +32,7 @@ div[contenteditable="true"] {
     outline: none;
 }
 .xx {
-    margin-left: 10px;
+    margin-left: 16px;
 }
 .x1 {
     cursor: pointer;
@@ -67,17 +67,24 @@ div[contenteditable="true"] {
     const _ = this._;
 
     const rendM = async (o, parentXX, parentVid) => {
-      for (let p in o) {
-        const v = o[p];
+
+      if (!o.m) return;
+      if (!o.o) { console.error('No order array for map', parentVid, o); return; }
+
+      for (let i = 0; i < o.o.length; i++) {
+        const k = o.o[i];
+        if (!o.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
+
+        const v = o.m[k];
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
         const xx = await this.mkXX({
-          x1: p, x2: v,
+          x1: k, x2: v,
           parentVid, vid: v[_].id
         });
         parentXX.children[2].append(xx);
 
-        if (v.m) await rendM(v.m, xx, v[_].id);
+        if (v.m) await rendM(v, xx, v[_].id);
         else if (v.l || v.v) { }
         else console.log('1: Unknown type of var', v);
       }
@@ -88,8 +95,8 @@ div[contenteditable="true"] {
         console.log('Unknown VAR', o);
         return;
       }
-      if (o.m) await rendM(o.m, parent, o[_].id);
-      if (o.l) await rendL(o.l, parent, o[_].id);
+      if (o.m) await rendM(o, parent, o[_].id);
+      if (o.l) await rendL(o, parent, o[_].id);
     }
 
     const p = async (event, data) => await this.b.p(event, data);
@@ -111,15 +118,6 @@ div[contenteditable="true"] {
 
     const data = await p('get', { path, depth: 5 }); console.log(data);
     await rend(data, root);
-  },
-  isRoot(t) {
-    return t.getAttribute('vid') === 'root'
-  },
-  isX1(t) {
-    return t.classList.contains('x1');
-  },
-  isVal(t) {
-    return t.classList.contains('val');
   },
   async mkXX(x) {
     const { x1, x2, parentVid, vid } = x;
@@ -143,7 +141,7 @@ div[contenteditable="true"] {
       let txt = x2.v;
       if (txt && txt.split) txt = txt.split('\n')[0];
 
-      const v = await this.mkRowV(txt);
+      const v = await this.b.p('doc.mk', { txt, class: 'val' });
       if (vid) v.setAttribute('vid', vid);
 
       x2DOM.classList.add('v');
@@ -152,8 +150,22 @@ div[contenteditable="true"] {
 
     return r;
   },
-  async mkRowV(v) {
-    return await this.b.p('doc.mk', { txt: v, class: 'val' });
+  xxInterface(xx) {
+    const children = xx.children;
+    return {
+      x1: children[0],
+      separator: children[1],
+      x2: children[2],
+    }
+  },
+  isRoot(t) {
+    return t.getAttribute('vid') === 'root'
+  },
+  isX1(t) {
+    return t.classList.contains('x1');
+  },
+  isVal(t) {
+    return t.classList.contains('val');
   },
   mark() {
     if (this.marked) this.marked.classList.add('mark');
@@ -189,9 +201,7 @@ div[contenteditable="true"] {
   async keydown(e) {
 
     if (e.key === 'Escape') {
-      if (this.marked.innerText !== this.markedV) {
-        this.marked.innerText = this.markedV;
-      }
+      if (this.marked.innerText !== this.markedTxt) this.marked.innerText = this.markedTxt;
       this.marked.removeAttribute('contenteditable');
       this.mark();
       return;
@@ -205,20 +215,18 @@ div[contenteditable="true"] {
       this.mark();
 
       const v = this.marked.innerText;
-      if (v === this.markedV) return;
-      if (!v) {
-        alert('No value is set.'); return;
-      }
+      if (v === this.markedTxt) return;
+      if (!v) { alert('No value is set.'); return; }
 
       const isX1 = this.isX1(this.marked);
       const isVal = this.isVal(this.marked);
 
       if (isX1) {
         const parentId = this.marked.getAttribute('parent_vid');
-        await this.b.p('cp', { id: parentId, oldKey: this.markedV, newKey: v });
-      }
-      else if (isVal) {
+        await this.b.p('cp', { id: parentId, oldKey: this.markedTxt, newKey: v });
+      } else if (isVal) {
         const id = this.marked.getAttribute('vid');
+        if (id === 'vid_stub') return;
         await this.b.p('set', { id, v: { v } });
       }
       return;
@@ -227,7 +235,7 @@ div[contenteditable="true"] {
     this.unmark();
     this.marked.setAttribute('contenteditable', 'true');
     this.marked.focus();
-    this.markedV = this.marked.innerText;
+    this.markedTxt = this.marked.innerText;
   },
   async handleContextmenu(e) {
     e.preventDefault();
@@ -269,15 +277,18 @@ div[contenteditable="true"] {
       const xx = await this.mkXX({
         x1: 'newKey', x2: v,
         parentVid: x1.getAttribute('parent_vid'),
-        vid: 'vid stub',
+        vid: 'vid_stub',
       });
       x2.append(xx);
 
       const id = x1.getAttribute('vid');
-      const response = await p('set', { id, k: 'newKey', ok, v });
-      console.log(response);
+      const resp = await p('set', { id, k: 'newKey', ok, v });
+      console.log(resp);
 
-      //todo after create set right vid;
+      if (resp.newVid) {
+        const xxInterface = this.xxInterface(xx);
+        xxInterface.x1.setAttribute('vid', resp.newVid);
+      }
 
       this.menu.remove();
     });
@@ -285,6 +296,9 @@ div[contenteditable="true"] {
 
 
     if (this.isRoot(t)) return;
+
+    btn = await mkBtn('Copy', (e) => console.log(e));
+    this.menu.append(btn);
 
     btn = await mkBtn('Remove', async (e) => {
       if (!this.marked || !this.isX1(this.marked)) return;
@@ -313,8 +327,6 @@ div[contenteditable="true"] {
       const v = await this.b.p('del', { id: parentId, k, ok }); console.log(v);
       x1.parentNode.remove();
     });
-    this.menu.append(btn);
-    btn = await mkBtn('Copy', (e) => console.log(e));
     this.menu.append(btn);
 
     return;

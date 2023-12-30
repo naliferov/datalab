@@ -38,13 +38,15 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { id, path, k, ok, v } = x;
 
-  //todo orderSet
-  // if (ok > vById.length - 1) {
-  //   vById.o.push(ok);
-  // } else {
-  //   const vMove = vById.o.splice(fromIndex, 1)[0];
-  //   arr.splice(toIndex, 0, vMove);
-  // }
+  if (id && ok && Array.isArray(ok)) {
+    const vById = await b.p('get', { id });
+    if (!vById) return { ok: 0, msg: 'V not found' };
+    const { from, to } = ok;
+
+    const element = vById.o.splice(from, 1)[0];
+    vById.o.splice(to, 0, element);
+    return { id, ok };
+  }
 
   if (id && k && v) {
     const vById = await b.p('get', { id });
@@ -56,18 +58,18 @@ await b.s('set', async (x) => {
       if (!vById.o) return { msg: `v.o is not found by [${id}]` };
       if (ok === undefined) return { msg: `ok is empty` };
 
-      const newVId = await b.p('getUniqId');
-      vById.m[k] = newVId;
+      const newVid = await b.p('getUniqId');
+      vById.m[k] = newVid;
 
       if (ok > vById.length - 1) {
-        vById.o.push(ok);
+        vById.o.push(newVid);
       } else {
-        vById.o.splice(ok, 0, newVId);
+        vById.o.splice(ok, 0, newVid);
       }
-      await repo.set(newVId, v);
+      await repo.set(newVid, v);
       await repo.set(id, vById);
 
-      return { id, k, v, newVId };
+      return { id, k, v, newVid };
     }
 
     return { msg: 'Not found "m" in vById', vById };
@@ -133,6 +135,7 @@ await b.s('cp', async (x) => {
 await b.s('port', async (x) => {
   const { b, msg } = x;
   if (msg.x) return await b.p(msg.x, msg);
+
   return {
     msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
     type: 'text/html',
@@ -145,9 +148,10 @@ await b.s('export', async x => 100);
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const repo = new FsStorage('./state', fs);
 
+//todo if env === test // clear tests/state, and set repo to tests/state
+
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
-
 
 
 const e = {

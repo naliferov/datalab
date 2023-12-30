@@ -41,7 +41,7 @@ export const b = {
 }
 
 export const set = async (x) => {
-  const { path, type } = x;
+  const { id, path, type } = x;
   let data = x.v;
   let repo = x.repo || 'default';
   let { _, b, createSet, prepareForTransfer } = x[x._];
@@ -199,7 +199,7 @@ export const createSet = async (x) => {
 
       v1.m[name] = v2[_].id;
       if (!v1.o) v1.o = [];
-      v1.o.push(v2[_].id);
+      v1.o.push(name);
 
       if (!v1[_].new) v1[_].updated = true;
     }
@@ -242,8 +242,8 @@ export const getVarData = async (x) => {
   if (v.v) data.v = v.v;
 
   if (!v.m) return data;
-
   data.m = {};
+  if (v.o) data.o = v.o;
 
   for (let p in v.m) {
 
@@ -255,9 +255,7 @@ export const getVarData = async (x) => {
       continue;
     }
     const v2 = await b.p('get', { id });
-    if (v2) {
-      v2[_] = { id };
-    }
+    if (v2) v2[_] = { id };
 
     if (v2.v) {
       data.m[p] = v2;
@@ -265,6 +263,7 @@ export const getVarData = async (x) => {
       data.m[p] = await getVarData({ b, v: v2, depth: depth - 1, _ });
     }
   }
+
   return data;
 }
 
