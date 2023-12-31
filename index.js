@@ -64,11 +64,9 @@ await b.s('set', async (x) => {
       const newVid = await b.p('getUniqId');
       vById.m[k] = newVid;
 
-      if (ok > vById.length - 1) {
-        vById.o.push(k);
-      } else {
-        vById.o.splice(ok, 0, k);
-      }
+      if (ok > vById.length - 1) vById.o.push(k);
+      else vById.o.splice(ok, 0, k);
+
       await repo.set(newVid, v);
       await repo.set(id, vById);
 
@@ -131,6 +129,14 @@ await b.s('cp', async (x) => {
   if (oldKey && newKey && v.m && v.m[oldKey]) {
     v.m[newKey] = v.m[oldKey];
     delete v.m[oldKey];
+
+    if (!v.o) { console.error('o not found in map'); return; }
+    for (let i = 0; i < v.o.length; i++) {
+      if (v.o[i] === oldKey) {
+        v.o[i] = newKey;
+        break;
+      }
+    }
     await b.p('set', { id, v })
   }
 });

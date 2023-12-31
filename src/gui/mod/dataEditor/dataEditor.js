@@ -71,10 +71,9 @@ div[contenteditable="true"] {
       if (!o.m) return;
       if (!o.o) { console.error('No order array for map', parentVid, o); return; }
 
-      for (let i = 0; i < o.o.length; i++) {
-        const k = o.o[i];
+      for (let k of o.o) {
         if (!o.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
-
+        
         const v = o.m[k];
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
