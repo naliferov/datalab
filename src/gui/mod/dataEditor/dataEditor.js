@@ -230,7 +230,8 @@ div[contenteditable="true"] {
 
       if (isX1) {
         const parentId = this.marked.getAttribute('parent_vid');
-        await this.b.p('cp', { id: parentId, oldKey: this.markedTxt, newKey: v });
+        const resp = await this.b.p('cp', { id: parentId, oldKey: this.markedTxt, newKey: v });
+        console.log(resp);
       } else if (isVal) {
         const id = this.marked.getAttribute('vid');
         if (id === 'vid_stub') return;
@@ -283,7 +284,7 @@ div[contenteditable="true"] {
       const v = { v: 'newVal' };
       const xx = await this.mkXX({
         x1: 'newKey', x2: v,
-        parentVid: x1.getAttribute('parent_vid'),
+        parentVid: x1.getAttribute('vid'),
         vid: 'vid_stub',
       });
       x2.append(xx);

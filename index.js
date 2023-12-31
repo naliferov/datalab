@@ -88,6 +88,8 @@ await b.s('set', async (x) => {
     await set(x);
     return { msg: 'update complete', x };
   }
+
+  return { msg: 'unknown state', x };
 });
 
 await b.s('get', async (x) => {
