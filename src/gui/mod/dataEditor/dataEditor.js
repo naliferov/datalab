@@ -73,7 +73,7 @@ div[contenteditable="true"] {
 
       for (let k of o.o) {
         if (!o.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
-        
+
         const v = o.m[k];
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
@@ -280,7 +280,7 @@ div[contenteditable="true"] {
       if (x2.classList.contains('v')) return;
 
       const ok = x2.children.length;
-      const v = { v: 'newValue' };
+      const v = { v: 'newVal' };
       const xx = await this.mkXX({
         x1: 'newKey', x2: v,
         parentVid: x1.getAttribute('parent_vid'),
@@ -328,6 +328,14 @@ div[contenteditable="true"] {
     btn = await mkBtn('Move down', async (e) => await mv('down'));
     this.menu.append(btn);
     btn = await mkBtn('Copy', (e) => console.log(e));
+    this.menu.append(btn);
+
+    btn = await mkBtn('Convert to map', async (e) => {
+      const vid = this.marked.getAttribute('vid');
+      const v = await this.b.p('set', { id: vid, v: { m: {}, o: [] } }); console.log(v);
+    });
+    this.menu.append(btn);
+    btn = await mkBtn('Convert to val', (e) => console.log(e));
     this.menu.append(btn);
 
     btn = await mkBtn('Remove', async (e) => {
