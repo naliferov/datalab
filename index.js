@@ -145,6 +145,8 @@ await b.s('cp', async (x) => {
   }
 });
 
+//await b.s('')
+
 await b.s('port', async (x) => {
   const { b, msg } = x;
   if (msg.x) return await b.p(msg.x, msg);
@@ -155,8 +157,10 @@ await b.s('port', async (x) => {
   }
 });
 
-await b.s('import', async x => 100);
-await b.s('export', async x => 100);
+await b.s('state.import', async (x) => {});
+await b.s('state.export', async (x) => {
+  console.log(x);
+});
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const repo = new FsStorage('./state', fs);
@@ -195,6 +199,7 @@ const e = {
     }
     return await b.p('del', { path: pathToArr(arg[1]) });
   },
+  'state.export': async () => await b.p('state.export', { repo }),
   'server.start': async (arg) => {
 
     //todo refactor this for more control

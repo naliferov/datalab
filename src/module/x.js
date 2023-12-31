@@ -303,6 +303,14 @@ export const prepareForTransfer = (v) => {
   return d;
 }
 
+export const stateExport = (repo) => {
+
+}
+
+export const stateImport = (repo) => {
+
+}
+
 // UTILS //
 export const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 export const pathToArr = path => Array.isArray(path) ? path : path.split('.');

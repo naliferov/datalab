@@ -23,6 +23,7 @@ export const DataEditor = {
 .menuBtn {
     cursor: pointer;
     padding: 1px 7px;
+    white-space: nowrap;
 }
 .menuBtn:hover {
     background: #ababab;

@@ -29,10 +29,9 @@ const rqParseBody = async (rq, limitMb = 12) => {
         });
         rq.on('end', () => {
             b = Buffer.concat(b);
-
             if (rq.headers['content-type'] === 'application/json') {
                 try { b = JSON.parse(b.toString()); }
-                catch (e) { b = { err: 'json parse error' }; }
+                catch (e) { b = { err: 'json parse error', data: b.toString() }; }
             }
             resolve(b);
         });
@@ -122,13 +121,13 @@ export const rqHandler = async (x) => {
     rq.pathname = url.pathname;
     rq.mp = `${rq.method}:${url.pathname}`;
 
-    if (x.serveFS && await rqResolveFile(rq, rs, fs)) {
-        return;
-    }
+    if (x.serveFS && await rqResolveFile(rq, rs, fs)) return;
 
     const query = rqParseQuery(rq);
     const body = await rqParseBody(rq);
-    const msg = body ?? query;
+
+    let msg = body ?? query;
+    if (msg instanceof Buffer) msg = { b: msg, meta: rq.headers };
 
     const out = await b.p('port', { b, msg });
     if (!out) {
