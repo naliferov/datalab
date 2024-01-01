@@ -6,11 +6,13 @@ import {
   del,
   get,
   getVarData, getVarIds,
+  getDateTime,
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
   set,
 } from "./src/module/x.js";
+import AmdZip from 'adm-zip';
 
 const _ = Symbol('sys');
 const x = X(_);
@@ -157,9 +159,13 @@ await b.s('port', async (x) => {
   }
 });
 
-await b.s('state.import', async (x) => {});
+await b.s('state.import', async (x) => {
+  (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true);
+});
 await b.s('state.export', async (x) => {
-  console.log(x);
+  const zip = new AmdZip();
+  zip.addLocalFolder(repo.getStatePath());
+  zip.writeZip(`./state_${getDateTime()}.zip`);
 });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
@@ -169,7 +175,6 @@ const repo = new FsStorage('./state', fs);
 
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
-
 
 const e = {
   'set': async (arg) => {
@@ -199,7 +204,13 @@ const e = {
     }
     return await b.p('del', { path: pathToArr(arg[1]) });
   },
-  'state.export': async () => await b.p('state.export', { repo }),
+  'state.import': async (arg) => {
+    const path = arg[1];
+    return await b.p('state.import', { path: './' + path });
+  },
+  'state.export': async (arg) => {
+    return await b.p('state.export', { repo })
+  },
   'server.start': async (arg) => {
 
     //todo refactor this for more control

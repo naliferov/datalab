@@ -4,6 +4,8 @@ export class FsStorage {
         this.path = path;
         this.fs = fs;
     }
+    getStatePath() { return this.path; }
+
     async set(id, v) {
         await this.fs.writeFile(`${this.path}/${id}`, JSON.stringify(v));
     }

@@ -337,6 +337,18 @@ export const parseCliArgs = cliArgs => {
   }
   return args;
 };
+export const getDateTime = () => {
+  const d = new Date;
+
+  let year = d.getFullYear();
+  let month = ('0' + (d.getMonth() + 1)).slice(-2); // Months are zero-based
+  let day = ('0' + d.getDate()).slice(-2);
+  const hours = ('0' + d.getHours()).slice(-2);
+  const minutes = ('0' + d.getMinutes()).slice(-2);
+  const seconds = ('0' + d.getSeconds()).slice(-2);
+
+  return year + '-' + month + '-' + day + '_' + hours + ':' + minutes + ':' + seconds;
+}
 
 // GUI //
 export const dmk = (d, x) => {
