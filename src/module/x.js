@@ -95,7 +95,7 @@ export const del = async (x) => {
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
-    const isMap = Boolean(v.m);
+    const isMap = Boolean(v.m); const isList = Boolean(v.l);
 
     const targetId = isMap ? v.m[k] : v.l[k];
     if (!targetId) return { msg: `v is not contains key [${k}]` };
@@ -116,6 +116,8 @@ export const del = async (x) => {
         delete v.m[k];
         v.o.splice(ok, 1);
       }
+      if (isList) v.l.splice(k, 1);
+
       await b.p('set', { id, v: prepareForTransfer(v) });
     }
     return;

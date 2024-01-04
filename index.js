@@ -110,29 +110,53 @@ await b.s('get', async (x) => {
 await b.s('del', async (x) => {
   const { id, path, k, ok } = x;
 
-  if (id && k) {
+  if ((id && k) || path) {
     x._ = _;
     x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
     return await del(x) ?? { msg: 'delete complete' };
   }
-
   if (id) return await repo.del(id);
-  if (path) {
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
-
-    return await del(x);
-  }
 });
 
 await b.s('cp', async (x) => {
-  const { id, oldKey, newKey, delSource } = x;
+  const { oldId, newId, key,   id, oldKey, newKey, delSource } = x;
 
-  const _ = await b.p('get_');
-  const v = await b.p('get', { id });
+  //move
+  if (oldId && newId && oldId !== newId && key) {
 
-  if (oldKey && newKey && v.m && v.m[oldKey]) {
+    const oldV = await b.p('get', { id: oldId });
+    const newV = await b.p('get', { id: newId });
+    if (!oldV || !newV || !oldV.m || !newV.m) {
+      return { msg: 'oldV or oldV not found or !oldV.m or !newV.m'};
+    }
+    if (!oldV.o || !newV.o) {
+      return { msg: 'oldV or oldV not found or !oldV.m or !newV.m'};
+    }
+    if (newV.m[key]) {
+      return { msg: `newV.m already have key ${key}`};
+    }
+
+    if (!oldV.m[key]) { console.log(`oldV.m[${key}] not found`); return; }
+    newV.m[key] = oldV.m[key];
+    delete oldV.m[key];
+
+    const index = oldV.o.indexOf(key);
+    if (index !== -1) oldV.o.splice(index, 1);
+    newV.o.push(key);
+
+    await b.p('set', { id: oldId, v: oldV });
+    await b.p('set', { id: newId, v: newV });
+    return { oldId, newId, key };
+  }
+
+  //rename
+  if (id && oldKey && newKey) {
+
+    const v = await b.p('get', { id });
+    if (!v.m || !v.m[oldKey]) {
+      return { msg: 'v.m or v.m[oldKey] not found'};
+    }
+
     v.m[newKey] = v.m[oldKey];
     delete v.m[oldKey];
 
@@ -143,7 +167,8 @@ await b.s('cp', async (x) => {
         break;
       }
     }
-    await b.p('set', { id, v })
+    await b.p('set', { id, v });
+    return { id, oldKey, newKey };
   }
 });
 

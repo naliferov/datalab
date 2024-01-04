@@ -114,7 +114,7 @@ div[contenteditable="true"] {
     const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' });
     container.append(header);
 
-    const root = await this.mkXX({ x1: 'root', vid: 'root' });
+    const root = await this.mkXX({ x1: 'root', x2: {m: {}}, vid: 'root' });
     container.append(root);
 
     const data = await p('get', { path, depth: 5 }); console.log(data);
@@ -136,6 +136,9 @@ div[contenteditable="true"] {
 
     const x2DOM = await this.b.p('doc.mk', { class: 'x2' });
     r.append(x2DOM);
+
+    if (x2 && x2.l) x2DOM.classList.add('l');
+    if (x2 && x2.m) x2DOM.classList.add('m');
 
     if (x2 && x2.v) {
 
@@ -175,6 +178,7 @@ div[contenteditable="true"] {
   isRoot(t) { return t.getAttribute('vid') === 'root' },
   isX1(t) { return t.classList.contains('x1'); },
   isVal(t) { return t.classList.contains('val'); },
+  isV(t) { return t.classList.contains('v'); },
   mark() {
     if (this.marked) this.marked.classList.add('mark');
   },
@@ -328,9 +332,44 @@ div[contenteditable="true"] {
     btn = await mkBtn('Move up', async (e) => await mv('up'));
     this.menu.append(btn);
     btn = await mkBtn('Move down', async (e) => await mv('down'));
+
+
     this.menu.append(btn);
-    btn = await mkBtn('Copy', (e) => console.log(e));
+    btn = await mkBtn('Copy', (e) => {
+      const x1 = this.marked;
+      if (!this.isX1(x1)) return;
+
+      const parentId = x1.getAttribute('parent_vid');
+      const key = x1.innerText;
+      this.buffer = { id: parentId, key };
+      this.menu.remove();
+    });
     this.menu.append(btn);
+
+    if (this.buffer) {
+      btn = await mkBtn('Paste', async (e) => {
+        const x1 = this.marked;
+        if (!this.isX1(x1)) return;
+
+        const xx = this.xxInterface(x1.parentNode);
+        if (this.isV(xx.x2)) {
+          console.log('x2 isV');
+          this.menu.remove();
+          return;
+        }
+
+        const resp = await this.b.p('cp', {
+          oldId: this.buffer.id,
+          newId: x1.getAttribute('vid'),
+          key: this.buffer.key,
+        });
+        console.log(resp);
+        this.buffer = null;
+        this.menu.remove();
+      });
+      this.menu.append(btn);
+    }
+
 
     btn = await mkBtn('Convert to map', async (e) => {
       const vid = this.marked.getAttribute('vid');
