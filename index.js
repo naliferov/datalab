@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import process from 'node:process'
 import { ulid } from "ulid";
 import {
   U, X, b,
@@ -19,7 +20,6 @@ const x = X(_);
 const u = U(x, _);
 b.set_(_);
 b.setX(x);
-//await b.s('x', async (x) => {});
 
 await u({
   y: 'log', f: async (x) => {
@@ -166,6 +166,15 @@ await b.s('state.export', async (x) => {
   const zip = new AmdZip();
   zip.addLocalFolder(repo.getStatePath());
   zip.writeZip(`./state_${getDateTime()}.zip`);
+});
+
+process.on('uncaughtException', (error, origin) => {
+  if (error?.code === 'ECONNRESET') {
+    console.error(error);
+    return;
+  }
+  console.error('UNCAUGHT EXCEPTION', error, origin);
+  process.exit(1);
 });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
