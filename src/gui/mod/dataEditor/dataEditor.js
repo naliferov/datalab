@@ -157,6 +157,7 @@ div[contenteditable="true"] {
   xxInterface(xx) {
     const children = xx.children;
     return {
+      xx: xx,
       x1: children[0],
       separator: children[1],
       x2: children[2],
@@ -341,7 +342,7 @@ div[contenteditable="true"] {
 
       const parentId = x1.getAttribute('parent_vid');
       const key = x1.innerText;
-      this.buffer = { id: parentId, key };
+      this.buffer = { id: parentId, key, xx: this.xxInterface(x1.parentNode) };
       this.menu.remove();
     });
     this.menu.append(btn);
@@ -352,11 +353,7 @@ div[contenteditable="true"] {
         if (!this.isX1(x1)) return;
 
         const xx = this.xxInterface(x1.parentNode);
-        if (this.isV(xx.x2)) {
-          console.log('x2 isV');
-          this.menu.remove();
-          return;
-        }
+        if (this.isV(xx.x2)) { this.menu.remove(); return; }
 
         const resp = await this.b.p('cp', {
           oldId: this.buffer.id,
@@ -364,6 +361,8 @@ div[contenteditable="true"] {
           key: this.buffer.key,
         });
         console.log(resp);
+
+        xx.x2.append(this.buffer.xx.xx);
         this.buffer = null;
         this.menu.remove();
       });
