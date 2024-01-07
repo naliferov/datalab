@@ -122,18 +122,20 @@ export const del = async (x) => {
       if (!v.o[ok]) return { msg: `v.o[oKey] is not found by key [${ok}]` };
     }
 
-    if (await delWithSubVars({ _, b, v: targetV })) {
+    const isDelWithSubVars = await delWithSubVars({ _, b, v: targetV });
+    if (isDelWithSubVars) {
 
       if (isMap) {
         delete v.m[k];
         v.o.splice(ok, 1);
+      } else if (isList) {
+        v.l.splice(k, 1);
       }
-      if (isList) v.l.splice(k, 1);
-
-      await b.p('set', { id, v: prepareForTransfer(v) });
+      //await b.p('set', { id, v: prepareForTransfer(v) });
     }
     return;
   }
+
 
   const set = await createSet({ _, b, repo, path, isNeedStopIfVarNotFound: true });
 
@@ -150,11 +152,21 @@ export const del = async (x) => {
     console.log('log', { msg: `key [${v2[_].name}] not found in v1` });
     return;
   }
-  if (await delWithSubVars({ _, b, v: v2 })) {
-    delete v1.m[v2[_].name];
-    v1.o = v1.o.filter(id => id !== v2ID);
 
-    await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
+  const isDelWithSubVars = await delWithSubVars({ _, b, v: v2 });
+  if (isDelWithSubVars) {
+
+    const isMap = Boolean(v1.m); const isList = Boolean(v1.l);
+    if (isMap) {
+      console.log(v2ID);
+
+      delete v1.m[v2[_].name];
+      v1.o = v1.o.filter(id => id !== v2[_].name);
+
+      await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
+    } else if (isList) {
+      console.log('isList', v1);
+    }
   }
 }
 
@@ -300,20 +312,31 @@ export const getVarIds = async (x) => {
 
   const { b, v } = x;
 
-  if (!v.m) return {};
-
   const subVars = [];
+  if (!v.l && !v.m) return subVars;
 
   const getSubVars = async (v) => {
-    for (let prop in v.m) {
-      const id = v.m[prop];
-      const subV = await b.p('get', { id });
-      subVars.push(id);
+    if (v.l) {
+      for (let id of v.l) {
+        const subV = await b.p('get', { id });
+        subVars.push(id);
 
-      if (subV.m) await getSubVars(subV);
-      if (subV.l) await getSubVars(subV);
+        if (subV.m) await getSubVars(subV);
+        if (subV.l) await getSubVars(subV);
+      }
+
+    } else if (v.m) {
+      for (let prop in v.m) {
+        const id = v.m[prop];
+        const subV = await b.p('get', { id });
+        subVars.push(id);
+
+        if (subV.m) await getSubVars(subV);
+        if (subV.l) await getSubVars(subV);
+      }
     }
   }
+
   await getSubVars(v);
 
   return subVars;
