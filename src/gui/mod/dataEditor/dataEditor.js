@@ -82,10 +82,10 @@ div[contenteditable="true"] {
           x1: k, x2: v,
           parentVid, vid: v[_].id
         });
-        this.xxInterface(parentXX).x2.append(xx);
+        this.rowInterface(parentXX).x2.append(xx);
 
         if (v.m) await rendM(v, xx, v[_].id);
-        else if (v.l) {}
+        else if (v.l) console.log('render', v.l);
         else if (v.v) {}
         else console.log('1: Unknown type of var', v);
       }
@@ -154,7 +154,7 @@ div[contenteditable="true"] {
 
     return r;
   },
-  xxInterface(xx) {
+  rowInterface(xx) {
     const children = xx.children;
     return {
       xx: xx,
@@ -170,7 +170,7 @@ div[contenteditable="true"] {
     const XXs = x1.parentNode.parentNode.children;
 
     for (let i = 0; i < XXs.length; i++) {
-      const x1 = this.xxInterface(XXs[i]).x1;
+      const x1 = this.rowInterface(XXs[i]).x1;
       if (id === x1.getAttribute('vid')) {
         return i;
       }
@@ -300,8 +300,8 @@ div[contenteditable="true"] {
       console.log(resp);
 
       if (resp.newVid) {
-        const xxInterface = this.xxInterface(xx);
-        xxInterface.x1.setAttribute('vid', resp.newVid);
+        const rowInterface = this.rowInterface(xx);
+        rowInterface.x1.setAttribute('vid', resp.newVid);
       }
 
       this.menu.remove();
@@ -342,7 +342,7 @@ div[contenteditable="true"] {
 
       const parentId = x1.getAttribute('parent_vid');
       const key = x1.innerText;
-      this.buffer = { id: parentId, key, xx: this.xxInterface(x1.parentNode) };
+      this.buffer = { id: parentId, key, xx: this.rowInterface(x1.parentNode) };
       this.menu.remove();
     });
     this.menu.append(btn);
@@ -352,7 +352,7 @@ div[contenteditable="true"] {
         const x1 = this.marked;
         if (!this.isX1(x1)) return;
 
-        const xx = this.xxInterface(x1.parentNode);
+        const xx = this.rowInterface(x1.parentNode);
         if (this.isV(xx.x2)) { this.menu.remove(); return; }
 
         const resp = await this.b.p('cp', {

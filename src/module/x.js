@@ -51,10 +51,22 @@ export const set = async (x) => {
 
   for (let i = 0; i < set.length; i++) {
     const v = set[i];
-    if (v.v) {
-      v.v = data;
-      if (!v[_].new) v[_].updated = true;
+    const isLast = i === set.length -1;
+
+    if (isLast) {
+      if (v.l) {
+        const newId = await b.p('getUniqId');
+        const newV = { _: { id: newId }, v: data };
+        await b.p('set', { repo, id: newId, v: prepareForTransfer(newV) });
+
+        v.l.push(newId);
+        if (!v[_].new) v[_].updated = true;
+      } else if (v.v) {
+        v.v = data;
+        if (!v[_].new) v[_].updated = true;
+      }
     }
+
     if (v[_].new || v[_].updated) {
       await b.p('set', { repo, id: v[_].id, v: prepareForTransfer(v) });
     }
@@ -237,12 +249,28 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { b, v, depth, _ } = x;
+  const { _, b, v, depth } = x;
 
   const data = { [_]: { id: v[_].id } };
   if (v.v) data.v = v.v;
 
+  if (v.l) {
+    data.l = [];
+
+    for (let id of v.l) {
+      const v2 = await b.p('get', { id });
+      if (v2) v2[_] = { id };
+
+      if (v2.v) {
+        data.l.push(v2);
+      } else if (v2.l || v2.m) {
+        data.l.push( await getVarData({ _, b, v: v2, depth: depth - 1 }) );
+      }
+    }
+  }
+
   if (!v.m) return data;
+
   data.m = {};
   if (v.o) data.o = v.o;
 
@@ -260,8 +288,8 @@ export const getVarData = async (x) => {
 
     if (v2.v) {
       data.m[p] = v2;
-    } else if (v2.m) {
-      data.m[p] = await getVarData({ b, v: v2, depth: depth - 1, _ });
+    } else if (v2.l || v2.m) {
+      data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1 });
     }
   }
 

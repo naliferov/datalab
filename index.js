@@ -40,6 +40,7 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { id, path, k, ok, v } = x;
 
+  //change order
   if (id && ok && typeof ok === 'object') {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'v not found' };
@@ -53,6 +54,7 @@ await b.s('set', async (x) => {
     return { id, ok };
   }
 
+  //set key and value to specific id
   if (id && k && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'v not found' };
@@ -78,6 +80,7 @@ await b.s('set', async (x) => {
     return { msg: 'Not found "m" in vById', vById };
   }
 
+  //update v by id
   if (id && v) {
     await repo.set(id, v);
     return { id, v };
@@ -214,13 +217,11 @@ const e = {
   'set': async (arg) => {
     const path = arg[1];
     if (!path) {
-      console.error('path is empty');
-      return;
+      console.error('path is empty'); return;
     }
     const v = arg[2];
     if (!v) {
-      console.error('data is empty');
-      return;
+      console.error('data is empty'); return;
     }
     const type = arg[3];
 
