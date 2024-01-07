@@ -85,12 +85,26 @@ div[contenteditable="true"] {
         this.rowInterface(parentXX).x2.append(xx);
 
         if (v.m) await rendM(v, xx, v[_].id);
-        else if (v.l) console.log('render', v.l);
+        else if (v.l) await rendL(v, xx, v[_].id);
         else if (v.v) {}
-        else console.log('1: Unknown type of var', v);
+        else console.log('Unknown type of var', v);
       }
     }
-    const rendL = async () => { }
+    const rendL = async (o, parentRow, parentVid) => {
+      if (!o.l) return;
+
+      for (let v of o.l) {
+        if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
+
+        const xx = await this.mkXX({ x2: v, parentVid, vid: v[_].id });
+        this.rowInterface(parentRow).x2.append(xx);
+
+        if (v.m) await rendM(v, xx, v[_].id);
+        else if (v.l) await rendL(v, xx, v[_].id);
+        else if (v.v) {}
+        else console.log('Unknown type of var', v);
+      }
+    }
     const rend = async (o, parent) => {
       if (!o[_]) {
         console.log('Unknown VAR', o);
@@ -125,14 +139,15 @@ div[contenteditable="true"] {
 
     const r = await this.b.p('doc.mk', { class: 'xx' });
 
-    const x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'x1' });
-    r.append(x1DOM);
+    if (x1) {
+      const x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'x1' });
+      r.append(x1DOM);
+      if (parentVid) x1DOM.setAttribute('parent_vid', parentVid);
+      if (vid) x1DOM.setAttribute('vid', vid);
 
-    if (parentVid) x1DOM.setAttribute('parent_vid', parentVid);
-    if (vid) x1DOM.setAttribute('vid', vid);
-
-    const sep = await this.b.p('doc.mk', { txt: ': ', class: 'sep' });
-    r.append(sep);
+      const sep = await this.b.p('doc.mk', { txt: ': ', class: 'sep' });
+      r.append(sep);
+    }
 
     const x2DOM = await this.b.p('doc.mk', { class: 'x2' });
     r.append(x2DOM);

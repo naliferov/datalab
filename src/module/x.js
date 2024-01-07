@@ -473,7 +473,4 @@ const on = (id, eventName, callback) => {
   //add event to id!
   //dom.addEventListener(eventName, callback);
 }
-
-const dragAndDrop = () => {
-
-}
+const dragAndDrop = () => {}
