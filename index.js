@@ -38,7 +38,7 @@ await b.s('fs.readFile', async (x) => {
 });
 
 await b.s('set', async (x) => {
-  const { id, path, k, ok, v } = x;
+  const { type, id, path, k, ok, v } = x;
 
   //change order
   if (id && ok && typeof ok === 'object') {
@@ -54,27 +54,29 @@ await b.s('set', async (x) => {
     return { id, ok };
   }
 
-  //set key and value to specific id
-  if (id && k && v) {
+  //set key value to specific id (MAP), or add value (LIST
+  if (type && id && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'v not found' };
 
-    if (vById.m) {
-
+    if (type === 'm' && vById.m) {
       if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
       if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-      if (ok === undefined) return { msg: `ok is empty` };
+      if (!ok) return { msg: `ok is empty` };
 
-      const newVid = await b.p('getUniqId');
-      vById.m[k] = newVid;
+      const newId = await b.p('getUniqId');
+      vById.m[k] = newId;
 
-      if (ok > vById.length - 1) vById.o.push(k);
+      if (ok > vById.o.length - 1) vById.o.push(k);
       else vById.o.splice(ok, 0, k);
 
-      await repo.set(newVid, v);
+      await repo.set(newId, v);
       await repo.set(id, vById);
 
-      return { id, k, v, newVid };
+      return { id, k, v, newId };
+    }
+    if (type === 'l' && vById.l) {
+      return { type, id, v };
     }
 
     return { msg: 'Not found "m" in vById', vById };

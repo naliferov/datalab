@@ -131,8 +131,9 @@ export const del = async (x) => {
       } else if (isList) {
         v.l.splice(k, 1);
       }
-      //await b.p('set', { id, v: prepareForTransfer(v) });
+      await b.p('set', { id, v: prepareForTransfer(v) });
     }
+
     return;
   }
 
@@ -173,14 +174,13 @@ export const del = async (x) => {
 export const delWithSubVars = async (x) => {
   const { _, b, v } = x;
 
-  const varIds = await getVarIds({ b, v }); console.log(varIds);
+  const varIds = await getVarIds({ b, v }); console.log('varIds for del', varIds);
 
   const len = Object.keys(varIds).length;
   if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
   for (let i = 0; i < varIds.length; i++) {
-    const id = varIds[i];
-    await b.p('del', { id });
+    await b.p('del', { id: varIds[i] });
   }
   console.log('del', v[_].id);
   await b.p('del', { id: v[_].id });

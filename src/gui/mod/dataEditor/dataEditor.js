@@ -67,7 +67,7 @@ div[contenteditable="true"] {
 
     const _ = this._;
 
-    const rendM = async (o, parentXX, parentVid) => {
+    const rendM = async (o, parentRow, parentVid) => {
 
       if (!o.m) return;
       if (!o.o) { console.error('No order array for map', parentVid, o); return; }
@@ -82,7 +82,7 @@ div[contenteditable="true"] {
           x1: k, x2: v,
           parentVid, vid: v[_].id
         });
-        this.rowInterface(parentXX).x2.append(xx);
+        this.rowInterface(parentRow).x2.append(xx);
 
         if (v.m) await rendM(v, xx, v[_].id);
         else if (v.l) await rendL(v, xx, v[_].id);
@@ -138,9 +138,12 @@ div[contenteditable="true"] {
     const { x1, x2, parentVid, vid } = x;
 
     const r = await this.b.p('doc.mk', { class: 'xx' });
+    if (x2 && x2.l) r.setAttribute('t', 'l');
+    if (x2 && x2.m) r.setAttribute('t', 'm');
 
+    let x1DOM;
     if (x1) {
-      const x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'x1' });
+      x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'x1' });
       r.append(x1DOM);
       if (parentVid) x1DOM.setAttribute('parent_vid', parentVid);
       if (vid) x1DOM.setAttribute('vid', vid);
@@ -151,9 +154,6 @@ div[contenteditable="true"] {
 
     const x2DOM = await this.b.p('doc.mk', { class: 'x2' });
     r.append(x2DOM);
-
-    if (x2 && x2.l) x2DOM.classList.add('l');
-    if (x2 && x2.m) x2DOM.classList.add('m');
 
     if (x2 && x2.v) {
 
@@ -176,6 +176,9 @@ div[contenteditable="true"] {
       x1: children[0],
       separator: children[1],
       x2: children[2],
+      getType() {
+        return this.xx.getAttribute('t')
+      },
     }
   },
   getOrderKeyOfX1(x1) {
@@ -193,6 +196,7 @@ div[contenteditable="true"] {
   },
   isRoot(t) { return t.getAttribute('vid') === 'root' },
   isX1(t) { return t.classList.contains('x1'); },
+  isX2(t) { return t.classList.contains('x2'); },
   isVal(t) { return t.classList.contains('val'); },
   isV(t) { return t.classList.contains('v'); },
   mark() {
@@ -294,29 +298,48 @@ div[contenteditable="true"] {
     //todo expand, collapse, structural stream;
     let btn = await mkBtn('Open', (e) => console.log(e));
     btn = await mkBtn('Add', async (e) => {
-      if (!this.marked || !this.isX1(this.marked)) return;
 
-      const x1 = this.marked;
-      const x2 = x1.nextSibling?.nextSibling;
-      if (!x2 || !x2.classList.contains('x2')) return;
-      if (x2.classList.contains('v')) return;
+      const mark = this.marked;
+      if (!mark) return;
+      if (!this.isX1(mark) && !this.isX2(mark)) return;
 
-      const ok = x2.children.length;
-      const v = { v: 'newVal' };
-      const xx = await this.mkXX({
-        x1: 'newKey', x2: v,
-        parentVid: x1.getAttribute('vid'),
-        vid: 'vid_stub',
-      });
-      x2.append(xx);
+      const row = this.rowInterface(mark.parentNode);
+      const type = row.getType();
 
-      const id = x1.getAttribute('vid');
-      const resp = await p('set', { id, k: 'newKey', ok, v });
-      console.log(resp);
+      if (type === 'm') {
+        const k = 'newKey';
+        const v = { v: 'newVal' };
+        const newRow = await this.mkXX({
+          x1: k, x2: v,
+          parentVid: row.x1.getAttribute('vid'),
+          vid: 'vid_stub',
+        });
+        row.x2.append(newRow);
 
-      if (resp.newVid) {
-        const rowInterface = this.rowInterface(xx);
-        rowInterface.x1.setAttribute('vid', resp.newVid);
+        const id = row.x1.getAttribute('vid');
+        const resp = await p('set', { id, type: 'm', k, ok: row.x2.children.length, v });
+        console.log(resp);
+
+        if (resp.newId) {
+          const newRowAPI = this.rowInterface(newRow);
+          newRowAPI.x1.setAttribute('vid', resp.newId);
+        }
+      }
+
+      if (type === 'l') {
+        const v = { v: 'newVal' };
+        const newRow = await this.mkXX({
+          x2: v,
+          parentVid: row.x1.getAttribute('vid'),
+          vid: 'vid_stub',
+        });
+        row.x2.append(newRow);
+
+        const id = row.x1.getAttribute('vid');
+        //const resp = await p('set', { id, v });
+        //console.log(resp);
+
+        console.log(row);
       }
 
       this.menu.remove();
