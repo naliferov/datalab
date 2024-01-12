@@ -10,6 +10,12 @@ import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
 
+if (!Array.prototype.at) {
+  Array.prototype.at = function(index) {
+    return index < 0 ? this[this.length + index] : this[index];
+  }
+}
+
 const _ = Symbol('sys');
 const x = X(_);
 b.set_(_);
@@ -17,7 +23,17 @@ b.setX(x);
 
 await b.s('log', async (x) => console.log(x));
 await b.s('get_', () => _);
-await b.s('getUniqId', () => crypto.randomUUID());
+await b.s('getUniqId', () => {
+
+  if (!window.crypto || !window.crypto.randomUUID) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
+        function(c) {
+          const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
+          return uuid.toString(16);
+        });
+  }
+  return crypto.randomUUID();
+});
 await b.s('port', async (x) => {
   const { data } = await (new HttpClient).post('/', x);
   return data;
