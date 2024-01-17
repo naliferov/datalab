@@ -1,5 +1,5 @@
-import { promises as fs } from "node:fs";
 import process from 'node:process'
+import { promises as fs } from "node:fs";
 import { ulid } from "ulid";
 import {
   U, X, b,
@@ -40,7 +40,7 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { type, id, path, k, ok, v } = x;
 
-  //change order
+  //CHANGE order for MAP keys
   if (id && ok && typeof ok === 'object') {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'v not found' };
@@ -54,7 +54,7 @@ await b.s('set', async (x) => {
     return { id, ok };
   }
 
-  //set key value to specific id (MAP), or add value (LIST
+  //SET key and value to specific id of (MAP), or add value (LIST)
   if (type && id && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { ok: 0, msg: 'v not found' };
@@ -75,19 +75,26 @@ await b.s('set', async (x) => {
 
       return { id, k, v, newId };
     }
+
     if (type === 'l' && vById.l) {
-      return { type, id, v };
+      const newId = await b.p('getUniqId');
+      vById.l.push(newId);
+      await repo.set(newId, v);
+      await repo.set(id, vById);
+
+      return { type, id, newId, v };
     }
 
     return { msg: 'Not found "m" in vById', vById };
   }
 
-  //update v by id
+  //SET value by ID
   if (id && v) {
     await repo.set(id, v);
     return { id, v };
   }
 
+  //SET by PATH
   if (path) {
     const _ = await b.p('get_');
     x._ = _;
@@ -126,7 +133,7 @@ await b.s('del', async (x) => {
 await b.s('cp', async (x) => {
   const { oldId, newId, key,   id, oldKey, newKey, delSource } = x;
 
-  //move
+  //move from one id to another
   if (oldId && newId && oldId !== newId && key) {
 
     const oldV = await b.p('get', { id: oldId });
@@ -154,7 +161,7 @@ await b.s('cp', async (x) => {
     return { oldId, newId, key };
   }
 
-  //rename
+  //rename of map key
   if (id && oldKey && newKey) {
 
     const v = await b.p('get', { id });
@@ -176,8 +183,6 @@ await b.s('cp', async (x) => {
     return { id, oldKey, newKey };
   }
 });
-
-//await b.s('')
 
 await b.s('port', async (x) => {
   const { b, msg } = x;
@@ -249,7 +254,6 @@ const e = {
     return await b.p('state.export', { repo })
   },
   'server.start': async (arg) => {
-
     //todo refactor this for more control
     const x = {
       server: (await import('node:http')).createServer({ requestTimeout: 30000 }),
@@ -273,7 +277,7 @@ const e = {
   //},
 };
 
-const args = parseCliArgs((await import('node:process')).default.argv);
+const args = parseCliArgs(process.argv);
 if (e[args[0]]) {
   console.log(await e[args[0]](args) ?? '');
 } else {

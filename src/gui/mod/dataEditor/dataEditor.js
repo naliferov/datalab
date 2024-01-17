@@ -32,7 +32,7 @@ export const DataEditor = {
 div[contenteditable="true"] {
     outline: none;
 }
-.xx {
+.row {
     margin-left: 16px;
 }
 .x1 {
@@ -137,9 +137,12 @@ div[contenteditable="true"] {
   async mkXX(x) {
     const { x1, x2, parentVid, vid } = x;
 
-    const r = await this.b.p('doc.mk', { class: 'xx' });
-    if (x2 && x2.l) r.setAttribute('t', 'l');
-    if (x2 && x2.m) r.setAttribute('t', 'm');
+    const r = await this.b.p('doc.mk', { class: 'row' });
+    if (x2) {
+      if (x2.l) r.setAttribute('t', 'l');
+      if (x2.m) r.setAttribute('t', 'm');
+      if (x2.v) r.setAttribute('t', 'v');
+    }
 
     let x1DOM;
     if (x1) {
@@ -176,9 +179,21 @@ div[contenteditable="true"] {
       x1: children[0],
       separator: children[1],
       x2: children[2],
+      val() {
+        const type = this.xx.getAttribute('t');
+
+        let val;
+        if (type === 'v') {
+          val = children[0].children[0];
+          if (!val.classList.contains('val')) return;
+          return val;
+        }
+
+      },
       getType() {
         return this.xx.getAttribute('t')
       },
+
     }
   },
   getOrderKeyOfX1(x1) {
@@ -336,10 +351,13 @@ div[contenteditable="true"] {
         row.x2.append(newRow);
 
         const id = row.x1.getAttribute('vid');
-        //const resp = await p('set', { id, v });
-        //console.log(resp);
+        const resp = await p('set', { id, type: 'l', v });
+        console.log(resp);
 
-        console.log(row);
+        if (resp.newId) {
+          const val = this.rowInterface(newRow).val();
+          if (val) val.setAttribute('vid', resp.newId);
+        }
       }
 
       this.menu.remove();
