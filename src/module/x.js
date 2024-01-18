@@ -179,9 +179,7 @@ export const delWithSubVars = async (x) => {
   const len = Object.keys(varIds).length;
   if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
-  for (let i = 0; i < varIds.length; i++) {
-    await b.p('del', { id: varIds[i] });
-  }
+  for (let id of varIds) await b.p('del', { id });
   console.log('del', v[_].id);
   await b.p('del', { id: v[_].id });
 
@@ -312,34 +310,33 @@ export const getVarIds = async (x) => {
 
   const { b, v } = x;
 
-  const subVars = [];
-  if (!v.l && !v.m) return subVars;
+  const ids = [];
+  if (!v.l && !v.m) return ids;
 
-  const getSubVars = async (v) => {
+  const getIds = async (v) => {
+
     if (v.l) {
       for (let id of v.l) {
         const subV = await b.p('get', { id });
-        subVars.push(id);
+        ids.push(id);
 
-        if (subV.m) await getSubVars(subV);
-        if (subV.l) await getSubVars(subV);
+        if (subV.m || subV.l) await getIds(subV);
       }
 
     } else if (v.m) {
-      for (let prop in v.m) {
-        const id = v.m[prop];
+      for (let k in v.m) {
+        const id = v.m[k];
         const subV = await b.p('get', { id });
-        subVars.push(id);
+        ids.push(id);
 
-        if (subV.m) await getSubVars(subV);
-        if (subV.l) await getSubVars(subV);
+        if (subV.m || subV.l) await getIds(subV);
       }
     }
   }
 
-  await getSubVars(v);
+  await getIds(v);
 
-  return subVars;
+  return ids;
 }
 
 export const prepareForTransfer = (v) => {

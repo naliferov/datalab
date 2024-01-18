@@ -24,8 +24,8 @@ const rqParseBody = async (rq, limitMb = 12) => {
         });
         rq.on('error', err => {
             rq.destroy();
-            b.p('log', { msg: 'rq socker err', e });
-            reject(err)
+            b.p('log', { msg: 'rq socker err', err });
+            reject(err);
         });
         rq.on('end', () => {
             b = Buffer.concat(b);

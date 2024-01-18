@@ -6,6 +6,7 @@ export const DataEditor = {
   async createStyle() {
 
     const css = `
+.inline { display: inline; }
 .container {
     padding: 10px;
     color: rgb(55, 53, 47);
@@ -35,25 +36,24 @@ div[contenteditable="true"] {
 .row {
     margin-left: 16px;
 }
-.x1 {
+
+.key {
     cursor: pointer;
     border: 1px solid transparent;
     display: inline;
     font-weight: bold;
 }
-.sep, .x2.v { display: inline; }
-
 .val {
     cursor: pointer;
     border: 1px solid transparent;
     display: inline;
 }
 
-.x1.mark,
+.key.mark,
 .val.mark {
     background: lightblue;
 }
-.x1[contenteditable="true"],
+.key[contenteditable="true"],
 .val[contenteditable="true"]
  {
     cursor: inherit;
@@ -141,21 +141,20 @@ div[contenteditable="true"] {
     if (x2) {
       if (x2.l) r.setAttribute('t', 'l');
       if (x2.m) r.setAttribute('t', 'm');
-      if (x2.v) r.setAttribute('t', 'v');
     }
 
     let x1DOM;
     if (x1) {
-      x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'x1' });
+      x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'key' });
       r.append(x1DOM);
       if (parentVid) x1DOM.setAttribute('parent_vid', parentVid);
       if (vid) x1DOM.setAttribute('vid', vid);
 
-      const sep = await this.b.p('doc.mk', { txt: ': ', class: 'sep' });
+      const sep = await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] });
       r.append(sep);
     }
 
-    const x2DOM = await this.b.p('doc.mk', { class: 'x2' });
+    const x2DOM = await this.b.p('doc.mk', { class: 'v' });
     r.append(x2DOM);
 
     if (x2 && x2.v) {
@@ -163,10 +162,10 @@ div[contenteditable="true"] {
       let txt = x2.v;
       if (txt && txt.split) txt = txt.split('\n')[0];
 
-      const v = await this.b.p('doc.mk', { txt, class: 'val' });
+      const v = await this.b.p('doc.mk', { txt, class: ['val'] });
       if (vid) v.setAttribute('vid', vid);
 
-      x2DOM.classList.add('v');
+      x2DOM.classList.add('inline');
       x2DOM.append(v);
     }
 
@@ -174,46 +173,46 @@ div[contenteditable="true"] {
   },
   rowInterface(xx) {
     const children = xx.children;
+
+    if (children.length === 1) {
+      return {
+        xx: xx,
+        val() {
+          return this.xx.children[0].children[0];
+        },
+        getType() { return this.xx.getAttribute('t') },
+      }
+    }
+
     return {
       xx: xx,
       x1: children[0],
       separator: children[1],
       x2: children[2],
       val() {
-        const type = this.xx.getAttribute('t');
-
-        let val;
-        if (type === 'v') {
-          val = children[0].children[0];
-          if (!val.classList.contains('val')) return;
-          return val;
-        }
-
+        return this.x2.children[0];
       },
-      getType() {
-        return this.xx.getAttribute('t')
-      },
-
+      getType() { return this.xx.getAttribute('t') },
     }
   },
-  getOrderKeyOfX1(x1) {
-    if (!this.isX1(x1)) return;
+  getOrderKey(item, type) {
 
-    const id = x1.getAttribute('vid');
-    const XXs = x1.parentNode.parentNode.children;
+    const rows = item.parentNode.parentNode.children;
+    for (let i = 0; i < rows.length; i++) {
 
-    for (let i = 0; i < XXs.length; i++) {
-      const x1 = this.rowInterface(XXs[i]).x1;
-      if (id === x1.getAttribute('vid')) {
+      let element;
+      if (type === 'm') element = this.rowInterface(rows[i]).x1;
+      else if (type === 'l') element = this.rowInterface(rows[i]).val();
+
+      if (element && this.isMarked(element)) {
         return i;
       }
     }
   },
   isRoot(t) { return t.getAttribute('vid') === 'root' },
-  isX1(t) { return t.classList.contains('x1'); },
-  isX2(t) { return t.classList.contains('x2'); },
+  isX1(t) { return t.classList.contains('key'); },
+  isX2(t) { return t.classList.contains('v'); },
   isVal(t) { return t.classList.contains('val'); },
-  isV(t) { return t.classList.contains('v'); },
   mark() {
     if (this.marked) this.marked.classList.add('mark');
   },
@@ -224,6 +223,9 @@ div[contenteditable="true"] {
     this.unmark();
     t.classList.add('mark');
     this.marked = t;
+  },
+  isMarked(t) {
+    return t.classList.contains('mark');
   },
   click(e) {
     const path = e.composedPath();
@@ -289,16 +291,16 @@ div[contenteditable="true"] {
     e.preventDefault();
     const t = e.target;
 
-    const isX1 = t.classList.contains('x1');
+    const isX1 = t.classList.contains('key');
     const isV = t.classList.contains('val');
     if (!isX1 && !isV) return;
 
     this.remark(t);
 
     const p = async (event, data) => await this.b.p(event, data);
-    const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
+    const mkBtn = async (txt, fn) => await p('doc.mk', {txt, class: 'menuBtn', events: {click: fn}});
 
-    const containerSize = await p('doc.getSize', { o: this.container });
+    const containerSize = await p('doc.getSize', {o: this.container});
     const menu = await p('doc.mk', {
       class: 'menu', css: {
         left: (e.clientX - containerSize.x) + 'px',
@@ -323,7 +325,7 @@ div[contenteditable="true"] {
 
       if (type === 'm') {
         const k = 'newKey';
-        const v = { v: 'newVal' };
+        const v = {v: 'newVal'};
         const newRow = await this.mkXX({
           x1: k, x2: v,
           parentVid: row.x1.getAttribute('vid'),
@@ -332,7 +334,7 @@ div[contenteditable="true"] {
         row.x2.append(newRow);
 
         const id = row.x1.getAttribute('vid');
-        const resp = await p('set', { id, type: 'm', k, ok: row.x2.children.length, v });
+        const resp = await p('set', {id, type: 'm', k, ok: row.x2.children.length - 1, v});
         console.log(resp);
 
         if (resp.newId) {
@@ -342,7 +344,7 @@ div[contenteditable="true"] {
       }
 
       if (type === 'l') {
-        const v = { v: 'newVal' };
+        const v = {v: 'newVal'};
         const newRow = await this.mkXX({
           x2: v,
           parentVid: row.x1.getAttribute('vid'),
@@ -351,7 +353,7 @@ div[contenteditable="true"] {
         row.x2.append(newRow);
 
         const id = row.x1.getAttribute('vid');
-        const resp = await p('set', { id, type: 'l', v });
+        const resp = await p('set', {id, type: 'l', v});
         console.log(resp);
 
         if (resp.newId) {
@@ -368,37 +370,57 @@ div[contenteditable="true"] {
     if (this.isRoot(t)) return;
 
     const mv = async (dir) => {
-      const x1 = this.marked;
-      if (!this.isX1(x1)) return;
 
-      const parentId = x1.getAttribute('parent_vid');
-      let k = this.getOrderKeyOfX1(x1);
+      let parentId, k;
+
+      if (this.isX1(this.marked)) {
+
+        const x1 = this.marked;
+        if (dir === 'up' && !x1.parentNode.previousSibling) return;
+        if (dir === 'down' && !x1.parentNode.nextSibling) return;
+
+        parentId = x1.getAttribute('parent_vid');
+        k = this.getOrderKey(x1, 'm');
+
+      } else {
+        if (this.isX2(this.marked.parentNode)) {
+
+          const x2 = this.marked.parentNode;
+          const row = x2.parentNode;
+
+          if (dir === 'up' && !row.previousSibling) return;
+          if (dir === 'down' && !row.nextSibling) return;
+
+          if (row.getAttribute('t')) return;
+
+          const parentRowInterface = this.rowInterface(row.parentNode.parentNode);
+          if (parentRowInterface.xx.getAttribute('t') !== 'l') {
+            return;
+          }
+          parentId = parentRowInterface.x1.getAttribute('vid');
+          k = this.getOrderKey(x2, 'l');
+        }
+      }
+
+      if (parentId === undefined) { console.log('parentId is empty'); return; }
       if (k === undefined) { console.log('ok not found'); return; }
-      if (dir === 'up' && !x1.parentNode.previousSibling) return;
-      if (dir === 'down' && !x1.parentNode.nextSibling) return;
 
-      const ok = {
-        from: k,
-        to: dir === 'up' ? --k : ++k
-      };
-      const v = await this.b.p('set', { id: parentId, ok }); console.log(v);
-
-      if (dir === 'up') x1.parentNode.previousSibling.before(x1.parentNode);
-      else x1.parentNode.nextSibling.after(x1.parentNode);
+      const ok = { from: k, to: dir === 'up' ? --k : ++k };
+      const v = await this.b.p('set', {id: parentId, ok});
+      console.log(v);
     }
     btn = await mkBtn('Move up', async (e) => await mv('up'));
     this.menu.append(btn);
     btn = await mkBtn('Move down', async (e) => await mv('down'));
-
-
     this.menu.append(btn);
+
     btn = await mkBtn('Copy', (e) => {
       const x1 = this.marked;
       if (!this.isX1(x1)) return;
 
       const parentId = x1.getAttribute('parent_vid');
       const key = x1.innerText;
-      this.buffer = { id: parentId, key, xx: this.rowInterface(x1.parentNode) };
+      this.buffer = {id: parentId, key, xx: this.rowInterface(x1.parentNode)};
       this.menu.remove();
     });
     this.menu.append(btn);
@@ -409,7 +431,10 @@ div[contenteditable="true"] {
         if (!this.isX1(x1)) return;
 
         const xx = this.rowInterface(x1.parentNode);
-        if (this.isV(xx.x2)) { this.menu.remove(); return; }
+        if (this.isV(xx.x2)) {
+          this.menu.remove();
+          return;
+        }
 
         const resp = await this.b.p('cp', {
           oldId: this.buffer.id,
@@ -428,7 +453,8 @@ div[contenteditable="true"] {
 
     btn = await mkBtn('Convert to map', async (e) => {
       const vid = this.marked.getAttribute('vid');
-      const v = await this.b.p('set', { id: vid, v: { m: {}, o: [] } }); console.log(v);
+      const v = await this.b.p('set', {id: vid, v: {m: {}, o: []}});
+      console.log(v);
     });
     this.menu.append(btn);
     btn = await mkBtn('Convert to val', (e) => console.log(e));
@@ -443,183 +469,19 @@ div[contenteditable="true"] {
       const k = x1.innerText;
 
       let ok = this.getOrderKeyOfX1(x1);
-      if (ok === undefined) { console.log('ok not found'); return; }
+      if (ok === undefined) {
+        console.log('ok not found');
+        return;
+      }
 
       if (!parentId || !k) return;
       this.menu.remove();
 
-      const v = await this.b.p('del', { id: parentId, k, ok }); console.log(v);
+      const v = await this.b.p('del', {id: parentId, k, ok});
+      console.log(v);
       x1.parentNode.remove();
     });
     this.menu.append(btn);
-
-    return;
-
-    let submenu;
-    const removeSubmenu = () => {
-      if (!submenu) return;
-      submenu.clear();
-      submenu = null;
-    }
-
-    let oBtn = createBtn('Open with');
-    let openWithBtn = oBtn;
-    oBtn.on('pointerenter', async () => {
-      removeSubmenu();
-      submenu = new (s.f('sys.apps.GUI.popup'));
-      window.e('app.addViewElement', submenu);
-
-      const apps = s.sys.apps;
-      //todo const authorizedUserApps = s.users[user].apps;
-
-      for (let name in apps) {
-        if (name === 'GUI') continue;
-        let appBtn = createBtn(name);
-        appBtn.on('click', () => {
-          window.e('openNode', { appPath: `sys.apps.${name}`, outlinerNode: node });
-          popup.clear();
-        });
-        window.e('>', [appBtn, submenu]);
-      }
-      submenu.putRightTo(openWithBtn);
-    });
-    window.e('>', [oBtn, popup]);
-
-
-    if (typeof data === 'object' && data !== null) {
-      oBtn = createBtn('Add item');
-      oBtn.on('pointerenter', removeSubmenu);
-      oBtn.on('click', () => {
-
-        if (Array.isArray(data)) {
-          data.push('item' + data.length + 1);
-        } else {
-          let c = 0;
-          while (1) {
-            c++;
-            const k = 'newKey' + c; const v = 'newValue';
-            if (data[k]) continue;
-
-            data[k] = v;
-            const dataNode = new this.node;
-            dataNode.setPath([...node.getPath(), k]);
-            s.e('state.update', { dataNode, data: v });
-            break;
-          }
-        }
-
-        node.reopen();
-        popup.clear();
-      });
-      window.e('>', [oBtn, popup]);
-    }
-
-    oBtn = createBtn('Copy');
-    oBtn.on('click', () => {
-      this.buffer = { mode: 'copy', node };
-      popup.clear();
-    });
-    oBtn.on('pointerenter', removeSubmenu);
-    window.e('>', [oBtn, popup]);
-
-    oBtn = createBtn('Cut');
-    oBtn.on('click', () => {
-      this.buffer = { mode: 'cut', node };
-      popup.clear();
-    });
-    oBtn.on('pointerenter', removeSubmenu);
-    window.e('>', [oBtn, popup]);
-
-    if (this.buffer) {
-      oBtn = createBtn('Paste');
-      oBtn.on('click', async () => {
-        if (!this.buffer) return;
-
-        const contextNodeData = node.getDataNode().getData();
-        if (!s.f('sys.isObject', contextNodeData) && !Array.isArray(contextNodeData)) return;
-
-        const bufOurlinerNode = this.buffer.outlinerNode;
-        const dataPath = bufOurlinerNode.getPath();
-
-        const dataNodeCopy = new this.node;
-        //todo in case of array we don't need to set key. just push to array
-        dataNodeCopy.setPath([...node.getPath(), dataPath.at(-1)]);
-
-        const data = structuredClone(bufOurlinerNode.getDataNode().getData());
-        s.e('state.update', { dataNode: dataNodeCopy, data });
-        if (this.buffer.mode === 'cut') {
-          await s.e('state.del', { outlinerNode: bufOurlinerNode });
-        }
-
-        this.buffer = null;
-        node.reopen(); //todo remember opened nodes
-        popup.clear();
-      });
-      oBtn.on('pointerenter', removeSubmenu);
-      window.e('>', [oBtn, popup]);
-    }
-
-    oBtn = createBtn('Duplicate');
-    oBtn.on('click', async () => {
-      await this.duplicate(node);
-      popup.clear();
-    });
-    oBtn.on('pointerenter', removeSubmenu);
-    window.e('>', [oBtn, popup]);
-
-    oBtn = createBtn('Console log');
-    oBtn.on('pointerenter', removeSubmenu);
-    oBtn.on('click', () => {
-      s.l(dataNode);
-      popup.clear();
-    });
-    window.e('>', [oBtn, popup]);
-
-    oBtn = createBtn('Console path');
-    oBtn.on('pointerenter', removeSubmenu);
-    oBtn.on('click', () => {
-      s.l(node.getPath());
-      popup.clear();
-    });
-    window.e('>', [oBtn, popup]);
-
-    oBtn = createBtn('Convert type to');
-    let convertTypeBtn = oBtn;
-    oBtn.on('pointerenter', () => {
-      removeSubmenu();
-      submenu = new (s.f('sys.apps.GUI.popup'));
-      window.e('app.addViewElement', submenu);
-
-      const types = ['Bool', 'String', 'Object', 'Array'];
-      types.forEach(t => {
-        let btn = createBtn(t);
-        btn.on('click', () => {
-          let data;
-          if (t === 'Array') data = [];
-          else if (t === 'Bool') {
-            data = dataNode.getData() === 'false' ? false : true;
-          }
-          else if (t === 'Object') data = {};
-          else if (t === 'String') data = 'str';
-          else if (data === undefined) return;
-          s.e('state.update', { outlinerNode: node, data });
-
-          node.getParent().reopen();
-          popup.clear();
-        });
-        window.e('>', [btn, submenu]);
-      });
-      submenu.putRightTo(convertTypeBtn);
-
-    });
-    window.e('>', [oBtn, popup]);
-
-    popup.onClear(() => removeSubmenu());
-    popup.putRightToPointer({ x: e.clientX, y: e.clientY });
-  },
-
-  addNode(node) {
-    //this.nodes.set(node.getId(), node);
   }
   // removeNode(id) {
   //     this.nodes.delete(id);
