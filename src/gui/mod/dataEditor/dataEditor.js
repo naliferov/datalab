@@ -307,41 +307,32 @@ div[contenteditable="true"] {
         const k = 'newKey';
         const v = { v: 'newVal' };
         const newRow = await this.mkRow({
-          x1: k, x2: v,
-          parentVid: row.x1.getAttribute('vid'),
-          vid: 'vid_stub',
+          k, v,
+          parentId: row.row.getAttribute('_id'),
+          id: 'vid_stub',
         });
-        row.x2.append(newRow);
+        row.val.append(newRow);
 
-        const id = row.x1.getAttribute('vid');
-        //const resp = await p('set', {id, type: 'm', k, ok: row.x2.children.length - 1, v});
-        //console.log(resp);
-        console.log(id, k, ok, v);
-        return;
+        const id = row.row.getAttribute('_id');
+        const resp = await p('set', { id, type: 'm', k, ok: row.val.children.length - 1, v });
+        console.log(resp);
 
-        if (resp.newId) {
-          const newRowAPI = this.rowInterface(newRow);
-          newRowAPI.x1.setAttribute('vid', resp.newId);
-        }
+        if (resp.newId) newRow.setAttribute('_id', resp.newId);
       }
 
       if (type === 'l') {
-        const v = {v: 'newVal'};
+        const v = { v: 'newVal' };
         const newRow = await this.mkRow({
-          x2: v,
-          parentVid: row.x1.getAttribute('vid'),
+          v,
+          parentId: row.row.getAttribute('_id'),
           vid: 'vid_stub',
         });
-        row.x2.append(newRow);
+        row.val.append(newRow);
 
-        const id = row.x1.getAttribute('vid');
-        //const resp = await p('set', {id, type: 'l', v});
-        //console.log(resp);
+        const id = row.row.getAttribute('_id');
 
-        if (resp.newId) {
-          //const val = this.rowInterface(newRow).val();
-          //if (val) val.setAttribute('vid', resp.newId);
-        }
+        const resp = await p('set', { id, type: 'l', v }); console.log(resp);
+        if (resp.newId) newRow.setAttribute('vid', resp.newId);
       }
 
       this.menu.remove();

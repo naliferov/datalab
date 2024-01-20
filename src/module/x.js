@@ -167,7 +167,7 @@ export const del = async (x) => {
       console.log(v2ID);
 
       delete v1.m[v2[_].name];
-      v1.o = v1.o.filter(id => id !== v2[_].name);
+      v1.o = v1.o.filter(key => key !== v2[_].name);
 
       await b.p('set', { id: v1[_].id, v: prepareForTransfer(v1) });
     } else if (isList) {
