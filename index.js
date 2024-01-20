@@ -60,8 +60,6 @@ await b.s('set', async (x) => {
       await repo.set(id, vById);
     }
 
-    console.log(vById);
-
     return { id, ok };
   }
 
@@ -78,10 +76,7 @@ await b.s('set', async (x) => {
       const newId = await b.p('getUniqId');
       vById.m[k] = newId;
 
-      if (ok > vById.o.length - 1) {
-        console.log('push new key', ok, vById.o.length - 1);
-        vById.o.push(k);
-      }
+      if (ok > vById.o.length - 1) vById.o.push(k);
       else vById.o.splice(ok, 0, k);
 
       await repo.set(newId, v);

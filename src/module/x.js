@@ -109,8 +109,8 @@ export const del = async (x) => {
 
     const isMap = Boolean(v.m); const isList = Boolean(v.l);
 
-    const targetId = isMap ? v.m[k] : v.l[k];
-    if (!targetId) return { msg: `v is not contains key [${k}]` };
+    const targetId = isMap ? v.m[k] : k;
+    if (!targetId) return { msg: `targetId not found by [${k}]` };
 
     const targetV = await b.p('get', { id: targetId });
     if (!targetV) return { msg: `targetV not found by [${targetId}]` };
@@ -129,8 +129,12 @@ export const del = async (x) => {
         delete v.m[k];
         v.o.splice(ok, 1);
       } else if (isList) {
-        v.l.splice(k, 1);
+        const l = v.l;
+        for (let i = 0; i < l.length; i++) {
+          if (l[i] === k) l.splice(i, 1);
+        }
       }
+
       await b.p('set', { id, v: prepareForTransfer(v) });
     }
 
@@ -138,6 +142,7 @@ export const del = async (x) => {
   }
 
 
+  //DELETE BY PATH
   const set = await createSet({ _, b, repo, path, isNeedStopIfVarNotFound: true });
 
   if (!set || set.length < 2) {
@@ -180,8 +185,8 @@ export const delWithSubVars = async (x) => {
   if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
   for (let id of varIds) await b.p('del', { id });
-  console.log('del', v[_].id);
   await b.p('del', { id: v[_].id });
+  console.log('del', v[_].id);
 
   return true;
 };
@@ -358,6 +363,10 @@ export const stateExport = (repo) => {
 }
 
 export const stateImport = (repo) => {
+
+}
+
+export const stateValidate = (repo) => {
 
 }
 
