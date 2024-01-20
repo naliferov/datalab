@@ -66,10 +66,10 @@ div[contenteditable="true"] {
 
     const _ = this._;
 
-    const rendM = async (o, parentRow, parentId) => {
+    const rendM = async (o, parentRow) => {
 
       if (!o.m) return;
-      if (!o.o) { console.error('No order array for map', parentId, o); return; }
+      if (!o.o) { console.error('No order array for map', o[_].id, o); return; }
 
       for (let k of o.o) {
         if (!o.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
@@ -77,40 +77,32 @@ div[contenteditable="true"] {
         const v = o.m[k];
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
-        const xx = await this.mkRow({
-          x1: k, x2: v,
-          parentId, id: v[_].id
-        });
-        this.rowInterface(parentRow).x2.append(xx);
-
-        if (v.m) await rendM(v, xx, v[_].id);
-        else if (v.l) await rendL(v, xx, v[_].id);
-        else if (v.v) {}
-        else console.log('Unknown type of var', v);
+        const row = await this.mkRow({ k, v, parentId: o[_].id, id: v[_].id });
+        this.rowInterface(parentRow).val.append(row);
+        await rend(v, row);
       }
     }
-    const rendL = async (o, parentRow, parentId) => {
+    const rendL = async (o, parentRow) => {
       if (!o.l) return;
 
       for (let v of o.l) {
         if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
 
-        const row = await this.mkRow({ x2: v, parentId, id: v[_].id });
-        this.rowInterface(parentRow).x2.append(row);
-
-        if (v.m) await rendM(v, row, v[_].id);
-        else if (v.l) await rendL(v, row, v[_].id);
-        else if (v.v) {}
-        else console.log('Unknown type of var', v);
+        const row = await this.mkRow({ v, parentId: o[_].id, id: v[_].id });
+        this.rowInterface(parentRow).val.append(row);
+        await rend(v, row);
       }
     }
-    const rend = async (o, parent) => {
-      if (!o[_]) {
+    const rend = async (v, parentRow) => {
+      if (!v[_]) {
         console.log('Unknown VAR', o);
         return;
       }
-      if (o.m) await rendM(o, parent, o[_].id);
-      if (o.l) await rendL(o, parent, o[_].id);
+
+      if (v.m) await rendM(v, parentRow, v[_].id);
+      else if (v.l) await rendL(v, parentRow, v[_].id);
+      else if (v.v) {}
+      else console.log('Unknown type of var', v);
     }
 
     const p = async (event, data) => await this.b.p(event, data);
@@ -134,21 +126,21 @@ div[contenteditable="true"] {
     await rend(data, root);
   },
   async mkRow(x) {
-    const { x1, x2, parentId, id } = x;
+    const { k, v, parentId, id } = x;
 
     const r = await this.b.p('doc.mk', { class: 'row' });
     if (parentId) r.setAttribute('_parent_id', parentId);
     if (id) r.setAttribute('_id', id);
 
-    if (x2) {
-      if (x2.l) r.setAttribute('t', 'l');
-      if (x2.m) r.setAttribute('t', 'm');
-      if (x2.v) r.setAttribute('t', 'v');
+    if (v) {
+      if (v.l) r.setAttribute('t', 'l');
+      if (v.m) r.setAttribute('t', 'm');
+      if (v.v) r.setAttribute('t', 'v');
     }
 
     let x1DOM;
-    if (x1) {
-      x1DOM = await this.b.p('doc.mk', { txt: x1, class: 'key' });
+    if (k) {
+      x1DOM = await this.b.p('doc.mk', { txt: k, class: 'key' });
       r.append(x1DOM);
       const sep = await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] });
       r.append(sep);
@@ -157,39 +149,31 @@ div[contenteditable="true"] {
     const val = await this.b.p('doc.mk', { class: 'val' });
     r.append(val);
 
-    if (x2 && x2.v) {
-      let txt = x2.v;
+    if (v && v.v) {
+      let txt = v.v;
       if (txt && txt.split) txt = txt.split('\n')[0];
-
       val.classList.add('inline');
       val.innerText = txt;
-      //x2DOM.append(await this.b.p('doc.mk', { txt, class: ['val'] }));
     }
 
     return r;
   },
-  rowInterface(xx) {
-    const children = xx.children;
+  rowInterface(row) {
+    const children = row.children;
 
     if (children.length === 1) {
       return {
-        xx: xx,
-        val() {
-          return this.xx.children[0].children[0];
-        },
-        getType() { return this.xx.getAttribute('t') },
+        row,
+        val: children[0],
+        getType() { return this.row.getAttribute('t') },
       }
     }
 
     return {
-      xx: xx,
-      x1: children[0],
-      separator: children[1],
-      x2: children[2],
-      val() {
-        return this.x2.children[0];
-      },
-      getType() { return this.xx.getAttribute('t') },
+      row,
+      key: children[0],
+      val: children[2],
+      getType() { return this.row.getAttribute('t') },
     }
   },
   getOrderKey(item, type) {
@@ -198,8 +182,8 @@ div[contenteditable="true"] {
     for (let i = 0; i < rows.length; i++) {
 
       let element;
-      if (type === 'm') element = this.rowInterface(rows[i]).x1;
-      else if (type === 'l') element = this.rowInterface(rows[i]).val();
+      if (type === 'm') element = this.rowInterface(rows[i]).key;
+      else if (type === 'l') element = this.rowInterface(rows[i]).val;
 
       if (element && this.isMarked(element)) {
         return i;
@@ -314,14 +298,14 @@ div[contenteditable="true"] {
 
       const mark = this.marked;
       if (!mark) return;
-      if (!this.isKey(mark) && !this.isVContainer(mark)) return;
+      if (!this.isKey(mark) && !this.isVal(mark)) return;
 
       const row = this.rowInterface(mark.parentNode);
       const type = row.getType();
 
       if (type === 'm') {
         const k = 'newKey';
-        const v = {v: 'newVal'};
+        const v = { v: 'newVal' };
         const newRow = await this.mkRow({
           x1: k, x2: v,
           parentVid: row.x1.getAttribute('vid'),
@@ -330,8 +314,10 @@ div[contenteditable="true"] {
         row.x2.append(newRow);
 
         const id = row.x1.getAttribute('vid');
-        const resp = await p('set', {id, type: 'm', k, ok: row.x2.children.length - 1, v});
-        console.log(resp);
+        //const resp = await p('set', {id, type: 'm', k, ok: row.x2.children.length - 1, v});
+        //console.log(resp);
+        console.log(id, k, ok, v);
+        return;
 
         if (resp.newId) {
           const newRowAPI = this.rowInterface(newRow);
@@ -349,12 +335,12 @@ div[contenteditable="true"] {
         row.x2.append(newRow);
 
         const id = row.x1.getAttribute('vid');
-        const resp = await p('set', {id, type: 'l', v});
-        console.log(resp);
+        //const resp = await p('set', {id, type: 'l', v});
+        //console.log(resp);
 
         if (resp.newId) {
-          const val = this.rowInterface(newRow).val();
-          if (val) val.setAttribute('vid', resp.newId);
+          //const val = this.rowInterface(newRow).val();
+          //if (val) val.setAttribute('vid', resp.newId);
         }
       }
 
@@ -477,9 +463,8 @@ div[contenteditable="true"] {
       const parentId = row.getAttribute('_parent_id');
       if (!parentId || !k) return;
 
-      const v = await this.b.p('del', { id: parentId, k, ok });
-      console.log(v);
-      //key.parentNode.remove();
+      const v = await this.b.p('del', { id: parentId, k, ok }); console.log(v);
+      marked.parentNode.remove();
     });
     this.menu.append(btn);
   }
