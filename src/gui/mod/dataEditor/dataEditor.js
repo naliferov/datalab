@@ -330,24 +330,22 @@ div[contenteditable="true"] {
 
     const mv = async (dir) => {
 
-      let parentId, k;
+      let parentId, k, row = this.marked.parentNode;
+
+      if (!this.isKey(this.marked) && !this.isVal(this.marked)) {
+        return;
+      }
+      if (dir === 'up' && !row.previousSibling) return;
+      if (dir === 'down' && !row.nextSibling) return;
 
       if (this.isKey(this.marked)) {
 
         const key = this.marked;
         const row = key.parentNode;
-        if (dir === 'up' && !row.previousSibling) return;
-        if (dir === 'down' && !row.nextSibling) return;
-
         parentId = row.getAttribute('_parent_id');
         k = this.getOrderKey(key, 'm');
 
       } else if (this.isVal(this.marked)) {
-
-        const val = this.marked;
-        const row = val.parentNode;
-        if (dir === 'up' && !row.previousSibling) return;
-        if (dir === 'down' && !row.nextSibling) return;
 
         const parentRowInterface = this.rowInterface(row.parentNode.parentNode);
         if (parentRowInterface.getType() !== 'l') return;
