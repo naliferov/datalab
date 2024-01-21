@@ -334,29 +334,26 @@ div[contenteditable="true"] {
 
       if (this.isKey(this.marked)) {
 
-        const x1 = this.marked;
-        if (dir === 'up' && !x1.parentNode.previousSibling) return;
-        if (dir === 'down' && !x1.parentNode.nextSibling) return;
-
-        parentId = x1.getAttribute('parent_vid');
-        k = this.getOrderKey(x1, 'm');
-
-      } else if (this.isVal(this.marked)) {
-
-        const x2 = this.marked.parentNode;
-        const row = x2.parentNode;
-
+        const key = this.marked;
+        const row = key.parentNode;
         if (dir === 'up' && !row.previousSibling) return;
         if (dir === 'down' && !row.nextSibling) return;
 
-        if (row.getAttribute('t')) return;
+        parentId = row.getAttribute('_parent_id');
+        k = this.getOrderKey(key, 'm');
+
+      } else if (this.isVal(this.marked)) {
+
+        const val = this.marked;
+        const row = val.parentNode;
+        if (dir === 'up' && !row.previousSibling) return;
+        if (dir === 'down' && !row.nextSibling) return;
 
         const parentRowInterface = this.rowInterface(row.parentNode.parentNode);
-        if (parentRowInterface.xx.getAttribute('t') !== 'l') {
-          return;
-        }
-        parentId = parentRowInterface.x1.getAttribute('vid');
-        k = this.getOrderKey(x2, 'l');
+        if (parentRowInterface.getType() !== 'l') return;
+
+        parentId = row.getAttribute('_parent_id');
+        k = this.getOrderKey(this.marked, 'l');
       }
 
       if (parentId === undefined) { console.log('parentId is empty'); return; }
