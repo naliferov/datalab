@@ -119,7 +119,7 @@ div[contenteditable="true"] {
     const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' });
     container.append(header);
 
-    const root = await this.mkRow({ x1: 'root', x2: {m: {}}, vid: 'root' });
+    const root = await this.mkRow({ k: 'root', v: { m: {} }, id: 'root' });
     container.append(root);
 
     const data = await p('get', { path, depth: 5 });
@@ -129,21 +129,17 @@ div[contenteditable="true"] {
     const { k, v, parentId, id } = x;
 
     const r = await this.b.p('doc.mk', { class: 'row' });
-    if (parentId) r.setAttribute('_parent_id', parentId);
     if (id) r.setAttribute('_id', id);
+    if (parentId) r.setAttribute('_parent_id', parentId);
 
     if (v) {
       if (v.l) r.setAttribute('t', 'l');
       if (v.m) r.setAttribute('t', 'm');
       if (v.v) r.setAttribute('t', 'v');
     }
-
-    let x1DOM;
     if (k) {
-      x1DOM = await this.b.p('doc.mk', { txt: k, class: 'key' });
-      r.append(x1DOM);
-      const sep = await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] });
-      r.append(sep);
+      r.append(await this.b.p('doc.mk', { txt: k, class: 'key' }));
+      r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
     }
 
     const val = await this.b.p('doc.mk', { class: 'val' });
@@ -161,20 +157,19 @@ div[contenteditable="true"] {
   rowInterface(row) {
     const children = row.children;
 
-    if (children.length === 1) {
-      return {
-        row,
-        val: children[0],
-        getType() { return this.row.getAttribute('t') },
-      }
-    }
-
-    return {
+    const o = {
       row,
-      key: children[0],
-      val: children[2],
+      getId() { return this.row.getAttribute('_id') },
       getType() { return this.row.getAttribute('t') },
     }
+
+    if (children.length === 1) {
+      o.val = children[0];
+    } else {
+      o.key = children[0];
+      o.val = children[2];
+    }
+    return o;
   },
   getOrderKey(item, type) {
 
@@ -259,6 +254,7 @@ div[contenteditable="true"] {
         if (id === 'vid_stub') return;
         await this.b.p('set', { id, v: { v } });
       }
+
       return;
     }
 
@@ -301,37 +297,27 @@ div[contenteditable="true"] {
       if (!this.isKey(mark) && !this.isVal(mark)) return;
 
       const row = this.rowInterface(mark.parentNode);
+      const id = row.getId();
+      const v = { v: 'newVal' };
       const type = row.getType();
 
       if (type === 'm') {
         const k = 'newKey';
-        const v = { v: 'newVal' };
-        const newRow = await this.mkRow({
-          k, v,
-          parentId: row.row.getAttribute('_id'),
-          id: 'vid_stub',
-        });
+        const ok = row.val.children.length - 1;
+        const newRow = await this.mkRow({ k, v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
 
-        const id = row.row.getAttribute('_id');
-        const resp = await p('set', { id, type: 'm', k, ok: row.val.children.length - 1, v });
+        const resp = await p('set', { type: 'm', id, k, ok, v });
         console.log(resp);
-
         if (resp.newId) newRow.setAttribute('_id', resp.newId);
       }
 
       if (type === 'l') {
-        const v = { v: 'newVal' };
-        const newRow = await this.mkRow({
-          v,
-          parentId: row.row.getAttribute('_id'),
-          vid: 'vid_stub',
-        });
+        const newRow = await this.mkRow({ v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
 
-        const id = row.row.getAttribute('_id');
-
-        const resp = await p('set', { id, type: 'l', v }); console.log(resp);
+        const resp = await p('set', { type: 'l', id, v });
+        console.log(resp);
         if (resp.newId) newRow.setAttribute('vid', resp.newId);
       }
 
