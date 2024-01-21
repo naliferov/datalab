@@ -303,7 +303,7 @@ div[contenteditable="true"] {
 
       if (type === 'm') {
         const k = 'newKey';
-        const ok = row.val.children.length - 1;
+        const ok = row.val.children.length;
         const newRow = await this.mkRow({ k, v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
 

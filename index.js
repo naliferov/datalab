@@ -71,7 +71,7 @@ await b.s('set', async (x) => {
     if (type === 'm' && vById.m) {
       if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
       if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-      if (!ok) return { msg: `ok is empty` };
+      if (ok === undefined) return { msg: `ok is empty` };
 
       const newId = await b.p('getUniqId');
       vById.m[k] = newId;
