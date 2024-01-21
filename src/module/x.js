@@ -282,29 +282,28 @@ export const getVarData = async (x) => {
         data.l.push( await getVarData({ _, b, v: v2, depth: depth - 1 }) );
       }
     }
-  }
 
-  if (!v.m) return data;
+  } else if (v.m) {
+    data.m = {};
+    if (v.o) data.o = v.o;
 
-  data.m = {};
-  if (v.o) data.o = v.o;
+    for (let p in v.m) {
 
-  for (let p in v.m) {
+      const id = v.m[p];
+      if (!id) return;
 
-    const id = v.m[p];
-    if (!id) return;
+      if (depth === 0) {
+        data.m[p] = id;
+        continue;
+      }
+      const v2 = await b.p('get', { id });
+      if (v2) v2[_] = { id };
 
-    if (depth === 0) {
-      data.m[p] = id;
-      continue;
-    }
-    const v2 = await b.p('get', { id });
-    if (v2) v2[_] = { id };
-
-    if (v2.v) {
-      data.m[p] = v2;
-    } else if (v2.l || v2.m) {
-      data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1 });
+      if (v2.v) {
+        data.m[p] = v2;
+      } else if (v2.l || v2.m) {
+        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1 });
+      }
     }
   }
 
@@ -324,16 +323,14 @@ export const getVarIds = async (x) => {
       for (let id of v.l) {
         const subV = await b.p('get', { id });
         ids.push(id);
-
         if (subV.m || subV.l) await getIds(subV);
       }
 
     } else if (v.m) {
       for (let k in v.m) {
         const id = v.m[k];
-        const subV = await b.p('get', { id });
         ids.push(id);
-
+        const subV = await b.p('get', { id });
         if (subV.m || subV.l) await getIds(subV);
       }
     }
@@ -367,7 +364,7 @@ export const stateImport = (repo) => {
 }
 
 export const stateValidate = (repo) => {
-
+  //
 }
 
 // UTILS //
