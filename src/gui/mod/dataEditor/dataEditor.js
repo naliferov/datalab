@@ -390,27 +390,21 @@ div[contenteditable="true"] {
         const movingRow = this.rowInterface(this.buffer.marked.parentNode);
         if (movingRow.getType() !== 'm') return;
 
+        //todo moveType of list
+
         const data = {
           oldId: movingRow.getParentId(),
           newId: row.getId(),
           key: movingRow.key.innerText,
-          //ok for array
         };
-        console.log(data);
-        return;
-
-        const resp = await this.b.p('cp', {
-          oldId: parentRow.getId(),
-          newId: row.getId(),
-          key: parentRow.key.innerText,
-          //orderKey
-        });
+        const resp = await this.b.p('cp', data);
         console.log(resp);
 
-        xx.x2.append(this.buffer.row);
+        //xx.x2.append(this.buffer.row);
         this.buffer = null;
         this.menu.remove();
       });
+
       this.menu.append(btn);
     }
 
