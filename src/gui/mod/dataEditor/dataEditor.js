@@ -101,7 +101,7 @@ div[contenteditable="true"] {
 
       if (v.m) await rendM(v, parentRow, v[_].id);
       else if (v.l) await rendL(v, parentRow, v[_].id);
-      else if (v.v) {}
+      else if (v.v) { }
       else console.log('Unknown type of var', v);
     }
 
@@ -160,6 +160,7 @@ div[contenteditable="true"] {
     const o = {
       row,
       getId() { return this.row.getAttribute('_id') },
+      getParentId() { return this.row.getAttribute('_parent_id') },
       getType() { return this.row.getAttribute('t') },
     }
 
@@ -216,7 +217,7 @@ div[contenteditable="true"] {
       this.unmark();
     }
 
-    if (!classList.contains('x1') && !classList.contains('val')) return;
+    if (!this.isKey(t) && !this.isVal(t)) return;
     if (this.isRoot(t)) return;
 
     e.preventDefault();
@@ -245,12 +246,14 @@ div[contenteditable="true"] {
       const isKey = this.isKey(this.marked);
       const isVal = this.isVal(this.marked);
 
+      const row = this.marked.parentNode;
+
       if (isKey) {
-        const parentId = this.marked.getAttribute('parent_vid');
+        const parentId = row.getAttribute('_parent_id');
         const resp = await this.b.p('cp', { id: parentId, oldKey: this.markedTxt, newKey: v });
         console.log(resp);
       } else if (isVal) {
-        const id = this.marked.getAttribute('vid');
+        const id = row.getAttribute('_id');
         if (id === 'vid_stub') return;
         await this.b.p('set', { id, v: { v } });
       }
@@ -274,9 +277,9 @@ div[contenteditable="true"] {
     this.remark(t);
 
     const p = async (event, data) => await this.b.p(event, data);
-    const mkBtn = async (txt, fn) => await p('doc.mk', {txt, class: 'menuBtn', events: {click: fn}});
+    const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
-    const containerSize = await p('doc.getSize', {o: this.container});
+    const containerSize = await p('doc.getSize', { o: this.container });
     const menu = await p('doc.mk', {
       class: 'menu', css: {
         left: (e.clientX - containerSize.x) + 'px',
@@ -358,7 +361,7 @@ div[contenteditable="true"] {
       if (k === undefined) { console.log('ok not found'); return; }
 
       const ok = { from: k, to: dir === 'up' ? --k : ++k };
-      const v = await this.b.p('set', {id: parentId, ok});
+      const v = await this.b.p('set', { id: parentId, ok });
       console.log(v);
     }
     btn = await mkBtn('Move up', async (e) => await mv('up'));
@@ -367,33 +370,40 @@ div[contenteditable="true"] {
     this.menu.append(btn);
 
     btn = await mkBtn('Copy', (e) => {
-      const x1 = this.marked;
-      if (!this.isKey(x1)) return;
-
-      const parentId = x1.getAttribute('parent_vid');
-      const key = x1.innerText;
-      this.buffer = { id: parentId, key, row: x1.parentNode };
+      if (!this.isKey(this.marked)) return;
+      this.buffer = { marked: this.marked };
       this.menu.remove();
     });
     this.menu.append(btn);
 
     if (this.buffer) {
       btn = await mkBtn('Paste', async (e) => {
-        const x1 = this.marked;
-        if (!this.isKey(x1)) return;
+        const key = this.marked;
+        if (!this.isKey(key)) return;
 
-        const xx = this.rowInterface(x1.parentNode);
-        // if (this.isVal(xx.x2)) {
-        //   this.menu.remove();
-        //   return;
-        // }
-        //can't paste to value objects
+        const row = this.rowInterface(key.parentNode);
+        if (row.getType() !== 'm') {
+          this.menu.remove();
+          return;
+        }
+
+        const movingRow = this.rowInterface(this.buffer.marked.parentNode);
+        if (movingRow.getType() !== 'm') return;
+
+        const data = {
+          oldId: movingRow.getParentId(),
+          newId: row.getId(),
+          key: movingRow.key.innerText,
+          //ok for array
+        };
+        console.log(data);
         return;
 
         const resp = await this.b.p('cp', {
-          oldId: this.buffer.id,
-          newId: x1.getAttribute('vid'),
-          key: this.buffer.key,
+          oldId: parentRow.getId(),
+          newId: row.getId(),
+          key: parentRow.key.innerText,
+          //orderKey
         });
         console.log(resp);
 
@@ -407,7 +417,7 @@ div[contenteditable="true"] {
 
     btn = await mkBtn('Convert to map', async (e) => {
       const vid = this.marked.getAttribute('vid');
-      const v = await this.b.p('set', {id: vid, v: {m: {}, o: []}});
+      const v = await this.b.p('set', { id: vid, v: { m: {}, o: [] } });
       console.log(v);
     });
     this.menu.append(btn);

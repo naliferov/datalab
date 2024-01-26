@@ -1,19 +1,19 @@
-import process from 'node:process'
+import AmdZip from 'adm-zip';
 import { promises as fs } from "node:fs";
+import process from 'node:process';
 import { ulid } from "ulid";
 import {
   U, X, b,
   createSet,
   del,
   get,
-  getVarData, getVarIds,
   getDateTime,
+  getVarData, getVarIds,
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
   set,
 } from "./src/module/x.js";
-import AmdZip from 'adm-zip';
 
 const _ = Symbol('sys');
 const x = X(_);
@@ -140,24 +140,21 @@ await b.s('del', async (x) => {
 });
 
 await b.s('cp', async (x) => {
-  const { oldId, newId, key,   id, oldKey, newKey, delSource } = x;
+  const { oldId, newId, key,
+    id, oldKey, newKey, delSource } = x;
 
   //move from one id to another
   if (oldId && newId && oldId !== newId && key) {
 
     const oldV = await b.p('get', { id: oldId });
     const newV = await b.p('get', { id: newId });
-    if (!oldV || !newV || !oldV.m || !newV.m) {
-      return { msg: 'oldV or oldV not found or !oldV.m or !newV.m'};
-    }
-    if (!oldV.o || !newV.o) {
-      return { msg: 'oldV or oldV not found or !oldV.m or !newV.m'};
-    }
-    if (newV.m[key]) {
-      return { msg: `newV.m already have key ${key}`};
-    }
+    if (!oldV || !newV) return { msg: 'oldV or oldV not found' };
+    if (!oldV.m || !newV.m) return { msg: 'newV.m not found' };
+    if (!oldV.o || !newV.o) { return { msg: 'oldV or oldV not found or !oldV.m or !newV.m' }; }
 
-    if (!oldV.m[key]) { console.log(`oldV.m[${key}] not found`); return; }
+    if (!oldV.m[key]) { console.log(`${key} not found in oldV.m`); return; }
+    if (newV.m[key]) { return { msg: `newV.m already have key ${key}` }; }
+
     newV.m[key] = oldV.m[key];
     delete oldV.m[key];
 
@@ -165,8 +162,8 @@ await b.s('cp', async (x) => {
     if (index !== -1) oldV.o.splice(index, 1);
     newV.o.push(key);
 
-    await b.p('set', { id: oldId, v: oldV });
-    await b.p('set', { id: newId, v: newV });
+    await b.p('set', { id: oldId, v: prepareForTransfer(oldV) });
+    await b.p('set', { id: newId, v: prepareForTransfer(newV) });
     return { oldId, newId, key };
   }
 
@@ -175,19 +172,17 @@ await b.s('cp', async (x) => {
 
     const v = await b.p('get', { id });
     if (!v.m || !v.m[oldKey]) {
-      return { msg: 'v.m or v.m[oldKey] not found'};
+      return { msg: 'v.m or v.m[oldKey] not found' };
     }
 
     v.m[newKey] = v.m[oldKey];
     delete v.m[oldKey];
 
     if (!v.o) { console.error('o not found in map'); return; }
-    for (let i = 0; i < v.o.length; i++) {
-      if (v.o[i] === oldKey) {
-        v.o[i] = newKey;
-        break;
-      }
-    }
+    const ok = v.o.indexOf(oldKey);
+    if (ok === -1) return { msg: `order key for key [${key}] not found` };
+
+    v.o[ok] = newKey;
     await b.p('set', { id, v });
     return { id, oldKey, newKey };
   }
