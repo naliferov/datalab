@@ -136,7 +136,7 @@ await b.s('del', async (x) => {
     x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
     return await del(x) ?? { msg: 'delete complete' };
   }
-  if (id) return await repo.del(id);
+  if (id && id !== 'root') return await repo.del(id);
 });
 
 await b.s('cp', async (x) => {

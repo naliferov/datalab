@@ -186,7 +186,7 @@ div[contenteditable="true"] {
       }
     }
   },
-  isRoot(t) { return t.getAttribute('vid') === 'root' },
+  isRoot(t) { return t.getAttribute('_id') === 'root' },
   isKey(t) { return t.classList.contains('key'); },
   isVal(t) { return t.classList.contains('val'); },
   mark() {
@@ -329,7 +329,7 @@ div[contenteditable="true"] {
     this.menu.append(btn);
 
 
-    if (this.isRoot(t)) return;
+    //if (this.isRoot(t.parentNode)) return;
 
     const mv = async (dir) => {
 
@@ -388,9 +388,8 @@ div[contenteditable="true"] {
         }
 
         const movingRow = this.rowInterface(this.buffer.marked.parentNode);
-        if (movingRow.getType() !== 'm') return;
-
-        //todo moveType of list
+        const type = movingRow.getType();
+        if (type !== 'm' && type !== 'l') return;
 
         const data = {
           oldId: movingRow.getParentId(),
