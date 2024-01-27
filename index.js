@@ -12,7 +12,7 @@ import {
   parseCliArgs,
   pathToArr,
   prepareForTransfer,
-  set,
+  set
 } from "./src/module/x.js";
 
 const _ = Symbol('sys');
@@ -207,6 +207,18 @@ await b.s('state.export', async (x) => {
   zip.addLocalFolder(repo.getStatePath());
   zip.writeZip(`./state_${getDateTime()}.zip`);
 });
+await b.s('state.validate', async (x) => {
+  const list = await fs.readdir('./state');
+  const fSet = new Set;
+  for (let i of list) {
+    if (i === '.gitignore' || i === 'root') continue;
+    fSet.add(i);
+  }
+  const v = await b.p('get', { id: 'root' });
+  const varIds = await getVarIds({ b, v });
+  for (let i of varIds) fSet.delete(i);
+  console.log('files that not exists in varIds', fSet);
+});
 
 process.on('uncaughtException', (error, origin) => {
   if (error?.code === 'ECONNRESET') {
@@ -255,9 +267,8 @@ const e = {
     const path = arg[1];
     return await b.p('state.import', { path: './' + path });
   },
-  'state.export': async (arg) => {
-    return await b.p('state.export', { repo })
-  },
+  'state.export': async (arg) => await b.p('state.export', { repo }),
+  'state.validate': async (arg) => await b.p('state.validate'),
   'server.start': async (arg) => {
     //todo refactor this for more control
     const x = {

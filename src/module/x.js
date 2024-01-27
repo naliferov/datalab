@@ -51,7 +51,7 @@ export const set = async (x) => {
 
   for (let i = 0; i < set.length; i++) {
     const v = set[i];
-    const isLast = i === set.length -1;
+    const isLast = i === set.length - 1;
 
     if (isLast) {
       if (v.l) {
@@ -279,7 +279,7 @@ export const getVarData = async (x) => {
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
-        data.l.push( await getVarData({ _, b, v: v2, depth: depth - 1 }) );
+        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1 }));
       }
     }
 
@@ -321,8 +321,8 @@ export const getVarIds = async (x) => {
 
     if (v.l) {
       for (let id of v.l) {
-        const subV = await b.p('get', { id });
         ids.push(id);
+        const subV = await b.p('get', { id });
         if (subV.m || subV.l) await getIds(subV);
       }
 
@@ -476,4 +476,4 @@ const on = (id, eventName, callback) => {
   //add event to id!
   //dom.addEventListener(eventName, callback);
 }
-const dragAndDrop = () => {}
+const dragAndDrop = () => { }

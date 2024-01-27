@@ -321,7 +321,7 @@ div[contenteditable="true"] {
 
         const resp = await p('set', { type: 'l', id, v });
         console.log(resp);
-        if (resp.newId) newRow.setAttribute('vid', resp.newId);
+        if (resp.newId) newRow.setAttribute('_id', resp.newId);
       }
 
       this.menu.remove();
@@ -407,11 +407,20 @@ div[contenteditable="true"] {
       this.menu.append(btn);
     }
 
-
     btn = await mkBtn('Convert to map', async (e) => {
-      const vid = this.marked.getAttribute('vid');
-      const v = await this.b.p('set', { id: vid, v: { m: {}, o: [] } });
-      console.log(v);
+      const row = this.marked.parentNode;
+      const id = row.getAttribute('_id');
+      if (!id) return;
+      const r = await this.b.p('set', { id, v: { m: {}, o: [] } });
+      console.log(r);
+    });
+    this.menu.append(btn);
+    btn = await mkBtn('Convert to list', async (e) => {
+      const row = this.marked.parentNode;
+      const id = row.getAttribute('_id');
+      if (!id) return;
+      const r = await this.b.p('set', { id, v: { l: [] } });
+      console.log(r);
     });
     this.menu.append(btn);
     btn = await mkBtn('Convert to val', (e) => console.log(e));
