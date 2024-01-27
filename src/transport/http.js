@@ -127,10 +127,10 @@ export const rqHandler = async (x) => {
   const body = await rqParseBody(rq);
   let msg = body ?? query;
 
-  if (msg instanceof Buffer) msg = { b: msg, meta: rq.headers };
+  if (msg instanceof Buffer) msg = { b, msg, meta: rq.headers };
   if (msg.x && msg.x !== 'get' && !isLocal) {
-    rqResponse(rs, 'Access denied');
-    return;
+    //rqResponse(rs, 'Access denied');
+    //return;
   }
 
   const out = await b.p('port', { b, msg });
@@ -138,7 +138,6 @@ export const rqHandler = async (x) => {
     rqResponse(rs, 'Default response');
     return;
   }
-
   if (typeof out === 'object' && out.msg && out.type) {
     const { msg, type } = out;
     rqResponse(rs, msg, type);
