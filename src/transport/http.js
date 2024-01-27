@@ -126,8 +126,8 @@ export const rqHandler = async (x) => {
   const query = rqParseQuery(rq);
   const body = await rqParseBody(rq);
   let msg = body ?? query;
-  if (msg instanceof Buffer) msg = { b: msg, meta: rq.headers };
 
+  if (msg instanceof Buffer) msg = { b: msg, meta: rq.headers };
   if (msg && msg.x !== 'get' && !isLocal) {
     rqResponse(rs, 'Access denied');
     return;
