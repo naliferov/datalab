@@ -4,11 +4,14 @@ export const X = (symbol) => {
   const f = {};
 
   return async (x) => {
-    if (x[_].x) {
-      return await f[x[_].x](x);
+    const callMyName = x[_].x;
+    if (callMyName) {
+      return await f[callMyName](x);
     }
-    if (x[_].y) {
-      f[x[_].y] = x[_].f;
+
+    const subscribeName = x[_].y;
+    if (subscribeName) {
+      f[subscribeName] = x[_].f;
     }
   }
 }
@@ -19,7 +22,7 @@ export const U = (X, symbol) => {
 
   return async (x) => {
     if (x.x) {
-      return await X({ [_]: { x: x.x }, ...x });
+      return await X({ ...x, [_]: { x: x.x } });
     }
     if (x.y) {
       return await X({ [_]: { y: x.y, f: x.f } });
@@ -32,7 +35,7 @@ export const b = {
   set_(_) { this._ = _; },
   async p(e, data) {
     const _ = this._;
-    return await this.x({ [_]: { x: e }, ...data });
+    return await this.x({ ...data, [_]: { x: e } });
   },
   async s(e, f) {
     const _ = this._;
@@ -76,24 +79,23 @@ export const set = async (x) => {
 }
 
 export const get = async (x) => {
-  let { path, depth, varIdsForGet } = x;
-  let repo = x.repo || 'default';
 
   let { _, b, createSet, getVarData } = x[x._];
+  let { path, depth, varIdsForGet, useUnderscore } = x;
+  let repo = x.repo || 'default';
 
-  if (!depth && depth !== 0) depth = 0;
+  if (depth === undefined) depth = 0;
 
   const set = await createSet({
     _, b, repo, path,
     isNeedStopIfVarNotFound: true,
   });
-
   if (!set) return;
 
   const v = set.at(-1);
   if (!v) return;
 
-  return await getVarData({ b, _, repo, v, varIdsForGet, depth });
+  return await getVarData({ _, b, repo, v, varIdsForGet, depth, useUnderscore });
 }
 
 export const del = async (x) => {
@@ -264,9 +266,15 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { _, b, v, depth } = x;
+  const { _, b, v, depth, useUnderscore } = x;
 
-  const data = { [_]: { id: v[_].id } };
+  let data;
+  if (useUnderscore) {
+    data = { ['_']: { id: v[_] ? v[_].id : v['_'].id } };
+  } else {
+    data = { [_]: { id: v[_].id } };
+  }
+
   if (v.v) data.v = v.v;
 
   if (v.l) {
@@ -274,16 +282,19 @@ export const getVarData = async (x) => {
 
     for (let id of v.l) {
       const v2 = await b.p('get', { id });
-      if (v2) v2[_] = { id };
+      if (v2) {
+        v2[useUnderscore ? '_' : _] = { id };
+      }
 
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
-        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1 }));
+        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1, useUnderscore }));
       }
     }
 
   } else if (v.m) {
+
     data.m = {};
     if (v.o) data.o = v.o;
 
@@ -297,14 +308,17 @@ export const getVarData = async (x) => {
         continue;
       }
       const v2 = await b.p('get', { id });
-      if (v2) v2[_] = { id };
+      if (v2) {
+        v2[useUnderscore ? '_' : _] = { id };
+      }
 
       if (v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
-        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1 });
+        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1, useUnderscore });
       }
     }
+
   }
 
   return data;

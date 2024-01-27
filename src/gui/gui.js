@@ -1,17 +1,14 @@
 import {
   X, b,
-  createSet,
   dmk,
-  get,
-  getSize,
-  getVarData
+  getSize
 } from "../module/x.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
 
 if (!Array.prototype.at) {
-  Array.prototype.at = function(index) {
+  Array.prototype.at = function (index) {
     return index < 0 ? this[this.length + index] : this[index];
   }
 }
@@ -27,10 +24,10 @@ await b.s('getUniqId', () => {
 
   if (!window.crypto || !window.crypto.randomUUID) {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
-        function(c) {
-          const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
-          return uuid.toString(16);
-        });
+      function (c) {
+        const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
+        return uuid.toString(16);
+      });
   }
   return crypto.randomUUID();
 });
@@ -38,38 +35,10 @@ await b.s('port', async (x) => {
   const { data } = await (new HttpClient).post('/', x);
   return data;
 });
-//todo receive updates from backend;
-
-await b.s('set', async (x) => {
-  const _ = await b.p('get_');
-  delete x[_];
-  return await b.p('port', { ...x, x: 'set' });
-});
-await b.s('get', async (x) => {
-  const { id, path, depth } = x;
-
-  if (id) {
-    return await b.p('port', { x: 'get', id });
-  }
-  if (path && depth !== undefined) {
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { b, _, createSet, getVarData };
-    return await get(x);
-  }
-});
-await b.s('del', async (x) => {
-  const _ = await b.p('get_');
-  delete x[_];
-  x.x = 'del';
-  return await b.p('port', x);
-});
-await b.s('cp', async (x) => {
-  const _ = await b.p('get_');
-  delete x[_];
-  x.x = 'cp';
-  return await b.p('port', x);
-});
+await b.s('set', async (x) => await b.p('port', { ...x, x: 'set' }));
+await b.s('get', async (x) => await b.p('port', { ...x, x: 'get' }));
+await b.s('del', async (x) => await b.p('port', { ...x, x: 'del' }));
+await b.s('cp', async (x) => await b.p('port', { ...x, x: 'cp' }));
 
 const doc = globalThis.document;
 const app = doc.createElement('div');
@@ -110,10 +79,6 @@ await b.s('doc.mv', async (x) => { });
 await b.s('doc.getSize', async (x) => {
   const { o } = x;
   return getSize(o);
-});
-await b.s('doc.setStyle', async (x) => {
-  const { o, style } = x;
-  for (let k in style) o.style[k] = style[k];
 });
 
 const frame = Object.create(Frame);

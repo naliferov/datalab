@@ -29,14 +29,12 @@ export const DataEditor = {
 .menuBtn:hover {
     background: #ababab;
 }
-
 div[contenteditable="true"] {
     outline: none;
 }
 .row {
     margin-left: 16px;
 }
-
 .key {
     cursor: pointer;
     border: 1px solid transparent;
@@ -47,7 +45,6 @@ div[contenteditable="true"] {
     cursor: pointer;
     border: 1px solid transparent;
 }
-
 .key.mark,
 .val.mark {
     background: lightblue;
@@ -65,42 +62,41 @@ div[contenteditable="true"] {
   async init(path) {
 
     const _ = this._;
+    const getVId = v => v['_'].id;
 
-    const rendM = async (o, parentRow) => {
-
-      if (!o.m) return;
-      if (!o.o) { console.error('No order array for map', o[_].id, o); return; }
-
-      for (let k of o.o) {
-        if (!o.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
-
-        const v = o.m[k];
-        if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
-
-        const row = await this.mkRow({ k, v, parentId: o[_].id, id: v[_].id });
-        this.rowInterface(parentRow).val.append(row);
-        await rend(v, row);
-      }
-    }
-    const rendL = async (o, parentRow) => {
-      if (!o.l) return;
-
-      for (let v of o.l) {
-        if (!v[_]) { console.log('2: Unknown type of VAR', v); return; }
-
-        const row = await this.mkRow({ v, parentId: o[_].id, id: v[_].id });
-        this.rowInterface(parentRow).val.append(row);
-        await rend(v, row);
-      }
-    }
     const rend = async (v, parentRow) => {
-      if (!v[_]) {
-        console.log('Unknown VAR', o);
-        return;
-      }
 
-      if (v.m) await rendM(v, parentRow, v[_].id);
-      else if (v.l) await rendL(v, parentRow, v[_].id);
+      const id = getVId(v);
+      if (!id) { console.log('Unknown VAR', v); return; }
+
+      if (v.m) {
+
+        if (!v.o) { console.error('No order array for map', id, v); return; }
+
+        for (let k of v.o) {
+          if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
+
+          const curV = v.m[k];
+          const curVId = getVId(curV);
+          if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+
+          const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
+          this.rowInterface(parentRow).val.append(row);
+          await rend(curV, row);
+        }
+
+      } else if (v.l) {
+
+        for (let curV of v.l) {
+
+          const curVId = getVId(curV);
+          if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+
+          const row = await this.mkRow({ v: curV, parentId: id, id: curVId });
+          this.rowInterface(parentRow).val.append(row);
+          await rend(curV, row);
+        }
+      }
       else if (v.v) { }
       else console.log('Unknown type of var', v);
     }
@@ -122,7 +118,8 @@ div[contenteditable="true"] {
     const root = await this.mkRow({ k: 'root', v: { m: {} }, id: 'root' });
     container.append(root);
 
-    const data = await p('get', { path, depth: 5 });
+    const data = await p('get', { path, depth: 10, useUnderscore: true });
+    console.log(data);
     await rend(data, root);
   },
   async mkRow(x) {

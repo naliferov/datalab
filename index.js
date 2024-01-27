@@ -123,7 +123,6 @@ await b.s('get', async (x) => {
     const _ = await b.p('get_');
     x._ = _;
     x[_] = { _, b, createSet, getVarData };
-
     return await get(x);
   }
 });
