@@ -255,7 +255,8 @@ div[contenteditable="true"] {
       } else if (isVal) {
         const id = row.getAttribute('_id');
         if (id === 'vid_stub') return;
-        await this.b.p('set', { id, v: { v } });
+        const resp = await this.b.p('set', { id, v: { v } });
+        console.log(resp);
       }
 
       return;

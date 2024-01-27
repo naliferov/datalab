@@ -76,7 +76,7 @@ export const set = async (x) => {
 }
 
 export const get = async (x) => {
-  let { path, depth } = x;
+  let { path, depth, varIdsForGet } = x;
   let repo = x.repo || 'default';
 
   let { _, b, createSet, getVarData } = x[x._];
@@ -93,7 +93,7 @@ export const get = async (x) => {
   const v = set.at(-1);
   if (!v) return;
 
-  return await getVarData({ b, _, repo, v, depth });
+  return await getVarData({ b, _, repo, v, varIdsForGet, depth });
 }
 
 export const del = async (x) => {
@@ -322,16 +322,14 @@ export const getVarIds = async (x) => {
     if (v.l) {
       for (let id of v.l) {
         ids.push(id);
-        const subV = await b.p('get', { id });
-        if (subV.m || subV.l) await getIds(subV);
+        await getIds(await b.p('get', { id }));
       }
 
     } else if (v.m) {
       for (let k in v.m) {
         const id = v.m[k];
         ids.push(id);
-        const subV = await b.p('get', { id });
-        if (subV.m || subV.l) await getIds(subV);
+        await getIds(await b.p('get', { id }));
       }
     }
   }

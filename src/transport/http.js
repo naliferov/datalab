@@ -128,6 +128,11 @@ export const rqHandler = async (x) => {
   let msg = body ?? query;
   if (msg instanceof Buffer) msg = { b: msg, meta: rq.headers };
 
+  if (msg && msg.x !== 'get' && !isLocal) {
+    rqResponse(rs, 'Access denied');
+    return;
+  }
+
   const out = await b.p('port', { b, msg });
   if (!out) {
     rqResponse(rs, 'Default response');

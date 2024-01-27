@@ -216,6 +216,7 @@ await b.s('state.validate', async (x) => {
   }
   const v = await b.p('get', { id: 'root' });
   const varIds = await getVarIds({ b, v });
+
   for (let i of varIds) fSet.delete(i);
   console.log('files that not exists in varIds', fSet);
 });
