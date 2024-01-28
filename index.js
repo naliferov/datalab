@@ -94,7 +94,7 @@ await b.s('set', async (x) => {
       return { type, id, newId, v };
     }
 
-    return { msg: 'Not found "m" in vById', vById };
+    return { msg: 'Unknown parama for set', x };
   }
 
   //SET value by ID
