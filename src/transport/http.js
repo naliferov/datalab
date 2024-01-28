@@ -1,9 +1,7 @@
 const rqParseQuery = (rq) => {
   const query = {};
   const url = new URL('http://t.c' + rq.url);
-  url.searchParams.forEach((v, k) => {
-    query[k] = v
-  });
+  url.searchParams.forEach((v, k) => query[k] = v);
   return query;
 }
 const rqParseBody = async (rq, limitMb = 12) => {
@@ -24,7 +22,7 @@ const rqParseBody = async (rq, limitMb = 12) => {
     });
     rq.on('error', err => {
       rq.destroy();
-      reject(err);
+      reject({ err });
     });
     rq.on('end', () => {
       b = Buffer.concat(b);
@@ -126,9 +124,10 @@ export const rqHandler = async (x) => {
   let msg = body ?? query;
 
   if (msg instanceof Buffer) msg = { b, msg, meta: rq.headers };
-  if (msg.x && msg.x !== 'get' && !isLocal) {
-    //rqResponse(rs, 'Access denied');
-    //return;
+  if (msg.err) {
+    console.log('err', msg.err);
+    rqResponse(rs, 'error processing rq');
+    return;
   }
 
   const out = await b.p('port', { b, msg });
