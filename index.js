@@ -63,7 +63,7 @@ await b.s('set', async (x) => {
     return { id, ok };
   }
 
-  //SET key and value to specific id of (MAP), or add value (LIST)
+  //SET key, value to id of map, or add value to List
   if (type && id && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { msg: 'v not found' };
