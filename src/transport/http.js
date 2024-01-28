@@ -24,7 +24,6 @@ const rqParseBody = async (rq, limitMb = 12) => {
     });
     rq.on('error', err => {
       rq.destroy();
-      b.p('log', { msg: 'rq socker err', err });
       reject(err);
     });
     rq.on('end', () => {
@@ -122,7 +121,6 @@ export const rqHandler = async (x) => {
   rq.mp = `${rq.method}:${url.pathname}`;
 
   if (x.serveFS && await rqResolveFile(rq, rs, fs)) return;
-
   const query = rqParseQuery(rq);
   const body = await rqParseBody(rq);
   let msg = body ?? query;
