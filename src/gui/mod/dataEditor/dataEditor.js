@@ -342,7 +342,6 @@ div[contenteditable="true"] {
       if (this.isKey(this.marked)) {
 
         const key = this.marked;
-        const row = key.parentNode;
         parentId = row.getAttribute('_parent_id');
         k = this.getOrderKey(key, 'm');
 
@@ -361,6 +360,9 @@ div[contenteditable="true"] {
       const ok = { from: k, to: dir === 'up' ? --k : ++k };
       const v = await this.b.p('set', { id: parentId, ok });
       console.log(v);
+
+      if (dir === 'up') row.previousSibling.before(row);
+      if (dir === 'down') row.nextSibling.after(row);
     }
     btn = await mkBtn('Move up', async (e) => await mv('up'));
     this.menu.append(btn);
@@ -397,7 +399,7 @@ div[contenteditable="true"] {
         const resp = await this.b.p('cp', data);
         console.log(resp);
 
-        //xx.x2.append(this.buffer.row);
+        row.val.append(movingRow.row);
         this.buffer = null;
         this.menu.remove();
       });
