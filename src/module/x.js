@@ -276,16 +276,19 @@ export const getVarData = async (x) => {
   }
 
   if (v.v) data.v = v.v;
-
   if (v.l) {
     data.l = [];
 
     for (let id of v.l) {
+
+      if (depth === 0) {
+        data.l.push({ i: id });
+        continue;
+      }
       const v2 = await b.p('get', { id });
       if (v2) {
         v2[useUnderscore ? '_' : _] = { id };
       }
-
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
@@ -304,7 +307,7 @@ export const getVarData = async (x) => {
       if (!id) return;
 
       if (depth === 0) {
-        data.m[p] = id;
+        data.m[p] = { i: id };
         continue;
       }
       const v2 = await b.p('get', { id });
@@ -356,11 +359,13 @@ export const getVarIds = async (x) => {
 export const prepareForTransfer = (v) => {
   const d = {};
 
+  if (v.i) d.i = v.i; //id data. link data, link or other vars or links
   if (v.b) d.b = v.b;
   if (v.v) d.v = v.v;
   if (v.m) d.m = v.m;
   if (v.l) d.l = v.l;
   if (v.o) d.o = v.o;
+  // if (v.u) d.u = v.u; //ui data
   if (v.f) d.f = v.f;
   if (v.x) d.x = v.x;
 

@@ -3,10 +3,22 @@ export const DataEditor = {
   setB(b) { this.b = b; },
   set_(_) { this._ = _; },
 
+  getArrow() {
+    return `
+<svg class="arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="12 5 19 12 12 19"></polyline>
+</svg>
+    `
+  },
+
   async createStyle() {
 
     const css = `
+.container {
+  font-family: 'Roboto', sans-serif;
+}
 .inline { display: inline; }
+.hidden { display: none; }
 .container {
     padding: 10px;
     color: rgb(55, 53, 47);
@@ -62,7 +74,10 @@ div[contenteditable="true"] {
   async init(path) {
 
     const _ = this._;
-    const getVId = v => v['_'].id;
+    const getVId = v => {
+      if (v.i) return v.i;
+      return v['_'].id;
+    }
 
     const rend = async (v, parentRow) => {
 
@@ -98,6 +113,10 @@ div[contenteditable="true"] {
         }
       }
       else if (v.v) { }
+      else if (v.i) {
+        parentRow.setAttribute('openable', 'true');
+        //console.log('openable row is opanable', v, parentRow);
+      }
       else console.log('Unknown type of var', v);
     }
 
@@ -118,7 +137,7 @@ div[contenteditable="true"] {
     const root = await this.mkRow({ k: 'root', v: { m: {} }, id: 'root' });
     container.append(root);
 
-    const data = await p('get', { path, depth: 10, useUnderscore: true });
+    const data = await p('get', { path, depth: 2, useUnderscore: true });
     console.log(data);
     await rend(data, root);
   },
@@ -129,14 +148,22 @@ div[contenteditable="true"] {
     if (id) r.setAttribute('_id', id);
     if (parentId) r.setAttribute('_parent_id', parentId);
 
+    let openCloseBtn = await this.b.p('doc.mk', { txt: '+ ', class: ['openClose', 'hidden', 'inline'] });
+    r.append(openCloseBtn);
+
+    if (k) {
+      r.append(await this.b.p('doc.mk', { txt: k, class: 'key' }));
+      r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
+    }
     if (v) {
       if (v.l) r.setAttribute('t', 'l');
       if (v.m) r.setAttribute('t', 'm');
       if (v.v) r.setAttribute('t', 'v');
-    }
-    if (k) {
-      r.append(await this.b.p('doc.mk', { txt: k, class: 'key' }));
-      r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
+
+      if (v.i || v.l || v.m) {
+        openCloseBtn.classList.remove('hidden');
+      }
+      if (!v.i) openCloseBtn.innerText = '- ';
     }
 
     const val = await this.b.p('doc.mk', { class: 'val' });
@@ -161,11 +188,21 @@ div[contenteditable="true"] {
       getType() { return this.row.getAttribute('t') },
     }
 
-    if (children.length === 1) {
-      o.val = children[0];
+    o.openCloseBtn = {
+      obj: children[0],
+      open: () => {
+        obj.innerText = '- ';
+      },
+      close: () => {
+        obj.innerText = '+ ';
+      }
+    }
+
+    if (children.length === 2) {
+      o.val = children[1];
     } else {
-      o.key = children[0];
-      o.val = children[2];
+      o.key = children[1];
+      o.val = children[3];
     }
     return o;
   },
@@ -186,6 +223,8 @@ div[contenteditable="true"] {
   isRoot(t) { return t.getAttribute('_id') === 'root' },
   isKey(t) { return t.classList.contains('key'); },
   isVal(t) { return t.classList.contains('val'); },
+  isOpenCloseBtn(t) { return t.classList.contains('openClose'); },
+
   mark() {
     if (this.marked) this.marked.classList.add('mark');
   },
@@ -212,6 +251,12 @@ div[contenteditable="true"] {
       }
     } else {
       this.unmark();
+    }
+
+    if (this.isOpenCloseBtn(t)) {
+      console.log('open or close', t.parentNode);
+
+      return;
     }
 
     if (!this.isKey(t) && !this.isVal(t)) return;

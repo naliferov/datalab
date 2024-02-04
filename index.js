@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import process from 'node:process';
 import { ulid } from "ulid";
 import {
-  U, X, b,
+  X, b,
   createSet,
   del,
   get,
@@ -16,22 +16,18 @@ import {
 } from "./src/module/x.js";
 
 const _ = Symbol('sys');
-const x = X(_);
-const u = U(x, _);
 b.set_(_);
-b.setX(x);
+b.setX(X(_));
 
-await u({
-  y: 'log', f: async (x) => {
-    if (typeof x === 'object') {
-      console.log(x.msg);
-      return;
-    }
-    console.log(x);
+await b.s('log', async (x) => {
+  if (typeof x === 'object') {
+    console.log(x.msg);
+    return;
   }
+  console.log(x);
 });
-await u({ y: 'get_', f: () => _ });
-await u({ y: 'getUniqId', f: () => ulid() });
+await b.s('get_', () => _);
+await b.s('getUniqId', () => ulid());
 await b.s('fs.readFile', async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
@@ -63,7 +59,7 @@ await b.s('set', async (x) => {
     return { id, ok };
   }
 
-  //SET key, value to id of map, or add value to list
+  //SET key and value to specific id of (MAP), or add value (LIST)
   if (type && id && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { msg: 'v not found' };
@@ -94,7 +90,7 @@ await b.s('set', async (x) => {
       return { type, id, newId, v };
     }
 
-    return { msg: 'Unknown parama for set', x };
+    return { msg: 'Not found "m" in vById', vById };
   }
 
   //SET value by ID
