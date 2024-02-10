@@ -266,9 +266,9 @@ div[contenteditable="true"] {
         row.clearVal();
       } else {
 
-        const data = await p('get', { id, depth: 2, useUnderscore: true });
-        console.log(data);
-        await rend(data, root);
+        //const data = await p('get', { id, depth: 2, useUnderscore: true });
+        //console.log(data);
+        //await rend(data, root);
 
         row.getId();
       }
