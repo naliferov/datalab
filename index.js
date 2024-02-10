@@ -112,9 +112,20 @@ await b.s('set', async (x) => {
 });
 
 await b.s('get', async (x) => {
-  const { id, path, depth, openedIds } = x;
 
-  if (id) return await repo.get(id);
+  const { id, path, depth, useUnderscore, openedIds } = x;
+
+  if (id) {
+    const _ = await b.p('get_');
+    let v = await repo.get(id);
+
+    if (depth !== undefined && useUnderscore) {
+      v['_'] = { id };
+      v = await getVarData({ _, b, v, depth, useUnderscore });
+    }
+
+    return v;
+  }
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;

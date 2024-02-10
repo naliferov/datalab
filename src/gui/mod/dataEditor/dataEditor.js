@@ -74,51 +74,6 @@ div[contenteditable="true"] {
   async init(path) {
 
     const _ = this._;
-    const getVId = v => {
-      if (v.i) return v.i;
-      return v['_'].id;
-    }
-
-    const rend = async (v, parentRow) => {
-
-      const id = getVId(v);
-      if (!id) { console.log('Unknown VAR', v); return; }
-
-      if (v.m) {
-
-        if (!v.o) { console.error('No order array for map', id, v); return; }
-
-        for (let k of v.o) {
-          if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
-
-          const curV = v.m[k];
-          const curVId = getVId(curV);
-          if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
-
-          const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
-          this.rowInterface(parentRow).val.append(row);
-          await rend(curV, row);
-        }
-
-      } else if (v.l) {
-
-        for (let curV of v.l) {
-
-          const curVId = getVId(curV);
-          if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
-
-          const row = await this.mkRow({ v: curV, parentId: id, id: curVId });
-          this.rowInterface(parentRow).val.append(row);
-          await rend(curV, row);
-        }
-      }
-      else if (v.v) { }
-      else if (v.i) {
-        parentRow.setAttribute('openable', 'true');
-        //console.log('openable row is opanable', v, parentRow);
-      }
-      else console.log('Unknown type of var', v);
-    }
 
     const p = async (event, data) => await this.b.p(event, data);
     this.o = await p('doc.mk', { class: 'dataEditor' });
@@ -137,10 +92,55 @@ div[contenteditable="true"] {
     const root = await this.mkRow({ k: 'root', v: { m: {} }, id: 'root' });
     container.append(root);
 
-    const data = await p('get', { path, depth: 2, useUnderscore: true });
-    console.log(data);
-    await rend(data, root);
+    const v = await p('get', { path, depth: 2, useUnderscore: true });
+    console.log(v);
+    await this.rend(v, root);
   },
+
+  async rend(v, parentRow) {
+
+    const getVId = v => {
+      if (v.i) return v.i;
+      return v['_'].id;
+    }
+    const id = getVId(v);
+    if (!id) { console.log('Unknown VAR', v); return; }
+
+    if (v.m) {
+
+      if (!v.o) { console.error('No order array for map', id, v); return; }
+
+      for (let k of v.o) {
+        if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
+
+        const curV = v.m[k];
+        const curVId = getVId(curV);
+        if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+
+        const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
+        this.rowInterface(parentRow).val.append(row);
+        await this.rend(curV, row);
+      }
+
+    } else if (v.l) {
+      for (let curV of v.l) {
+
+        const curVId = getVId(curV);
+        if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+
+        const row = await this.mkRow({ v: curV, parentId: id, id: curVId });
+        this.rowInterface(parentRow).val.append(row);
+        await this.rend(curV, row);
+      }
+    }
+    else if (v.v) { }
+    else if (v.i) {
+      parentRow.setAttribute('openable', 'true');
+      //console.log('openable row is opanable', v, parentRow);
+    }
+    else console.log('Unknown type of var', v);
+  },
+
   async mkRow(x) {
     const { k, v, parentId, id } = x;
 
@@ -162,7 +162,9 @@ div[contenteditable="true"] {
 
       if (v.i || v.l || v.m) openCloseBtn.classList.remove('hidden');
 
-      if (!v.i) {
+      if (v.i) {
+        if (v.t) r.setAttribute('t', v.t);
+      } else {
         openCloseBtn.innerText = '- ';
         openCloseBtn.classList.add('opened');
       }
@@ -180,14 +182,15 @@ div[contenteditable="true"] {
 
     return r;
   },
+
   rowInterface(row) {
     const children = row.children;
 
     const o = {
-      row,
-      getId() { return this.row.getAttribute('_id') },
-      getParentId() { return this.row.getAttribute('_parent_id') },
-      getType() { return this.row.getAttribute('t') },
+      dom: row,
+      getId() { return this.dom.getAttribute('_id') },
+      getParentId() { return this.dom.getAttribute('_parent_id') },
+      getType() { return this.dom.getAttribute('t') },
       clearVal() { this.val.innerHTML = ''; }
     }
 
@@ -214,6 +217,7 @@ div[contenteditable="true"] {
     }
     return o;
   },
+
   getOrderKey(item, type) {
 
     const rows = item.parentNode.parentNode.children;
@@ -247,7 +251,7 @@ div[contenteditable="true"] {
   isMarked(t) {
     return t.classList.contains('mark');
   },
-  click(e) {
+  async click(e) {
     const path = e.composedPath();
     const t = path[0];
     const classList = t.classList;
@@ -265,12 +269,11 @@ div[contenteditable="true"] {
         row.openCloseBtn.close();
         row.clearVal();
       } else {
-
-        //const data = await p('get', { id, depth: 2, useUnderscore: true });
+        const depth = row.getType() === 'l' ? 1 : 0;
+        const data = await this.b.p('get', { id: row.getId(), depth, useUnderscore: true });
         //console.log(data);
-        //await rend(data, root);
-
-        row.getId();
+        await this.rend(data, row.dom);
+        row.openCloseBtn.open();
       }
 
       return;
@@ -461,7 +464,7 @@ div[contenteditable="true"] {
         const resp = await this.b.p('cp', data);
         console.log(resp);
 
-        row.val.append(movingRow.row);
+        row.val.append(movingRow.dom);
         this.buffer = null;
         this.menu.remove();
       });

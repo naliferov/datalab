@@ -268,6 +268,13 @@ export const getVarData = async (x) => {
 
   const { _, b, v, depth, useUnderscore } = x;
 
+  const getType = (v) => {
+    if (v.m) return 'm';
+    if (v.l) return 'l';
+    if (v.v) return 'v';
+    return 'unknown';
+  }
+
   let data;
   if (useUnderscore) {
     data = { ['_']: { id: v[_] ? v[_].id : v['_'].id } };
@@ -281,14 +288,14 @@ export const getVarData = async (x) => {
 
     for (let id of v.l) {
 
+      const v2 = await b.p('get', { id });
+
       if (depth === 0) {
-        data.l.push({ i: id });
+        data.l.push({ i: id, t: getType(v2) });
         continue;
       }
-      const v2 = await b.p('get', { id });
-      if (v2) {
-        v2[useUnderscore ? '_' : _] = { id };
-      }
+      if (v2) v2[useUnderscore ? '_' : _] = { id };
+
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
@@ -305,16 +312,14 @@ export const getVarData = async (x) => {
 
       const id = v.m[p];
       if (!id) return;
+      const v2 = await b.p('get', { id });
 
       if (depth === 0) {
-        data.m[p] = { i: id };
+        data.m[p] = { i: id, t: getType(v2) };
         continue;
       }
-      const v2 = await b.p('get', { id });
-      if (v2) {
-        v2[useUnderscore ? '_' : _] = { id };
-      }
 
+      if (v2) v2[useUnderscore ? '_' : _] = { id };
       if (v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
@@ -365,6 +370,8 @@ export const prepareForTransfer = (v) => {
   if (v.m) d.m = v.m;
   if (v.l) d.l = v.l;
   if (v.o) d.o = v.o;
+
+  // if (v.t) d.t = v.t;
   // if (v.u) d.u = v.u; //ui data
   if (v.f) d.f = v.f;
   if (v.x) d.x = v.x;
