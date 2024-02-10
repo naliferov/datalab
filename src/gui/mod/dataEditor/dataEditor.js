@@ -160,10 +160,12 @@ div[contenteditable="true"] {
       if (v.m) r.setAttribute('t', 'm');
       if (v.v) r.setAttribute('t', 'v');
 
-      if (v.i || v.l || v.m) {
-        openCloseBtn.classList.remove('hidden');
+      if (v.i || v.l || v.m) openCloseBtn.classList.remove('hidden');
+
+      if (!v.i) {
+        openCloseBtn.innerText = '- ';
+        openCloseBtn.classList.add('opened');
       }
-      if (!v.i) openCloseBtn.innerText = '- ';
     }
 
     const val = await this.b.p('doc.mk', { class: 'val' });
@@ -186,15 +188,21 @@ div[contenteditable="true"] {
       getId() { return this.row.getAttribute('_id') },
       getParentId() { return this.row.getAttribute('_parent_id') },
       getType() { return this.row.getAttribute('t') },
+      clearVal() { this.val.innerHTML = ''; }
     }
 
     o.openCloseBtn = {
       obj: children[0],
-      open: () => {
-        obj.innerText = '- ';
+      open() {
+        this.obj.classList.add('opened');
+        this.obj.innerText = '- ';
       },
-      close: () => {
-        obj.innerText = '+ ';
+      close() {
+        this.obj.classList.remove('opened');
+        this.obj.innerText = '+ ';
+      },
+      isOpened() {
+        return this.obj.classList.contains('opened');
       }
     }
 
@@ -249,12 +257,21 @@ div[contenteditable="true"] {
         this.menu.remove();
         this.unmark();
       }
-    } else {
-      this.unmark();
-    }
+    } else this.unmark();
 
     if (this.isOpenCloseBtn(t)) {
-      console.log('open or close', t.parentNode);
+      const row = this.rowInterface(t.parentNode);
+      if (row.openCloseBtn.isOpened()) {
+        row.openCloseBtn.close();
+        row.clearVal();
+      } else {
+
+        const data = await p('get', { id, depth: 2, useUnderscore: true });
+        console.log(data);
+        await rend(data, root);
+
+        row.getId();
+      }
 
       return;
     }

@@ -112,7 +112,7 @@ await b.s('set', async (x) => {
 });
 
 await b.s('get', async (x) => {
-  const { id, path, depth } = x;
+  const { id, path, depth, openedIds } = x;
 
   if (id) return await repo.get(id);
   if (path && depth !== undefined) {
@@ -216,12 +216,14 @@ await b.s('state.validate', async (x) => {
   console.log('files that not exists in varIds', fSet);
 });
 
-process.on('uncaughtException', (error, origin) => {
-  if (error?.code === 'ECONNRESET') {
-    console.error(error);
+process.on('uncaughtException', (e, origin) => {
+  if (e?.code === 'ECONNRESET') {
+    console.error(e);
     return;
   }
-  console.error('UNCAUGHT EXCEPTION', error, origin);
+  if (e.stack) console.log('e.stack', e.stack);
+
+  console.error('UNCAUGHT EXCEPTION', e, e.stack, origin);
   process.exit(1);
 });
 
@@ -279,7 +281,11 @@ const e = {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
     x.server.on('request', async (rq, rs) => {
-      await rqHandler({ b, rq, rs, fs, serveFS: true });
+      try {
+        await rqHandler({ b, rq, rs, fs, serveFS: true });
+      } catch (e) {
+        console.error('error in rqHandler', e);
+      }
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
