@@ -81,13 +81,13 @@ export const set = async (x) => {
 export const get = async (x) => {
 
   let { _, b, createSet, getVarData } = x[x._];
-  let { path, depth, varIdsForGet, useUnderscore } = x;
+  let { path, depth, getMeta, varIdsForGet } = x;
   let repo = x.repo || 'default';
 
   if (depth === undefined) depth = 0;
 
   const set = await createSet({
-    _, b, repo, path,
+    _, b, repo, path, getMeta,
     isNeedStopIfVarNotFound: true,
   });
   if (!set) return;
@@ -95,7 +95,7 @@ export const get = async (x) => {
   const v = set.at(-1);
   if (!v) return;
 
-  return await getVarData({ _, b, repo, v, varIdsForGet, depth, useUnderscore });
+  return await getVarData({ _, b, repo, v, depth, getMeta, varIdsForGet });
 }
 
 export const del = async (x) => {
@@ -195,11 +195,12 @@ export const delWithSubVars = async (x) => {
 
 export const createSet = async (x) => {
 
-  const { b, path, isNeedStopIfVarNotFound, _, } = x;
+  const { _, b, path, getMeta, isNeedStopIfVarNotFound } = x;
   let type = x.type || 'v';
 
   let v1 = await b.p('get', { id: 'root' });
   v1[_] = { id: 'root', name: 'root' };
+  if (getMeta) v1.i = { id: 'root' };
 
   let set = [v1];
   if (path[0] === 'root') return set;
@@ -266,7 +267,7 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { _, b, v, depth, useUnderscore } = x;
+  const { _, b, v, depth, getMeta } = x;
 
   const getType = (v) => {
     if (v.m) return 'm';
@@ -275,11 +276,12 @@ export const getVarData = async (x) => {
     return 'unknown';
   }
 
-  let data;
-  if (useUnderscore) {
-    data = { ['_']: { id: v[_] ? v[_].id : v['_'].id } };
-  } else {
-    data = { [_]: { id: v[_].id } };
+  let data = { [_]: v[_] };
+  if (getMeta) data.i = v.i;
+
+  if (depth === 0) {
+    if (getMeta) data.i.openable = true;
+    return data;
   }
 
   if (v.v) data.v = v.v;
@@ -290,16 +292,13 @@ export const getVarData = async (x) => {
 
       const v2 = await b.p('get', { id });
 
-      if (depth === 0) {
-        data.l.push({ i: id, t: getType(v2) });
-        continue;
-      }
-      if (v2) v2[useUnderscore ? '_' : _] = { id };
+      v2[_] = { id };
+      if (getMeta) v2.i = { id, t: getType(v2) };
 
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
-        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1, useUnderscore }));
+        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1, getMeta }));
       }
     }
 
@@ -314,16 +313,18 @@ export const getVarData = async (x) => {
       if (!id) return;
       const v2 = await b.p('get', { id });
 
-      if (depth === 0) {
-        data.m[p] = { i: id, t: getType(v2) };
-        continue;
-      }
+      // if (depth === 0) {
+      //   data.m[p] = { i: { id, t: getType(v2), openable: true } };
+      //   continue;
+      // }
 
-      if (v2) v2[useUnderscore ? '_' : _] = { id };
+      v2[_] = { id };
+      if (getMeta) v2.i = { id, t: getType(v2) };
+
       if (v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
-        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1, useUnderscore });
+        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1, getMeta });
       }
     }
 
@@ -364,31 +365,16 @@ export const getVarIds = async (x) => {
 export const prepareForTransfer = (v) => {
   const d = {};
 
-  if (v.i) d.i = v.i; //id data. link data, link or other vars or links
+  if (v.i) d.i = v.i; //metaData id, link, type, etc.
   if (v.b) d.b = v.b;
   if (v.v) d.v = v.v;
   if (v.m) d.m = v.m;
   if (v.l) d.l = v.l;
   if (v.o) d.o = v.o;
-
-  // if (v.t) d.t = v.t;
-  // if (v.u) d.u = v.u; //ui data
   if (v.f) d.f = v.f;
   if (v.x) d.x = v.x;
 
   return d;
-}
-
-export const stateExport = (repo) => {
-
-}
-
-export const stateImport = (repo) => {
-
-}
-
-export const stateValidate = (repo) => {
-  //
 }
 
 // UTILS //

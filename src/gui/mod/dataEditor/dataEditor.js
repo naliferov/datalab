@@ -3,14 +3,6 @@ export const DataEditor = {
   setB(b) { this.b = b; },
   set_(_) { this._ = _; },
 
-  getArrow() {
-    return `
-<svg class="arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <polyline points="12 5 19 12 12 19"></polyline>
-</svg>
-    `
-  },
-
   async createStyle() {
 
     const css = `
@@ -89,10 +81,10 @@ div[contenteditable="true"] {
     const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' });
     container.append(header);
 
-    const root = await this.mkRow({ k: 'root', v: { m: {} }, id: 'root' });
+    const root = await this.mkRow({ k: 'root', v: { m: {}, o: [], i: { id: 'root', t: 'map' } }, id: 'root' });
     container.append(root);
 
-    const v = await p('get', { path, depth: 2, useUnderscore: true });
+    const v = await p('get', { path, depth: 1, getMeta: true });
     console.log(v);
     await this.rend(v, root);
   },
@@ -100,8 +92,7 @@ div[contenteditable="true"] {
   async rend(v, parentRow) {
 
     const getVId = v => {
-      if (v.i) return v.i;
-      return v['_'].id;
+      if (v.i) return v.i.id;
     }
     const id = getVId(v);
     if (!id) { console.log('Unknown VAR', v); return; }
@@ -123,6 +114,7 @@ div[contenteditable="true"] {
       }
 
     } else if (v.l) {
+
       for (let curV of v.l) {
 
         const curVId = getVId(curV);
@@ -160,11 +152,13 @@ div[contenteditable="true"] {
       if (v.m) r.setAttribute('t', 'm');
       if (v.v) r.setAttribute('t', 'v');
 
-      if (v.i || v.l || v.m) openCloseBtn.classList.remove('hidden');
+      const t = v.i.t;
 
-      if (v.i) {
-        if (v.t) r.setAttribute('t', v.t);
-      } else {
+      if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
+
+      if (t) r.setAttribute('t', t);
+
+      if (!v.i.openable) {
         openCloseBtn.innerText = '- ';
         openCloseBtn.classList.add('opened');
       }
@@ -269,9 +263,7 @@ div[contenteditable="true"] {
         row.openCloseBtn.close();
         row.clearVal();
       } else {
-        const depth = row.getType() === 'l' ? 1 : 0;
-        const data = await this.b.p('get', { id: row.getId(), depth, useUnderscore: true });
-        //console.log(data);
+        const data = await this.b.p('get', { id: row.getId(), depth: 1, getMeta: true });
         await this.rend(data, row.dom);
         row.openCloseBtn.open();
       }
