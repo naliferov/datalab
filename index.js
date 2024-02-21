@@ -46,15 +46,14 @@ await b.s('set', async (x) => {
     if (vById.m) {
       if (!vById.o) return { ok: 0, msg: 'v.o not found' };
 
-      const item = vById.o.splice(from, 1)[0];
-      vById.o.splice(to, 0, item);
-      await repo.set(id, vById);
+      const i = vById.o.splice(from, 1)[0];
+      vById.o.splice(to, 0, i);
     }
     if (vById.l) {
-      const item = vById.l.splice(from, 1)[0];
-      vById.l.splice(to, 0, item);
-      await repo.set(id, vById);
+      const i = vById.l.splice(from, 1)[0];
+      vById.l.splice(to, 0, i);
     }
+    await repo.set(id, vById);
 
     return { id, ok };
   }
