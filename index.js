@@ -155,8 +155,8 @@ await b.s('cp', async (x) => {
     const newV = await b.p('get', { id: newId });
 
     if (!oldV || !newV) return { msg: 'oldV or oldV not found' };
-    if (!oldV.m || !newV.m) return { msg: 'newV.m not found' };
-    if (!oldV.o || !newV.o) { return { msg: 'oldV or oldV not found or !oldV.m or !newV.m' }; }
+    if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
+    if (!oldV.o || !newV.o) { return { msg: 'oldV.o or newV.o not found' }; }
 
     if (!oldV.m[key]) { return { msg: `${key} not found in oldV.m` }; }
     if (newV.m[key]) { return { msg: `newV.m already have key ${key}` }; }
