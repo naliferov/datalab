@@ -3,6 +3,7 @@ import {
   dmk,
   getSize
 } from "../module/x.js";
+import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { Frame } from "./mod/frame/frame.js";
 import { HttpClient } from "/src/transport/http.js";
@@ -35,8 +36,18 @@ await b.s('port', async (x) => {
   const { data } = await (new HttpClient).post('/', x);
   return data;
 });
-await b.s('set', async (x) => await b.p('port', { ...x, x: 'set' }));
-await b.s('get', async (x) => await b.p('port', { ...x, x: 'get' }));
+await b.s('set', async (x) => {
+  if (x.repo === 'idb') {
+    return await idb.set(x);
+  }
+  return await b.p('port', { ...x, x: 'set' });
+});
+await b.s('get', async (x) => {
+  if (x.repo === 'idb') {
+    return await idb.get(x);
+  }
+  return await b.p('port', { ...x, x: 'get' });
+});
 await b.s('del', async (x) => await b.p('port', { ...x, x: 'del' }));
 await b.s('cp', async (x) => await b.p('port', { ...x, x: 'cp' }));
 
@@ -86,11 +97,13 @@ frame.setB(b);
 await frame.init();
 await b.p('doc.ins', { o1: 'app', o2: frame.o });
 
+const idb = new IndexedDb();
+await idb.open();
 
 const dataEditor = Object.create(DataEditor);
 dataEditor.setB(b);
 dataEditor.set_(_);
-await dataEditor.init([]);
+await dataEditor.init();
 
 frame.setContent(dataEditor.o);
 

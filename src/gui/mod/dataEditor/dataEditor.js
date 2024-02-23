@@ -63,7 +63,13 @@ div[contenteditable="true"] {
     return await this.b.p('doc.mk', { type: 'style', txt: css });
   },
 
-  async init(path) {
+  async getOpenedIds() {
+    let ids = await this.b.p('get', { repo: 'idb', id: 'openedIds' });
+    if (!ids) ids = new Set();
+    return ids;
+  },
+
+  async init() {
 
     const _ = this._;
 
@@ -84,7 +90,8 @@ div[contenteditable="true"] {
     const root = await this.mkRow({ k: 'root', v: { m: {}, o: [], i: { id: 'root', t: 'map' } }, id: 'root' });
     container.append(root);
 
-    const v = await p('get', { path, depth: 1, getMeta: true });
+    const openedIds = await this.getOpenedIds();
+    const v = await p('get', { id: 'root', subIds: [...openedIds], depth: 1, getMeta: true });
     console.log(v);
     await this.rend(v, root);
   },
@@ -126,10 +133,7 @@ div[contenteditable="true"] {
       }
     }
     else if (v.v) { }
-    else if (v.i) {
-      parentRow.setAttribute('openable', 'true');
-      //console.log('openable row is opanable', v, parentRow);
-    }
+    else if (v.i) { }
     else console.log('Unknown type of var', v);
   },
 
@@ -203,7 +207,7 @@ div[contenteditable="true"] {
       }
     }
 
-    if (children.length === 2) {
+    if (children.length === 2) { //todo better check type
       o.val = children[1];
     } else {
       o.key = children[1];
@@ -263,7 +267,11 @@ div[contenteditable="true"] {
         row.openCloseBtn.close();
         row.clearVal();
       } else {
-        const data = await this.b.p('get', { id: row.getId(), depth: 1, getMeta: true });
+        const openedIds = await this.getOpenedIds();
+        if (row.getId()) openedIds.add(row.getId());
+        await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
+
+        const data = await this.b.p('get', { id: row.getId(), subIds: [...openedIds], depth: 1, getMeta: true });
         await this.rend(data, row.dom);
         row.openCloseBtn.open();
       }
@@ -383,8 +391,6 @@ div[contenteditable="true"] {
     });
     this.menu.append(btn);
 
-
-    //if (this.isRoot(t.parentNode)) return;
 
     const mv = async (dir) => {
 

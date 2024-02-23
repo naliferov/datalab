@@ -267,7 +267,7 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { _, b, v, depth, getMeta } = x;
+  const { _, b, v, subIds, depth, getMeta } = x;
 
   const getType = (v) => {
     if (v.m) return 'm';
@@ -279,13 +279,16 @@ export const getVarData = async (x) => {
   let data = { [_]: v[_] };
   if (getMeta) data.i = v.i;
 
-  if (depth === 0) {
+  const isNeedToGet = Boolean(subIds && subIds.has(data.i.id));
+
+  if (depth <= 0 && !isNeedToGet) {
     if (getMeta) data.i.openable = true;
     return data;
   }
 
   if (v.v) data.v = v.v;
   if (v.l) {
+
     data.l = [];
 
     for (let id of v.l) {
@@ -298,7 +301,7 @@ export const getVarData = async (x) => {
       if (v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
-        data.l.push(await getVarData({ _, b, v: v2, depth: depth - 1, getMeta }));
+        data.l.push(await getVarData({ _, b, v: v2, subIds, depth: depth - 1, getMeta }));
       }
     }
 
@@ -313,18 +316,13 @@ export const getVarData = async (x) => {
       if (!id) return;
       const v2 = await b.p('get', { id });
 
-      // if (depth === 0) {
-      //   data.m[p] = { i: { id, t: getType(v2), openable: true } };
-      //   continue;
-      // }
-
       v2[_] = { id };
       if (getMeta) v2.i = { id, t: getType(v2) };
 
       if (v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
-        data.m[p] = await getVarData({ _, b, v: v2, depth: depth - 1, getMeta });
+        data.m[p] = await getVarData({ _, b, v: v2, subIds, depth: depth - 1, getMeta });
       }
     }
 

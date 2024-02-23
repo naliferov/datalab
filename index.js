@@ -112,7 +112,7 @@ await b.s('set', async (x) => {
 
 await b.s('get', async (x) => {
 
-  const { id, path, depth, getMeta, varIdsForGet } = x;
+  const { id, subIds, path, depth, getMeta } = x;
 
   if (id) {
     const _ = await b.p('get_');
@@ -120,11 +120,12 @@ await b.s('get', async (x) => {
 
     if (depth !== undefined && getMeta) {
       v.i = { id };
-      v = await getVarData({ _, b, v, depth, getMeta });
+      v = await getVarData({ _, b, v, subIds: new Set(subIds), depth, getMeta });
     }
 
     return v;
   }
+
   if (path && depth !== undefined) {
     const _ = await b.p('get_');
     x._ = _;
@@ -158,8 +159,8 @@ await b.s('cp', async (x) => {
     if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
     if (!oldV.o || !newV.o) return { msg: 'oldV.o or newV.o not found' };
 
-    if (!oldV.m[key]) { return { msg: `${key} not found in oldV.m` }; }
-    if (newV.m[key]) { return { msg: `newV.m already have key ${key}` }; }
+    if (!oldV.m[key]) return { msg: `${key} not found in oldV.m` };
+    if (newV.m[key]) return { msg: `newV.m already have key ${key}` };
 
     newV.m[key] = oldV.m[key];
     delete oldV.m[key];
