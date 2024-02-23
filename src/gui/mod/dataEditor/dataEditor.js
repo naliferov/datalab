@@ -189,7 +189,10 @@ div[contenteditable="true"] {
       getId() { return this.dom.getAttribute('_id') },
       getParentId() { return this.dom.getAttribute('_parent_id') },
       getType() { return this.dom.getAttribute('t') },
-      clearVal() { this.val.innerHTML = ''; }
+      clearVal() { this.val.innerHTML = ''; },
+      isValHasSubItems() {
+        return this.val.children.length > 0;
+      }
     }
 
     o.openCloseBtn = {
@@ -287,6 +290,11 @@ div[contenteditable="true"] {
 
     if (!this.isKey(t) && !this.isVal(t)) return;
     if (this.isRoot(t)) return;
+
+    if (this.isVal(t)) {
+      const row = this.rowInterface(t.parentNode);
+      if (row.isValHasSubItems()) return;
+    }
 
     e.preventDefault();
     this.remark(t);
