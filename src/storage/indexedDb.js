@@ -48,5 +48,17 @@ export class IndexedDb {
     });
   }
 
-  async del(id) { }
+  async del(x) {
+
+    const { id } = x;
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction('vars', 'readwrite');
+      const vars = transaction.objectStore('vars');
+
+      const rq = vars.delete(id);
+      rq.onsuccess = () => resolve(rq.result);
+      rq.onerror = () => reject(rq.error);
+    });
+  }
 }

@@ -264,9 +264,15 @@ div[contenteditable="true"] {
     if (this.isOpenCloseBtn(t)) {
       const row = this.rowInterface(t.parentNode);
       if (row.openCloseBtn.isOpened()) {
+
+        const openedIds = await this.getOpenedIds();
+        if (row.getId()) openedIds.delete(row.getId());
+        await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
+
         row.openCloseBtn.close();
         row.clearVal();
       } else {
+
         const openedIds = await this.getOpenedIds();
         if (row.getId()) openedIds.add(row.getId());
         await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
