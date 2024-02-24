@@ -108,4 +108,4 @@ await dataEditor.init();
 frame.setContent(dataEditor.o);
 
 window.onkeydown = (e) => dataEditor.keydown(e);
-window.onclick = (e) => dataEditor.click(e);
+window.onpointerdown = (e) => dataEditor.click(e);

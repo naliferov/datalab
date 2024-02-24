@@ -87,7 +87,11 @@ div[contenteditable="true"] {
     const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' });
     container.append(header);
 
-    const root = await this.mkRow({ k: 'root', v: { m: {}, o: [], i: { id: 'root', t: 'map' } }, id: 'root' });
+    const root = await this.mkRow({
+      k: 'root',
+      v: { m: {}, o: [], i: { id: 'root', t: 'm' } },
+      id: 'root'
+    });
     container.append(root);
 
     const openedIds = await this.getOpenedIds();
@@ -378,11 +382,12 @@ div[contenteditable="true"] {
 
       const row = this.rowInterface(mark.parentNode);
       const id = row.getId();
-      const v = { v: 'newVal' };
+      const v = { v: 'newVal', i: { id: 'vid_stub', t: 'v' } };
       const type = row.getType();
 
       if (type === 'm') {
         const k = 'newKey';
+
         const ok = row.val.children.length;
         const newRow = await this.mkRow({ k, v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);

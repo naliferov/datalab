@@ -36,6 +36,8 @@ await b.s('fs.readFile', async (x) => {
 await b.s('set', async (x) => {
   const { type, id, path, k, ok, v } = x;
 
+  if (v && v.i) delete v.i;
+
   //CHANGE ORDER
   if (id && ok && typeof ok === 'object') {
     const vById = await b.p('get', { id });
@@ -57,14 +59,13 @@ await b.s('set', async (x) => {
 
     return { id, ok };
   }
-
   //SET key and value to id of (MAP) or add value (LIST)
   if (type && id && v) {
     const vById = await b.p('get', { id });
     if (!vById) return { msg: 'v not found' };
 
     if (type === 'm' && vById.m) {
-      if (vById.m[k]) return { msg: `Key [${k}] already exists in vById.` };
+      if (vById.m[k]) return { msg: `k [${k}] already exists in vById` };
       if (!vById.o) return { msg: `v.o is not found by [${id}]` };
       if (ok === undefined) return { msg: `ok is empty` };
 
@@ -79,7 +80,6 @@ await b.s('set', async (x) => {
 
       return { id, k, v, newId };
     }
-
     if (type === 'l' && vById.l) {
       const newId = await b.p('getUniqId');
       vById.l.push(newId);
@@ -146,10 +146,12 @@ await b.s('del', async (x) => {
 });
 
 await b.s('cp', async (x) => {
-  const { oldId, newId, key,
-    id, oldKey, newKey, delSource } = x;
+  const {
+    oldId, newId, key,
+    id, oldKey, newKey
+  } = x;
 
-  //move from one id to another
+  //MOVE from one id to another
   if (oldId && newId && oldId !== newId && key) {
 
     const oldV = await b.p('get', { id: oldId });
@@ -159,8 +161,8 @@ await b.s('cp', async (x) => {
     if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
     if (!oldV.o || !newV.o) return { msg: 'oldV.o or newV.o not found' };
 
-    if (!oldV.m[key]) return { msg: `${key} not found in oldV.m` };
-    if (newV.m[key]) return { msg: `newV.m already have key ${key}` };
+    if (!oldV.m[key]) return { msg: `key [${key}] not found in oldV.m` };
+    if (newV.m[key]) return { msg: `newV.m already have key [${key}]` };
 
     newV.m[key] = oldV.m[key];
     delete oldV.m[key];
@@ -174,7 +176,7 @@ await b.s('cp', async (x) => {
     return { oldId, newId, key };
   }
 
-  //rename of map key
+  //RENAME of map key
   if (id && oldKey && newKey) {
 
     const v = await b.p('get', { id });
@@ -185,9 +187,9 @@ await b.s('cp', async (x) => {
     v.m[newKey] = v.m[oldKey];
     delete v.m[oldKey];
 
-    if (!v.o) { console.error('o not found in map'); return; }
+    if (!v.o) return { msg: 'o not found in map' };
     const ok = v.o.indexOf(oldKey);
-    if (ok === -1) return { msg: `order key for key [${key}] not found` };
+    if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
 
     v.o[ok] = newKey;
     await b.p('set', { id, v });
