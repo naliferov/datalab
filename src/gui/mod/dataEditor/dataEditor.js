@@ -68,6 +68,11 @@ div[contenteditable="true"] {
     if (!ids) ids = new Set();
     return ids;
   },
+  async openId(id) {
+    const v = await this.getOpenedIds();
+    v.add(id);
+    await this.b.p('set', { repo: 'idb', id: 'openedIds', v });
+  },
 
   async init() {
 
@@ -289,9 +294,9 @@ div[contenteditable="true"] {
         row.clearVal();
       } else {
 
+        if (row.getId()) await this.openId(row.getId());
+
         const openedIds = await this.getOpenedIds();
-        if (row.getId()) openedIds.add(row.getId());
-        await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
 
         const data = await this.b.p('get', { id: row.getId(), subIds: [...openedIds], depth: 1, getMeta: true });
         await this.rend(data, row.dom);
@@ -507,9 +512,10 @@ div[contenteditable="true"] {
       await this.mkRow({
         domId: row.getDomId(), k: row.getKeyValue(), v,
       });
+      this.openId(id);
 
-      //const r = await this.b.p('set', { id, v });
-      //console.log(r);
+      const r = await this.b.p('set', { id, v });
+      console.log(r);
     });
     this.menu.append(btn);
     btn = await mkBtn('Convert to list', async (e) => {
