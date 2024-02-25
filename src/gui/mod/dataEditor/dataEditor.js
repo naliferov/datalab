@@ -142,9 +142,18 @@ div[contenteditable="true"] {
   },
 
   async mkRow(x) {
-    const { k, v, parentId, id } = x;
+    const { k, v, parentId, id, domId } = x;
 
-    const r = await this.b.p('doc.mk', { class: 'row' });
+    let r;
+    if (domId) {
+      r = this.container.querySelector('#' + domId);
+      if (!r) return;
+      r.innerHTML = '';
+    } else {
+      r = await this.b.p('doc.mk', { class: 'row' });
+      r.id = await this.b.p('getUniqForDomId');
+    }
+
     if (id) r.setAttribute('_id', id);
     if (parentId) r.setAttribute('_parent_id', parentId);
 
@@ -156,12 +165,7 @@ div[contenteditable="true"] {
       r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
     }
     if (v) {
-      if (v.l) r.setAttribute('t', 'l');
-      if (v.m) r.setAttribute('t', 'm');
-      if (v.v) r.setAttribute('t', 'v');
-
       const t = v.i.t;
-
       if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
 
       if (t) r.setAttribute('t', t);
@@ -190,9 +194,14 @@ div[contenteditable="true"] {
 
     const o = {
       dom: row,
+      getDomId() { return this.dom.getAttribute('id') },
       getId() { return this.dom.getAttribute('_id') },
       getParentId() { return this.dom.getAttribute('_parent_id') },
       getType() { return this.dom.getAttribute('t') },
+      getKeyValue() {
+        if (!this.key) return;
+        return this.key.innerText;
+      },
       clearVal() { this.val.innerHTML = ''; },
       isValHasSubItems() {
         return this.val.children.length > 0;
@@ -490,11 +499,17 @@ div[contenteditable="true"] {
     }
 
     btn = await mkBtn('Convert to map', async (e) => {
-      const row = this.marked.parentNode;
-      const id = row.getAttribute('_id');
+      const row = this.rowInterface(this.marked.parentNode);
+      const id = row.getId();
       if (!id) return;
-      const r = await this.b.p('set', { id, v: { m: {}, o: [] } });
-      console.log(r);
+
+      const v = { m: {}, o: [], i: { id, t: 'm' } };
+      await this.mkRow({
+        domId: row.getDomId(), k: row.getKeyValue(), v,
+      });
+
+      //const r = await this.b.p('set', { id, v });
+      //console.log(r);
     });
     this.menu.append(btn);
     btn = await mkBtn('Convert to list', async (e) => {

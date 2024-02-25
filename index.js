@@ -8,6 +8,7 @@ import {
   del,
   get,
   getDateTime,
+  getType,
   getVarData, getVarIds,
   parseCliArgs,
   pathToArr,
@@ -119,7 +120,7 @@ await b.s('get', async (x) => {
     let v = await repo.get(id);
 
     if (depth !== undefined && getMeta) {
-      v.i = { id };
+      v.i = { id, t: getType(v) };
       v = await getVarData({ _, b, v, subIds: new Set(subIds), depth, getMeta });
     }
 
@@ -151,7 +152,7 @@ await b.s('cp', async (x) => {
     id, oldKey, newKey
   } = x;
 
-  //MOVE from one id to another
+  //COPY or MOVE MAP key from one ID to another ID
   if (oldId && newId && oldId !== newId && key) {
 
     const oldV = await b.p('get', { id: oldId });
@@ -176,7 +177,7 @@ await b.s('cp', async (x) => {
     return { oldId, newId, key };
   }
 
-  //RENAME of map key
+  //RENAME of MAP key
   if (id && oldKey && newKey) {
 
     const v = await b.p('get', { id });

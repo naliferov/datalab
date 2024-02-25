@@ -269,13 +269,6 @@ export const getVarData = async (x) => {
 
   const { _, b, v, subIds, depth, getMeta } = x;
 
-  const getType = (v) => {
-    if (v.m) return 'm';
-    if (v.l) return 'l';
-    if (v.v) return 'v';
-    return 'unknown';
-  }
-
   let data = { [_]: v[_] };
   if (getMeta) data.i = v.i;
 
@@ -360,10 +353,18 @@ export const getVarIds = async (x) => {
   return ids;
 }
 
+export const getType = (v) => {
+  if (v.m) return 'm';
+  if (v.l) return 'l';
+  if (v.v) return 'v';
+  return 'unknown';
+}
+
 export const prepareForTransfer = (v) => {
   const d = {};
 
   if (v.i) d.i = v.i; //metaData id, link, type, etc.
+
   if (v.b) d.b = v.b;
   if (v.v) d.v = v.v;
   if (v.m) d.m = v.m;

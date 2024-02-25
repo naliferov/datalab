@@ -32,6 +32,18 @@ await b.s('getUniqId', () => {
   }
   return crypto.randomUUID();
 });
+await b.s('getUniqForDomId', async () => {
+
+  const getRandomLetter = () => {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    const randomIndex = Math.floor(Math.random() * alphabet.length);
+    return alphabet.charAt(randomIndex);
+  }
+
+  const id = await b.p('getUniqId');
+  return id.replace(/^[0-9]/, getRandomLetter());
+})
+
 await b.s('port', async (x) => {
   const { data } = await (new HttpClient).post('/', x);
   return data;
@@ -56,10 +68,7 @@ const app = doc.createElement('div');
 app.id = 'app';
 doc.body.appendChild(app);
 
-await b.s('doc.mk', async (x) => {
-  if (!x.id) x.id = await b.p('getUniqId');
-  return dmk(doc, x);
-});
+await b.s('doc.mk', async (x) => dmk(doc, x));
 await b.s('doc.on', async (x) => {
   const { o, e, f } = x;
   o.addEventListener(e, f);
