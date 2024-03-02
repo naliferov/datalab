@@ -5,8 +5,10 @@ import {
 } from "../module/x.js";
 import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
-import { Frame } from "./mod/frame/frame.js";
+import { DomPart } from "./mod/layout/DomPart.js";
+import { Header } from "./mod/layout/header.js";
 import { HttpClient } from "/src/transport/http.js";
+
 
 if (!Array.prototype.at) {
   Array.prototype.at = function (index) {
@@ -62,11 +64,10 @@ await b.s('get', async (x) => {
 });
 await b.s('del', async (x) => await b.p('port', { ...x, x: 'del' }));
 await b.s('cp', async (x) => await b.p('port', { ...x, x: 'cp' }));
-
-const doc = globalThis.document;
-const app = doc.createElement('div');
-app.id = 'app';
-doc.body.appendChild(app);
+await b.s('signUp', async (x) => {
+  console.log(x);
+  //await b.p('port', { ...x, x: 'signUp' })
+});
 
 await b.s('doc.mk', async (x) => dmk(doc, x));
 await b.s('doc.on', async (x) => {
@@ -76,11 +77,11 @@ await b.s('doc.on', async (x) => {
 await b.s('doc.get', async (x) => doc.getElementById(x.id));
 await b.s('doc.ins', async (x) => {
   const { o1, o2 } = x;
-  let o1ob;
+  let o1Object;
   if (typeof o1 === 'string') {
-    o1ob = await b.p('doc.get', { id: o1 });
+    o1Object = await b.p('doc.get', { id: o1 });
   } else {
-    o1ob = o1;
+    o1Object = o1;
   }
 
   let o2ob;
@@ -92,7 +93,7 @@ await b.s('doc.ins', async (x) => {
     o2ob = await b.p('doc.mk', o2);
   }
 
-  o1ob.appendChild(o2ob);
+  o1Object.appendChild(o2ob);
   return o2ob;
 });
 await b.s('doc.mv', async (x) => { });
@@ -101,20 +102,65 @@ await b.s('doc.getSize', async (x) => {
   return getSize(o);
 });
 
-const frame = Object.create(Frame);
-frame.setB(b);
-await frame.init();
-await b.p('doc.ins', { o1: 'app', o2: frame.o });
-
 const idb = new IndexedDb();
 await idb.open();
 
-const dataEditor = Object.create(DataEditor);
-dataEditor.setB(b);
-dataEditor.set_(_);
-await dataEditor.init();
 
-frame.setContent(dataEditor.o);
 
-window.onkeydown = (e) => dataEditor.keydown(e);
-window.onpointerdown = (e) => dataEditor.click(e);
+const doc = globalThis.document;
+const appDOM = doc.createElement('div');
+appDOM.id = 'app';
+doc.body.appendChild(appDOM);
+
+const app = new DomPart();
+app.setDOM(appDOM);
+
+const header = new Header;
+app.ins(header);
+
+
+const path = doc.location.pathname;
+
+if (path.startsWith('/sign')) {
+
+  const act = path === '/sign/in' ? 'Sign In' : 'Sign Up';
+
+  const signForm = new DomPart({ class: 'signForm' });
+  app.ins(signForm);
+
+  const signHeader = new DomPart({ class: 'header', txt: act });
+  signForm.ins(signHeader);
+
+  const email = new DomPart({ type: 'input', class: 'email', txt: '' });
+  signForm.ins(email);
+
+  signForm.ins(new DomPart({ type: 'br' }));
+
+  const password = new DomPart({ type: 'input', class: 'password', txt: '' });
+  signForm.ins(password);
+
+  signForm.ins(new DomPart({ type: 'br' }));
+
+  const btn = new DomPart({ type: 'button', class: 'btn', txt: act });
+  signForm.ins(btn);
+
+  btn.on('pointerdown', async (e) => {
+
+    if (act === 'Sign Up') {
+      const user = await b.p('signUp', {
+        email: email.getVal(),
+        password: password.getVal(),
+      });
+    }
+  });
+
+} else {
+  const dataEditor = Object.create(DataEditor);
+  dataEditor.setB(b);
+  dataEditor.set_(_);
+  await dataEditor.init();
+  await b.p('doc.ins', { o1: 'app', o2: dataEditor.o });
+
+  window.onkeydown = (e) => dataEditor.keydown(e);
+  window.onpointerdown = (e) => dataEditor.click(e);
+}

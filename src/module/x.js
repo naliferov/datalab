@@ -49,31 +49,37 @@ export const set = async (x) => {
   let repo = x.repo || 'default';
   let { _, b, createSet, prepareForTransfer } = x[x._];
 
-  const set = await createSet({ _, b, repo, path, type });
-  if (!set) return;
+  if (path) {
 
-  for (let i = 0; i < set.length; i++) {
-    const v = set[i];
-    const isLast = i === set.length - 1;
+    const set = await createSet({ _, b, repo, path, type });
+    if (!set) return;
 
-    if (isLast) {
-      if (v.l) {
-        const newId = await b.p('getUniqId');
-        const newV = { _: { id: newId }, v: data };
-        await b.p('set', { repo, id: newId, v: prepareForTransfer(newV) });
+    for (let i = 0; i < set.length; i++) {
+      const v = set[i];
+      const isLast = i === set.length - 1;
 
-        v.l.push(newId);
-        if (!v[_].new) v[_].updated = true;
-      } else if (v.v) {
-        v.v = data;
-        if (!v[_].new) v[_].updated = true;
+      if (isLast) {
+        if (v.l) {
+          const newId = await b.p('getUniqId');
+          const newV = { _: { id: newId }, v: data };
+          await b.p('set', { repo, id: newId, v: prepareForTransfer(newV) });
+
+          v.l.push(newId);
+          if (!v[_].new) v[_].updated = true;
+        } else if (v.v) {
+          v.v = data;
+          if (!v[_].new) v[_].updated = true;
+        }
+      }
+
+      if (v[_].new || v[_].updated) {
+        await b.p('set', { repo, id: v[_].id, v: prepareForTransfer(v) });
       }
     }
-
-    if (v[_].new || v[_].updated) {
-      await b.p('set', { repo, id: v[_].id, v: prepareForTransfer(v) });
-    }
   }
+
+
+
 
   return set.at(-1);
 }
@@ -196,7 +202,7 @@ export const delWithSubVars = async (x) => {
 export const createSet = async (x) => {
 
   const { _, b, path, getMeta, isNeedStopIfVarNotFound } = x;
-  let type = x.type || 'v';
+  const type = x.type || 'v';
 
   let v1 = await b.p('get', { id: 'root' });
   v1[_] = { id: 'root', name: 'root' };

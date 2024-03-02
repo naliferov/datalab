@@ -8,11 +8,11 @@ export const DataEditor = {
     const css = `
 .container {
   font-family: 'Roboto', sans-serif;
+  margin-top: 15px;
 }
 .inline { display: inline; }
 .hidden { display: none; }
 .container {
-    padding: 10px;
     color: rgb(55, 53, 47);
 }
 .header {
@@ -99,6 +99,8 @@ div[contenteditable="true"] {
     });
     container.append(root);
 
+
+    //open ids of prefiled. this will be alternative of http adress
     const openedIds = await this.getOpenedIds();
     const v = await p('get', { id: 'root', subIds: [...openedIds], depth: 1, getMeta: true });
     console.log(v);

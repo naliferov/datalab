@@ -113,7 +113,7 @@ await b.s('set', async (x) => {
 
 await b.s('get', async (x) => {
 
-  const { id, subIds, path, depth, getMeta } = x;
+  const { id, subIds, depth, getMeta } = x;
 
   if (id) {
     const _ = await b.p('get_');
@@ -127,7 +127,12 @@ await b.s('get', async (x) => {
     return v;
   }
 
-  if (path && depth !== undefined) {
+  let path = x.path;
+  if (path && path !== undefined) {
+    if (!Array.isArray(path) && typeof path === 'string') {
+      x.path = x.path.split('.');
+    }
+
     const _ = await b.p('get_');
     x._ = _;
     x[_] = { _, b, createSet, getVarData };
@@ -198,6 +203,15 @@ await b.s('cp', async (x) => {
   }
 });
 
+// await b.s('signIn', async (x) => {
+//   const { email, password } = x;
+//   return { email, password };
+// });
+await b.s('signUp', async (x) => {
+  const { email, password } = x;
+  return { email, password };
+});
+
 await b.s('port', async (x) => {
   const { b, msg } = x;
   if (msg.x) return await b.p(msg.x, msg);
@@ -208,9 +222,7 @@ await b.s('port', async (x) => {
   }
 });
 
-await b.s('state.import', async (x) => {
-  (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true);
-});
+await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true));
 await b.s('state.export', async (x) => {
   const zip = new AmdZip();
   zip.addLocalFolder(repo.getStatePath());
@@ -244,10 +256,18 @@ process.on('uncaughtException', (e, origin) => {
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const repo = new FsStorage('./state', fs);
 
+//return await b.p('set', { path: pathToArr(path), v, type });
 //todo if env === test // clear tests/state, and set repo to tests/state
+
 
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
+
+const users = await b.p('get', { path: ['sys', 'users'] });
+if (!users) {
+  await b.p('set', { path: ['sys', 'users'], v: {}, type: 'm' })
+}
+
 
 const e = {
   'set': async (arg) => {
@@ -290,7 +310,8 @@ const e = {
     const { rqHandler } = await import('./src/transport/http.js');
 
     x.server.on('clientError', (err, socket) => {
-      console.log(err);
+      console.log('CLIENT ERROR', err);
+
       if (err.code === 'ECONNRESET' || !socket.writable) return;
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
@@ -303,10 +324,6 @@ const e = {
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
-  //todo add basic integrating testing
-  //'test': async (arg) => {
-  //test set, get what settled, and del, after del check get is return nothing
-  //},
 };
 
 const args = parseCliArgs(process.argv);

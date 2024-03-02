@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "adm-zip": "^0.5.10",
-    "ulid": "^2.3.0"
+    "ulid": "^2.3.0",
+    "vue": "^3.4.21"
   }
 }
