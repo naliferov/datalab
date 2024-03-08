@@ -4,15 +4,12 @@ import process from 'node:process';
 import { ulid } from "ulid";
 import {
   X, b,
-  createSet,
   del,
   get,
   getDateTime,
-  getType,
-  getVarData, getVarIds,
+  getVarIds,
   parseCliArgs,
   pathToArr,
-  prepareForTransfer,
   set
 } from "./src/module/x.js";
 
@@ -34,193 +31,37 @@ await b.s('fs.readFile', async (x) => {
   return await fs.readFile(path, 'utf8');
 });
 
-await b.s('set', async (x) => {
-  const { type, id, path, k, ok, v } = x;
+const injectSys = async (x) => {
+  const _ = await b.p('get_');
+  x._ = _;
+  x[_] = { b, repo };
+}
 
-  if (v && v.i) delete v.i;
-
-  //CHANGE ORDER
-  if (id && ok && typeof ok === 'object') {
-    const vById = await b.p('get', { id });
-    if (!vById) return { ok: 0, msg: 'v not found' };
-
-    const { from, to } = ok;
-
-    if (vById.m) {
-      if (!vById.o) return { ok: 0, msg: 'v.o not found' };
-
-      const i = vById.o.splice(from, 1)[0];
-      vById.o.splice(to, 0, i);
-    }
-    if (vById.l) {
-      const i = vById.l.splice(from, 1)[0];
-      vById.l.splice(to, 0, i);
-    }
-    await repo.set(id, vById);
-
-    return { id, ok };
-  }
-  //SET key and value to id of (MAP) or add value (LIST)
-  if (type && id && v) {
-    const vById = await b.p('get', { id });
-    if (!vById) return { msg: 'v not found' };
-
-    if (type === 'm' && vById.m) {
-      if (vById.m[k]) return { msg: `k [${k}] already exists in vById` };
-      if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-      if (ok === undefined) return { msg: `ok is empty` };
-
-      const newId = await b.p('getUniqId');
-      vById.m[k] = newId;
-
-      if (ok > vById.o.length - 1) vById.o.push(k);
-      else vById.o.splice(ok, 0, k);
-
-      await repo.set(newId, v);
-      await repo.set(id, vById);
-
-      return { id, k, v, newId };
-    }
-    if (type === 'l' && vById.l) {
-      const newId = await b.p('getUniqId');
-      vById.l.push(newId);
-      await repo.set(newId, v);
-      await repo.set(id, vById);
-
-      return { type, id, newId, v };
-    }
-
-    return { msg: 'Not found "m" in vById', vById };
-  }
-
-  //SET value by ID
-  if (id && v) {
-    await repo.set(id, v);
-    return { id, v };
-  }
-
-  //SET by PATH
-  if (path) {
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { _, b, createSet, prepareForTransfer };
-    await set(x);
-    return { msg: 'update complete', x };
-  }
-
-  return { msg: 'unknown state', x };
-});
-
-await b.s('get', async (x) => {
-
-  const { id, subIds, depth, getMeta } = x;
-
-  if (id) {
-    const _ = await b.p('get_');
-    let v = await repo.get(id);
-
-    if (depth !== undefined && getMeta) {
-      v.i = { id, t: getType(v) };
-      v = await getVarData({ _, b, v, subIds: new Set(subIds), depth, getMeta });
-    }
-
-    return v;
-  }
-
-  let path = x.path;
-  if (path && path !== undefined) {
-    if (!Array.isArray(path) && typeof path === 'string') {
-      x.path = x.path.split('.');
-    }
-
-    const _ = await b.p('get_');
-    x._ = _;
-    x[_] = { _, b, createSet, getVarData };
-    return await get(x);
-  }
-});
-
-await b.s('del', async (x) => {
-  const { id, path, k, ok } = x;
-
-  if ((id && k) || path) {
-    x._ = _;
-    x[_] = { _, b, createSet, getVarIds, prepareForTransfer };
-    return await del(x) ?? { msg: 'delete complete' };
-  }
-  if (id && id !== 'root') return await repo.del(id);
-});
-
-await b.s('cp', async (x) => {
-  const {
-    oldId, newId, key,
-    id, oldKey, newKey
-  } = x;
-
-  //COPY or MOVE MAP key from one ID to another ID
-  if (oldId && newId && oldId !== newId && key) {
-
-    const oldV = await b.p('get', { id: oldId });
-    const newV = await b.p('get', { id: newId });
-
-    if (!oldV || !newV) return { msg: 'oldV or oldV not found' };
-    if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
-    if (!oldV.o || !newV.o) return { msg: 'oldV.o or newV.o not found' };
-
-    if (!oldV.m[key]) return { msg: `key [${key}] not found in oldV.m` };
-    if (newV.m[key]) return { msg: `newV.m already have key [${key}]` };
-
-    newV.m[key] = oldV.m[key];
-    delete oldV.m[key];
-
-    const index = oldV.o.indexOf(key);
-    if (index !== -1) oldV.o.splice(index, 1);
-    newV.o.push(key);
-
-    await b.p('set', { id: oldId, v: prepareForTransfer(oldV) });
-    await b.p('set', { id: newId, v: prepareForTransfer(newV) });
-    return { oldId, newId, key };
-  }
-
-  //RENAME of MAP key
-  if (id && oldKey && newKey) {
-
-    const v = await b.p('get', { id });
-    if (!v.m || !v.m[oldKey]) {
-      return { msg: 'v.m or v.m[oldKey] not found' };
-    }
-
-    v.m[newKey] = v.m[oldKey];
-    delete v.m[oldKey];
-
-    if (!v.o) return { msg: 'o not found in map' };
-    const ok = v.o.indexOf(oldKey);
-    if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
-
-    v.o[ok] = newKey;
-    await b.p('set', { id, v });
-    return { id, oldKey, newKey };
-  }
-});
-
-// await b.s('signIn', async (x) => {
-//   const { email, password } = x;
-//   return { email, password };
-// });
-await b.s('signUp', async (x) => {
-  const { email, password } = x;
-  return { email, password };
-});
-
-await b.s('port', async (x) => {
-  const { b, msg } = x;
-  if (msg.x) return await b.p(msg.x, msg);
-
+await b.s('getHtml', async (x) => {
   return {
     msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
     type: 'text/html',
   }
 });
+await b.s('set', async (x) => {
+  await injectSys(x);
+  return await set(x);
+});
+await b.s('get', async (x) => {
+  await injectSys(x);
+  return await get(x);
+});
+await b.s('del', async (x) => {
+  await injectSys(x);
+  return await del(x);
+});
+
+await b.s('signUp', async (x) => {
+  const { email, password } = x;
+  return { email, password };
+});
+
+await b.s('port', async (x) => await b.p(x.x, x));
 
 await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true));
 await b.s('state.export', async (x) => {

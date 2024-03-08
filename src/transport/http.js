@@ -105,7 +105,7 @@ const rqResponse = (rs, v, contentType) => {
 }
 export const rqHandler = async (x) => {
 
-  const { b, rq, rs, fs } = x;
+  const { b, rq, rs, fs, serveFS } = x;
   rq.on('error', (e) => {
     rq.destroy();
     b.p('log', { msg: 'rq socker err', e });
@@ -114,23 +114,22 @@ export const rqHandler = async (x) => {
   const ip = rq.socket.remoteAddress;
   const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
   const url = new URL('http://t.c' + rq.url);
-
   rq.pathname = url.pathname;
-  rq.mp = `${rq.method}:${url.pathname}`;
 
-  if (x.serveFS && await rqResolveFile(rq, rs, fs)) return;
+  if (serveFS && await rqResolveFile(rq, rs, fs)) return;
   const query = rqParseQuery(rq);
   const body = await rqParseBody(rq);
   let msg = body ?? query;
 
-  if (msg instanceof Buffer) msg = { b, msg, meta: rq.headers };
+  if (msg instanceof Buffer) msg.meta = { headers: rq.headers };
   if (msg.err) {
     console.log('err', msg.err);
     rqResponse(rs, 'error processing rq');
     return;
   }
+  if (!msg.x) msg.x = 'getHtml';
 
-  const out = await b.p('port', { b, msg });
+  const out = await b.p('port', msg);
   if (!out) {
     rqResponse(rs, 'Default response');
     return;
@@ -140,6 +139,7 @@ export const rqHandler = async (x) => {
     rqResponse(rs, msg, type);
     return;
   }
+
   rqResponse(rs, out);
 };
 

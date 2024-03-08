@@ -44,15 +44,80 @@ export const b = {
 }
 
 export const set = async (x) => {
-  const { id, path, type } = x;
-  let data = x.v;
-  let repo = x.repo || 'default';
-  let { _, b, createSet, prepareForTransfer } = x[x._];
 
+  const { type, id, path, k, ok, v } = x;
+
+  let { _, b, repo } = x[x._];
+
+  if (v && v.i) delete v.i;
+
+  //CHANGE ORDER
+  if (id && ok && typeof ok === 'object') {
+    const vById = await b.p('get', { id });
+    if (!vById) return { ok: 0, msg: 'v not found' };
+
+    const { from, to } = ok;
+
+    if (vById.m) {
+      if (!vById.o) return { ok: 0, msg: 'v.o not found' };
+
+      const i = vById.o.splice(from, 1)[0];
+      vById.o.splice(to, 0, i);
+    }
+    if (vById.l) {
+      const i = vById.l.splice(from, 1)[0];
+      vById.l.splice(to, 0, i);
+    }
+    await repo.set(id, vById);
+
+    return { id, ok };
+  }
+
+  //SET key and value to id of (MAP) or add value (LIST)
+  if (type && id && v) {
+    const vById = await b.p('get', { id });
+    if (!vById) return { msg: 'v not found' };
+
+    if (type === 'm' && vById.m) {
+      if (vById.m[k]) return { msg: `k [${k}] already exists in vById` };
+      if (!vById.o) return { msg: `v.o is not found by [${id}]` };
+      if (ok === undefined) return { msg: `ok is empty` };
+
+      const newId = await b.p('getUniqId');
+      vById.m[k] = newId;
+      vById.o.splice(ok, 0, k);
+
+      await repo.set(newId, v);
+      await repo.set(id, vById);
+
+      return { type, id, k, v, newId };
+    }
+    if (type === 'l' && vById.l) {
+      const newId = await b.p('getUniqId');
+      vById.l.push(newId);
+
+      await repo.set(newId, v);
+      await repo.set(id, vById);
+
+      return { type, id, newId, v };
+    }
+
+    return { msg: 'Not found "m" in vById', vById };
+  }
+
+  //SET value by ID
+  if (id && v) {
+    await repo.set(id, v);
+    return { id, v };
+  }
+
+  //SET BY PATH
   if (path) {
 
     const set = await createSet({ _, b, repo, path, type });
     if (!set) return;
+
+    let data = v;
 
     for (let i = 0; i < set.length; i++) {
       const v = set[i];
@@ -76,39 +141,102 @@ export const set = async (x) => {
         await b.p('set', { repo, id: v[_].id, v: prepareForTransfer(v) });
       }
     }
+
+    return set.at(-1);
   }
 
 
+  const {
+    oldId, newId, key,
+    oldKey, newKey
+  } = x;
 
+  //COPY or MOVE MAP key from one ID to another ID
+  if (oldId && newId && oldId !== newId && key) {
 
-  return set.at(-1);
+    const oldV = await b.p('get', { id: oldId });
+    const newV = await b.p('get', { id: newId });
+
+    if (!oldV || !newV) return { msg: 'oldV or oldV not found' };
+    if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
+    if (!oldV.o || !newV.o) return { msg: 'oldV.o or newV.o not found' };
+
+    if (!oldV.m[key]) return { msg: `key [${key}] not found in oldV.m` };
+    if (newV.m[key]) return { msg: `newV.m already have key [${key}]` };
+
+    newV.m[key] = oldV.m[key];
+    delete oldV.m[key];
+
+    const index = oldV.o.indexOf(key);
+    if (index !== -1) oldV.o.splice(index, 1);
+    newV.o.push(key);
+
+    await b.p('set', { id: oldId, v: prepareForTransfer(oldV) });
+    await b.p('set', { id: newId, v: prepareForTransfer(newV) });
+    return { oldId, newId, key };
+  }
+
+  //RENAME of MAP key
+  if (id && oldKey && newKey) {
+
+    const v = await b.p('get', { id });
+    if (!v.m || !v.m[oldKey]) {
+      return { msg: 'v.m or v.m[oldKey] not found' };
+    }
+
+    v.m[newKey] = v.m[oldKey];
+    delete v.m[oldKey];
+
+    if (!v.o) return { msg: 'o not found in map' };
+    const ok = v.o.indexOf(oldKey);
+    if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
+
+    v.o[ok] = newKey;
+    await b.p('set', { id, v });
+    return { id, oldKey, newKey };
+  }
 }
 
 export const get = async (x) => {
 
-  let { _, b, createSet, getVarData } = x[x._];
-  let { path, depth, getMeta, varIdsForGet } = x;
-  let repo = x.repo || 'default';
+  let { id, path, subIds, depth, getMeta, varIdsForGet } = x;
+  let { _, b, repo } = x[x._];
 
   if (depth === undefined) depth = 0;
 
-  const set = await createSet({
-    _, b, repo, path, getMeta,
-    isNeedStopIfVarNotFound: true,
-  });
-  if (!set) return;
+  if (id) {
+    const _ = await b.p('get_');
+    let v = await repo.get(id);
 
-  const v = set.at(-1);
-  if (!v) return;
+    if (getMeta) {
+      v.i = { id, t: getType(v) };
+      v = await getVarData({ _, b, v, subIds: new Set(subIds), depth, getMeta });
+    }
+    return v;
+  }
 
-  return await getVarData({ _, b, repo, v, depth, getMeta, varIdsForGet });
+  if (path && path !== undefined) {
+    if (!Array.isArray(path) && typeof path === 'string') {
+      x.path = x.path.split('.');
+    }
+
+    const set = await createSet({
+      _, b, repo, path, getMeta,
+      isNeedStopIfVarNotFound: true,
+    });
+    if (!set) return;
+
+    const v = set.at(-1);
+    if (!v) return;
+
+    return await getVarData({ _, b, repo, v, depth, getMeta, varIdsForGet });
+  }
 }
 
 export const del = async (x) => {
 
   const { path, id, k, ok } = x;
-  let repo = x.repo || 'default';
-  let { _, b, createSet, prepareForTransfer } = x[x._];
+  let { _, b, repo } = x[x._];
 
   if (id && k) {
     const v = await b.p('get', { id });
@@ -149,9 +277,11 @@ export const del = async (x) => {
     return;
   }
 
+  if (id && id !== 'root') return await repo.del(id);
+
 
   //DELETE BY PATH
-  const set = await createSet({ _, b, repo, path, isNeedStopIfVarNotFound: true });
+  const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
 
   if (!set || set.length < 2) {
     console.log('log', { msg: 'Var set not found' });

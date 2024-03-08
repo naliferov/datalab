@@ -346,7 +346,7 @@ div[contenteditable="true"] {
 
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
-        const resp = await this.b.p('cp', { id: parentId, oldKey: this.markedTxt, newKey: v });
+        const resp = await this.b.p('set', { id: parentId, oldKey: this.markedTxt, newKey: v });
         console.log(resp);
       } else if (isVal) {
         const id = row.getAttribute('_id');
@@ -485,19 +485,19 @@ div[contenteditable="true"] {
           return;
         }
 
-        const movingRow = this.rowInterface(this.buffer.marked.parentNode);
-        const type = movingRow.getType();
+        const mvRow = this.rowInterface(this.buffer.marked.parentNode);
+        const type = mvRow.getType();
         if (type !== 'm' && type !== 'l') return;
 
         const data = {
-          oldId: movingRow.getParentId(),
+          oldId: mvRow.getParentId(),
           newId: row.getId(),
-          key: movingRow.key.innerText,
+          key: mvRow.key.innerText,
         };
-        const resp = await this.b.p('cp', data);
+        const resp = await this.b.p('set', data);
         console.log(resp);
 
-        row.val.append(movingRow.dom);
+        row.val.append(mvRow.dom);
         this.buffer = null;
         this.menu.remove();
       });
