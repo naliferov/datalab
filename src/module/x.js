@@ -103,6 +103,7 @@ export const set = async (x) => {
   //SET binary file and save it's ID to specific varID
   if (id && bin) {
     console.log(id, bin);
+    return { id, bin };
   }
 
   //SET BY PATH
