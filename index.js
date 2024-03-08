@@ -25,17 +25,12 @@ await b.s('log', async (x) => {
   console.log(x);
 });
 await b.s('get_', () => _);
+await b.s('getRepo', () => repo);
 await b.s('getUniqId', () => ulid());
 await b.s('fs.readFile', async (x) => {
   const { path } = x;
   return await fs.readFile(path, 'utf8');
 });
-
-const injectSys = async (x) => {
-  const _ = await b.p('get_');
-  x._ = _;
-  x[_] = { b, repo };
-}
 
 await b.s('getHtml', async (x) => {
   return {
@@ -43,24 +38,13 @@ await b.s('getHtml', async (x) => {
     type: 'text/html',
   }
 });
-await b.s('set', async (x) => {
-  await injectSys(x);
-  return await set(x);
-});
-await b.s('get', async (x) => {
-  await injectSys(x);
-  return await get(x);
-});
-await b.s('del', async (x) => {
-  await injectSys(x);
-  return await del(x);
-});
-
+await b.s('set', async (x) => await set(x));
+await b.s('get', async (x) => await get(x));
+await b.s('del', async (x) => await del(x));
 await b.s('signUp', async (x) => {
   const { email, password } = x;
   return { email, password };
 });
-
 await b.s('port', async (x) => await b.p(x.x, x));
 
 await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true));

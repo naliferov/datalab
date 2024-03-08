@@ -111,8 +111,8 @@ export const rqHandler = async (x) => {
     b.p('log', { msg: 'rq socker err', e });
   });
 
-  const ip = rq.socket.remoteAddress;
-  const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+  //const ip = rq.socket.remoteAddress;
+  //const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
   const url = new URL('http://t.c' + rq.url);
   rq.pathname = url.pathname;
 
@@ -121,14 +121,17 @@ export const rqHandler = async (x) => {
   const body = await rqParseBody(rq);
   let msg = body ?? query;
 
-  if (msg instanceof Buffer) msg.meta = { headers: rq.headers };
+  if (msg instanceof Buffer) {
+    const x = rq.headers['x'] ? JSON.parse(rq.headers['x']) : {};
+    msg = { bin: msg, ...x };
+  }
   if (msg.err) {
-    console.log('err', msg.err);
+    console.log('msg.err', msg.err);
     rqResponse(rs, 'error processing rq');
     return;
   }
-  if (!msg.x) msg.x = 'getHtml';
 
+  if (!msg.x) msg.x = 'getHtml';
   const out = await b.p('port', msg);
   if (!out) {
     rqResponse(rs, 'Default response');
@@ -146,11 +149,7 @@ export const rqHandler = async (x) => {
 export class HttpClient {
 
   constructor(baseURL = '', headers = {}, options = {}) {
-
     this.headers = headers;
-    if (!this.headers['Content-Type']) {
-      this.headers['Content-Type'] = 'application/json';
-    }
     if (baseURL) this.baseURL = baseURL;
   }
 

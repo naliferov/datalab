@@ -16,26 +16,15 @@ export const X = (symbol) => {
   }
 }
 
-export const U = (X, symbol) => {
-
-  const _ = symbol;
-
-  return async (x) => {
-    if (x.x) {
-      return await X({ ...x, [_]: { x: x.x } });
-    }
-    if (x.y) {
-      return await X({ [_]: { y: x.y, f: x.f } });
-    }
-  }
-};
-
 export const b = {
   setX(x) { this.x = x; },
   set_(_) { this._ = _; },
-  async p(e, data) {
-    const _ = this._;
-    return await this.x({ ...data, [_]: { x: e } });
+  async p(event, data) {
+    const inject = {
+      _: this._,
+      [this._]: { b, x: event }
+    }
+    return await this.x({ ...data, ...inject });
   },
   async s(e, f) {
     const _ = this._;
@@ -45,9 +34,10 @@ export const b = {
 
 export const set = async (x) => {
 
-  const { type, id, path, k, ok, v } = x;
-
-  let { _, b, repo } = x[x._];
+  const { type, id, path, k, ok, v, bin } = x;
+  const { b } = x[x._];
+  const _ = await b.p('get_');
+  const repo = await b.p('getRepo');
 
   if (v && v.i) delete v.i;
 
@@ -99,7 +89,7 @@ export const set = async (x) => {
       await repo.set(newId, v);
       await repo.set(id, vById);
 
-      return { type, id, newId, v };
+      return { type, id, v, newId };
     }
 
     return { msg: 'Not found "m" in vById', vById };
@@ -109,6 +99,10 @@ export const set = async (x) => {
   if (id && v) {
     await repo.set(id, v);
     return { id, v };
+  }
+  //SET binary file and save it's ID to specific varID
+  if (id && bin) {
+    console.log(id, bin);
   }
 
   //SET BY PATH
@@ -190,8 +184,8 @@ export const set = async (x) => {
     if (!v.o) return { msg: 'o not found in map' };
     const ok = v.o.indexOf(oldKey);
     if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
-
     v.o[ok] = newKey;
+
     await b.p('set', { id, v });
     return { id, oldKey, newKey };
   }
@@ -200,12 +194,13 @@ export const set = async (x) => {
 export const get = async (x) => {
 
   let { id, path, subIds, depth, getMeta, varIdsForGet } = x;
-  let { _, b, repo } = x[x._];
+  const { b } = x[x._];
+  const _ = await b.p('get_');
+  const repo = await b.p('getRepo');
 
   if (depth === undefined) depth = 0;
 
   if (id) {
-    const _ = await b.p('get_');
     let v = await repo.get(id);
 
     if (getMeta) {
@@ -236,7 +231,9 @@ export const get = async (x) => {
 export const del = async (x) => {
 
   const { path, id, k, ok } = x;
-  let { _, b, repo } = x[x._];
+  const { b } = x[x._];
+  const _ = await b.p('get_');
+  const repo = await b.p('getRepo');
 
   if (id && k) {
     const v = await b.p('get', { id });
@@ -427,7 +424,7 @@ export const getVarData = async (x) => {
       v2[_] = { id };
       if (getMeta) v2.i = { id, t: getType(v2) };
 
-      if (v2.v) {
+      if (v2.b || v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
         data.l.push(await getVarData({ _, b, v: v2, subIds, depth: depth - 1, getMeta }));
@@ -448,7 +445,7 @@ export const getVarData = async (x) => {
       v2[_] = { id };
       if (getMeta) v2.i = { id, t: getType(v2) };
 
-      if (v2.v) {
+      if (v2.b || v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
         data.m[p] = await getVarData({ _, b, v: v2, subIds, depth: depth - 1, getMeta });
@@ -490,6 +487,7 @@ export const getVarIds = async (x) => {
 }
 
 export const getType = (v) => {
+  if (v.b) return 'b';
   if (v.m) return 'm';
   if (v.l) return 'l';
   if (v.v) return 'v';

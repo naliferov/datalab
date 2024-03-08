@@ -1,3 +1,5 @@
+import { DomPart } from "../../mod/layout/DomPart.js";
+
 export const DataEditor = {
 
   setB(b) { this.b = b; },
@@ -120,7 +122,7 @@ div[contenteditable="true"] {
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
       for (let k of v.o) {
-        if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, o); return; }
+        if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
 
         const curV = v.m[k];
         const curVId = getVId(curV);
@@ -158,7 +160,7 @@ div[contenteditable="true"] {
       r.innerHTML = '';
     } else {
       r = await this.b.p('doc.mk', { class: 'row' });
-      r.id = await this.b.p('getUniqForDomId');
+      r.id = await this.b.p('getUniqIdForDomId');
     }
 
     if (id) r.setAttribute('_id', id);
@@ -174,7 +176,6 @@ div[contenteditable="true"] {
     if (v) {
       const t = v.i.t;
       if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
-
       if (t) r.setAttribute('t', t);
 
       if (!v.i.openable) {
@@ -191,6 +192,17 @@ div[contenteditable="true"] {
       if (txt && txt.split) txt = txt.split('\n')[0];
       val.classList.add('inline');
       val.innerText = txt;
+    }
+    if (v && v.b) {
+      val.classList.add('inline');
+
+      const input = new DomPart({ type: 'input' })
+      input.setAttr('type', 'file');
+      input.on('change', async (e) => {
+        const row = this.rowInterface(r);
+        return await this.setBinToId(row, input)
+      });
+      val.append(input.getDOM());
     }
 
     return r;
@@ -505,6 +517,15 @@ div[contenteditable="true"] {
       this.menu.append(btn);
     }
 
+    btn = await mkBtn('Convert to bin', async (e) => {
+      const row = this.rowInterface(this.marked.parentNode);
+      const id = row.getId();
+      if (!id) return;
+      const r = await this.b.p('set', { id, v: { b: {} } });
+      console.log(r);
+    });
+    this.menu.append(btn);
+
     btn = await mkBtn('Convert to map', async (e) => {
       const row = this.rowInterface(this.marked.parentNode);
       const id = row.getId();
@@ -556,6 +577,12 @@ div[contenteditable="true"] {
       marked.parentNode.remove();
     });
     this.menu.append(btn);
+  },
+  async setBinToId(row, input) {
+    const f = input.getDOM().files[0];
+    const r = new FileReader;
+    r.onload = async (e) => await this.b.p('set', { id: row.getId(), v: e.target.result });
+    r.readAsArrayBuffer(f);
   }
 
   // async duplicate(outlinerNode) {

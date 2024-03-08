@@ -34,7 +34,7 @@ await b.s('getUniqId', () => {
   }
   return crypto.randomUUID();
 });
-await b.s('getUniqForDomId', async () => {
+await b.s('getUniqIdForDomId', async () => {
 
   const getRandomLetter = () => {
     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -44,10 +44,19 @@ await b.s('getUniqForDomId', async () => {
 
   const id = await b.p('getUniqId');
   return id.replace(/^[0-9]/, getRandomLetter());
-})
+});
 
 await b.s('port', async (x) => {
-  const { data } = await (new HttpClient).post('/', x);
+
+  let headers = {};
+  if (x.v instanceof ArrayBuffer) {
+    const x2 = { ...x };
+    delete x2.v;
+    headers.x = JSON.stringify({ ...x2 });
+    x = x.v;
+  }
+
+  const { data } = await (new HttpClient).post('/', x, headers);
   return data;
 });
 await b.s('set', async (x) => {

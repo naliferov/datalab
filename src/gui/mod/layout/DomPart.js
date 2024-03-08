@@ -33,6 +33,11 @@ export class DomPart {
   setVal(val) { this.getDOM().value = val; }
   getVal() { return this.getDOM().value; }
 
+  setAttr(k, v) {
+    this.getDOM().setAttribute(k, v);
+    return this;
+  }
+
   attachCSS() {
     const css = new DomPart({ type: 'style', txt: this.css })
     this.ins(css);
