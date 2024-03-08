@@ -6,9 +6,8 @@ import {
 import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
 import { DomPart } from "./mod/layout/DomPart.js";
-import { Header } from "./mod/layout/header.js";
+import { Header } from "./mod/layout/Header.js";
 import { HttpClient } from "/src/transport/http.js";
-
 
 if (!Array.prototype.at) {
   Array.prototype.at = function (index) {
