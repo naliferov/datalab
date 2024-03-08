@@ -83,23 +83,8 @@ await b.s('state.validate', async (x) => {
   console.log('files that not exists in varIds', fSet);
 });
 
-process.on('uncaughtException', (e, origin) => {
-  if (e?.code === 'ECONNRESET') {
-    console.error(e);
-    return;
-  }
-  if (e.stack) console.log('e.stack', e.stack);
-
-  console.error('UNCAUGHT EXCEPTION', e, e.stack, origin);
-  process.exit(1);
-});
-
 const { FsStorage } = await import('./src/storage/fsStorage.js');
 const repo = new FsStorage('./state', fs);
-
-//return await b.p('set', { path: pathToArr(path), v, type });
-//todo if env === test // clear tests/state, and set repo to tests/state
-
 
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
@@ -143,7 +128,6 @@ const e = {
   'state.export': async (arg) => await b.p('state.export', { repo }),
   'state.validate': async (arg) => await b.p('state.validate'),
   'server.start': async (arg) => {
-    //todo refactor this for more control
     const x = {
       server: (await import('node:http')).createServer({ requestTimeout: 30000 }),
       port: arg[1] || 8080,
@@ -166,6 +150,17 @@ const e = {
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
   },
 };
+
+process.on('uncaughtException', (e, origin) => {
+  if (e?.code === 'ECONNRESET') {
+    console.error(e);
+    return;
+  }
+  if (e.stack) console.log('e.stack', e.stack);
+
+  console.error('UNCAUGHT EXCEPTION', e, e.stack, origin);
+  process.exit(1);
+});
 
 const args = parseCliArgs(process.argv);
 if (e[args[0]]) {
