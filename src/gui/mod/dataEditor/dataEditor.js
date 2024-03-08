@@ -376,11 +376,10 @@ div[contenteditable="true"] {
     const p = async (event, data) => await this.b.p(event, data);
     const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
-    const containerSize = await p('doc.getSize', { o: this.container });
     const menu = await p('doc.mk', {
       class: 'menu', css: {
-        left: (e.clientX - containerSize.x) + 'px',
-        top: (e.clientY - containerSize.y) + 'px',
+        left: e.clientX + 'px',
+        top: e.clientY + 'px',
         padding: '5px',
       }
     });
@@ -486,7 +485,8 @@ div[contenteditable="true"] {
         }
 
         const mvRow = this.rowInterface(this.buffer.marked.parentNode);
-        const type = mvRow.getType();
+        const type = row.getType();
+
         if (type !== 'm' && type !== 'l') return;
 
         const data = {
