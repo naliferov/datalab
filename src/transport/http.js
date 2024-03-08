@@ -36,14 +36,23 @@ const rqParseBody = async (rq, limitMb = 12) => {
 }
 const rqResolveFile = async (rq, rs, fs) => {
 
-  const lastPart = rq.pathname.split('/').pop();
-  const split = lastPart.split('.');
-  if (split.length < 2) return false;
+  const query = rqParseQuery(rq);
+  let ext, mime;
 
-  const extension = split[split.length - 1]; if (!extension) return;
-  try {
+  if (!query.getFile) {
+    const lastPart = rq.pathname.split('/').pop();
+    const split = lastPart.split('.');
+    if (split.length < 2) return false;
+
+    ext = split[split.length - 1];
+    if (!ext) return;
+
     const m = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf' };
-    if (m[extension]) rs.setHeader('Content-Type', m[extension]);
+    mime = m[ext];
+  }
+
+  try {
+    if (mime) rs.setHeader('Content-Type', mime);
 
     rs.end(await fs.readFile('.' + rq.pathname));
     return true;
@@ -73,11 +82,6 @@ const rqGetCookies = rq => {
     result[k.trim()] = v.trim();
   }
   return result;
-}
-const rqAuthenticate = (rq) => {
-  let { token } = sys.rqGetCookies(rq);
-  const netToken = sys.getNetToken();
-  return token && netToken && token === netToken;
 }
 const rqResponse = (rs, v, contentType) => {
   const send = (value, type) => {

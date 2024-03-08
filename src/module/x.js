@@ -34,7 +34,7 @@ export const b = {
 
 export const set = async (x) => {
 
-  const { type, id, path, k, ok, v, bin } = x;
+  const { type, id, path, k, ok, v, bin, binName } = x;
   const { b } = x[x._];
   const _ = await b.p('get_');
   const repo = await b.p('getRepo');
@@ -101,9 +101,19 @@ export const set = async (x) => {
     return { id, v };
   }
   //SET binary file and save it's ID to specific varID
-  if (id && bin) {
-    console.log(id, bin);
-    return { id, bin };
+  if (id && bin && binName) {
+    const v = await b.p('get', { id });
+    if (!v) return { msg: 'v not found by id', id };
+    //todo clear previous binary file;
+
+    let t = binName.split('.').at(-1);
+    if (t === 'png' || t === 'jpg' || t === 'jpeg') { }
+
+    const newId = await b.p('getUniqId');
+    await repo.set(newId, bin, 'raw');
+    await repo.set(id, { b: { id: newId } });
+
+    return { id, newId };
   }
 
   //SET BY PATH
@@ -236,12 +246,14 @@ export const del = async (x) => {
   const _ = await b.p('get_');
   const repo = await b.p('getRepo');
 
+  //DELETE KEY IN MAP with subVars
   if (id && k) {
     const v = await b.p('get', { id });
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
-    const isMap = Boolean(v.m); const isList = Boolean(v.l);
+    const isMap = Boolean(v.m);
+    const isList = Boolean(v.l);
 
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
@@ -275,8 +287,8 @@ export const del = async (x) => {
     return;
   }
 
+  //DELETE BY ID
   if (id && id !== 'root') return await repo.del(id);
-
 
   //DELETE BY PATH
   const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
@@ -297,8 +309,10 @@ export const del = async (x) => {
 
   const isDelWithSubVars = await delWithSubVars({ _, b, v: v2 });
   if (isDelWithSubVars) {
+    const isBin = Boolean(v1.b);
+    const isMap = Boolean(v1.m);
+    const isList = Boolean(v1.l);
 
-    const isMap = Boolean(v1.m); const isList = Boolean(v1.l);
     if (isMap) {
       console.log(v2ID);
 
@@ -463,19 +477,20 @@ export const getVarIds = async (x) => {
   const { b, v } = x;
 
   const ids = [];
-  if (!v.l && !v.m) return ids;
+  if (!v.b && !v.m && !v.l) return ids;
 
   const getIds = async (v) => {
 
-    if (v.l) {
-      for (let id of v.l) {
-        ids.push(id);
-        await getIds(await b.p('get', { id }));
-      }
-
+    if (v.b) {
+      if (v.b.id) ids.push(v.b.id);
     } else if (v.m) {
       for (let k in v.m) {
         const id = v.m[k];
+        ids.push(id);
+        await getIds(await b.p('get', { id }));
+      }
+    } else if (v.l) {
+      for (let id of v.l) {
         ids.push(id);
         await getIds(await b.p('get', { id }));
       }

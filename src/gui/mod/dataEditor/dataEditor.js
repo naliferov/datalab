@@ -61,6 +61,11 @@ div[contenteditable="true"] {
     cursor: inherit;
     border: 1px solid rgb(148 148 148);
 }
+img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
 `;
     return await this.b.p('doc.mk', { type: 'style', txt: css });
   },
@@ -194,15 +199,20 @@ div[contenteditable="true"] {
       val.innerText = txt;
     }
     if (v && v.b) {
-      val.classList.add('inline');
 
-      const input = new DomPart({ type: 'input' })
-      input.setAttr('type', 'file');
-      input.on('change', async (e) => {
-        const row = this.rowInterface(r);
-        return await this.setBinToId(row, input)
-      });
-      val.append(input.getDOM());
+      if (v.b.id) {
+        const img = new DomPart({ type: 'img' });
+        img.setAttr('src', `state/${v.b.id}?getFile=1`);
+        val.append(img.getDOM());
+      } else {
+        const input = new DomPart({ type: 'input' })
+        input.setAttr('type', 'file');
+        input.on('change', async (e) => {
+          const row = this.rowInterface(r);
+          return await this.setBinToId(row, input)
+        });
+        val.append(input.getDOM());
+      }
     }
 
     return r;
@@ -581,34 +591,8 @@ div[contenteditable="true"] {
   async setBinToId(row, input) {
     const f = input.getDOM().files[0];
     const r = new FileReader;
-    r.onload = async (e) => await this.b.p('set', { id: row.getId(), v: e.target.result });
+    r.onload = async (e) => await this.b.p('set', { id: row.getId(), binName: f.name, v: e.target.result });
     r.readAsArrayBuffer(f);
   }
-
-  // async duplicate(outlinerNode) {
-  //
-  //     const parentDataNode = outlinerNode.getParent().getDataNode();
-  //     const dataNode = outlinerNode.getDataNode();
-  //     const newK = dataNode.getKey() + '_copy';
-  //
-  //     if (parentDataNode.get(newK)) {
-  //         console.log(`Key ${newK} already exists in object.`); return;
-  //     }
-  //     let v = dataNode.getData();
-  //     if (s.f('sys.isObject', v) || s.f('sys.isArray', v)) v = structuredClone(v);
-  //
-  //     const newDataNode = new this.node(v);
-  //     newDataNode.setKey(newK);
-  //     const newOutlinerNode = new this.outlinerNode;
-  //     await newOutlinerNode.init(newDataNode, false, this);
-  //
-  //     e('>after', [newOutlinerNode.getV(), outlinerNode.getV()]);
-  //     this.nodes.set(newOutlinerNode.getDomId(), newOutlinerNode);
-  //
-  //     parentDataNode.set(newK, v);
-  //     setTimeout(() => newOutlinerNode.focus(), 100);
-  //
-  //     newDataNode.setPath(newOutlinerNode.getPath());
-  //     s.e('state.update', { dataNode: newDataNode, data: v });
-  // }
+  //duplicate
 }
