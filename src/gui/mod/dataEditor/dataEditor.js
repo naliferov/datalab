@@ -61,9 +61,10 @@ div[contenteditable="true"] {
     cursor: inherit;
     border: 1px solid rgb(148 148 148);
 }
+.openClose {
+  cursor: pointer;
+}
 img {
-  height: 100%;
-  width: 100%;
   object-fit: cover;
 }
 `;
@@ -201,17 +202,20 @@ img {
     if (v && v.b) {
 
       if (v.b.id) {
-        const img = new DomPart({ type: 'img' });
-        img.setAttr('src', `state/${v.b.id}?getFile=1`);
-        val.append(img.getDOM());
+        let o;
+        if (v.b.t === 'i') {
+          o = new DomPart({ type: 'img' });
+          o.setAttr('src', `state/${v.b.id}?getFile=1`);
+        }
+        if (o) val.append(o.getDOM());
       } else {
-        const input = new DomPart({ type: 'input' })
-        input.setAttr('type', 'file');
-        input.on('change', async (e) => {
+        const i = new DomPart({ type: 'input' });
+        i.setAttr('type', 'file');
+        i.on('change', async (e) => {
           const row = this.rowInterface(r);
-          return await this.setBinToId(row, input)
+          return await this.setBinToId(row, i);
         });
-        val.append(input.getDOM());
+        val.append(i.getDOM());
       }
     }
 
@@ -308,21 +312,22 @@ img {
 
     if (this.isOpenCloseBtn(t)) {
       const row = this.rowInterface(t.parentNode);
+      const id = row.getId();
+
       if (row.openCloseBtn.isOpened()) {
 
         const openedIds = await this.getOpenedIds();
-        if (row.getId()) openedIds.delete(row.getId());
+        if (id) openedIds.delete(id);
         await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
 
         row.openCloseBtn.close();
         row.clearVal();
       } else {
-
-        if (row.getId()) await this.openId(row.getId());
+        if (id && id !== 'root') await this.openId(id);
 
         const openedIds = await this.getOpenedIds();
 
-        const data = await this.b.p('get', { id: row.getId(), subIds: [...openedIds], depth: 1, getMeta: true });
+        const data = await this.b.p('get', { id, subIds: [...openedIds], depth: 1, getMeta: true });
         await this.rend(data, row.dom);
         row.openCloseBtn.open();
       }
@@ -591,7 +596,10 @@ img {
   async setBinToId(row, input) {
     const f = input.getDOM().files[0];
     const r = new FileReader;
-    r.onload = async (e) => await this.b.p('set', { id: row.getId(), binName: f.name, v: e.target.result });
+    r.onload = async (e) => {
+      const resp = await this.b.p('set', { id: row.getId(), binName: f.name, v: e.target.result });
+      console.log(resp);
+    }
     r.readAsArrayBuffer(f);
   }
   //duplicate

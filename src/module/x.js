@@ -309,7 +309,6 @@ export const del = async (x) => {
 
   const isDelWithSubVars = await delWithSubVars({ _, b, v: v2 });
   if (isDelWithSubVars) {
-    const isBin = Boolean(v1.b);
     const isMap = Boolean(v1.m);
     const isList = Boolean(v1.l);
 
