@@ -10,7 +10,7 @@ export const DataEditor = {
     const css = `
 .container {
   font-family: 'Roboto', sans-serif;
-  font-size: 17px;
+  font-size: 1em;
   margin-top: 15px;
   color: rgb(55, 53, 47);
 }
@@ -18,7 +18,7 @@ export const DataEditor = {
 .hidden { display: none; }
 .header {
     font-weight: bold;
-    font-size: 18px;
+    font-size: 1.2em;
     margin-bottom: 8px;
 }
 .menu {
