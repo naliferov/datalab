@@ -106,14 +106,15 @@ export const set = async (x) => {
     if (!v) return { msg: 'v not found by id', id };
     //todo clear previous binary file;
 
-    let t = binName.split('.').at(-1);
-    if (t === 'png' || t === 'jpg' || t === 'jpeg') { }
+    let ext = binName.split('.').at(-1);
+    let t = '';
+    if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif') t = 'i';
 
     const newId = await b.p('getUniqId');
     await repo.set(newId, bin, 'raw');
-    await repo.set(id, { b: { id: newId } });
+    await repo.set(id, { b: { id: newId, t } });
 
-    return { id, newId };
+    return { id };
   }
 
   //SET BY PATH

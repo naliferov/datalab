@@ -128,7 +128,9 @@ const e = {
       try {
         await rqHandler({ b, rq, rs, fs, serveFS: true });
       } catch (e) {
-        console.error('error in rqHandler', e);
+        const m = 'Error in rqHandler';
+        console.error(m, e);
+        rs.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end(m);
       }
     });
     x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));

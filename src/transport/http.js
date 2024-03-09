@@ -104,7 +104,7 @@ const rqResponse = (rs, v, contentType) => {
   } else if (typeof v === 'string' || typeof v === 'number') {
     send(v, contentType ?? 'text/plain; charset=utf-8');
   } else {
-    send('', 'text/plain');
+    send('', 'text/plain; charset=utf-8');
   }
 }
 export const rqHandler = async (x) => {

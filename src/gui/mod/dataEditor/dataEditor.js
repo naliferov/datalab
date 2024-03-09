@@ -10,13 +10,12 @@ export const DataEditor = {
     const css = `
 .container {
   font-family: 'Roboto', sans-serif;
+  font-size: 17px;
   margin-top: 15px;
+  color: rgb(55, 53, 47);
 }
 .inline { display: inline; }
 .hidden { display: none; }
-.container {
-    color: rgb(55, 53, 47);
-}
 .header {
     font-weight: bold;
     font-size: 18px;
@@ -51,6 +50,10 @@ div[contenteditable="true"] {
     cursor: pointer;
     border: 1px solid transparent;
 }
+.val > img {
+    max-width: 200px;
+}
+
 .key.mark,
 .val.mark {
     background: lightblue;
@@ -63,9 +66,6 @@ div[contenteditable="true"] {
 }
 .openClose {
   cursor: pointer;
-}
-img {
-  object-fit: cover;
 }
 `;
     return await this.b.p('doc.mk', { type: 'style', txt: css });
@@ -179,19 +179,20 @@ img {
       r.append(await this.b.p('doc.mk', { txt: k, class: 'key' }));
       r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
     }
+
+    const val = await this.b.p('doc.mk', { class: 'val' });
+    r.append(val);
+
     if (v) {
       const t = v.i.t;
-      if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
       if (t) r.setAttribute('t', t);
+      if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
 
       if (!v.i.openable) {
         openCloseBtn.innerText = '- ';
         openCloseBtn.classList.add('opened');
       }
     }
-
-    const val = await this.b.p('doc.mk', { class: 'val' });
-    r.append(val);
 
     if (v && v.v) {
       let txt = v.v;
@@ -208,6 +209,7 @@ img {
           o.setAttr('src', `state/${v.b.id}?getFile=1`);
         }
         if (o) val.append(o.getDOM());
+
       } else {
         const i = new DomPart({ type: 'input' });
         i.setAttr('type', 'file');
@@ -217,6 +219,7 @@ img {
         });
         val.append(i.getDOM());
       }
+
     }
 
     return r;
@@ -391,13 +394,13 @@ img {
     this.markedTxt = this.marked.innerText;
   },
   async handleContextmenu(e) {
-    e.preventDefault();
     const t = e.target;
 
     const isKey = t.classList.contains('key');
     const isV = t.classList.contains('val');
     if (!isKey && !isV) return;
 
+    e.preventDefault();
     this.remark(t);
 
     const p = async (event, data) => await this.b.p(event, data);
@@ -536,8 +539,12 @@ img {
       const row = this.rowInterface(this.marked.parentNode);
       const id = row.getId();
       if (!id) return;
-      const r = await this.b.p('set', { id, v: { b: {} } });
-      console.log(r);
+
+      const v = { b: {}, i: { id, t: 'b' } };
+      await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
+
+      //const r = await this.b.p('set', { id, v });
+      //console.log(r);
     });
     this.menu.append(btn);
 
@@ -547,9 +554,7 @@ img {
       if (!id) return;
 
       const v = { m: {}, o: [], i: { id, t: 'm' } };
-      await this.mkRow({
-        domId: row.getDomId(), k: row.getKeyValue(), v,
-      });
+      await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
       this.openId(id);
 
       const r = await this.b.p('set', { id, v });
