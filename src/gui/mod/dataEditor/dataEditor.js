@@ -409,7 +409,7 @@ div[contenteditable="true"] {
     const menu = await p('doc.mk', {
       class: 'menu', css: {
         left: e.clientX + 'px',
-        top: e.clientY + 'px',
+        top: window.scrollY + e.clientY + 'px',
         padding: '5px',
       }
     });
