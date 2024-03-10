@@ -51,7 +51,7 @@ div[contenteditable="true"] {
     border: 1px solid transparent;
 }
 .val > img {
-    max-width: 200px;
+    max-width: 100px;
 }
 
 .key.mark,
@@ -65,6 +65,8 @@ div[contenteditable="true"] {
     border: 1px solid rgb(148 148 148);
 }
 .openClose {
+  font-family: monospace;
+  font-size: 1.1em;
   cursor: pointer;
 }
 `;
@@ -107,8 +109,6 @@ div[contenteditable="true"] {
     });
     container.append(root);
 
-
-    //open ids of prefiled. this will be alternative of http adress
     const openedIds = await this.getOpenedIds();
     const v = await p('get', { id: 'root', subIds: [...openedIds], depth: 1, getMeta: true });
     console.log(v);
