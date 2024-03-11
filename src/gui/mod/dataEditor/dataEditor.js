@@ -84,7 +84,7 @@ div[contenteditable="true"] {
     v.add(id);
     await this.b.p('set', { repo: 'idb', id: 'openedIds', v });
   },
-  async openId(id) {
+  async closeId(id) {
     //close id
   },
 

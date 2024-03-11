@@ -270,11 +270,11 @@ export const del = async (x) => {
     }
 
     const isDelWithSubVars = await delWithSubVars({ _, b, v: targetV });
-    if (isDelWithSubVars) {
+    if (isDelWithSubVars || true) {
 
       if (isMap) {
         delete v.m[k];
-        v.o.splice(ok, 1);
+        v.o = v.o.filter(currentK => currentK !== k);
       } else if (isList) {
         const l = v.l;
         for (let i = 0; i < l.length; i++) {
