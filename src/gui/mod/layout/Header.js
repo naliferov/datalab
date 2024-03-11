@@ -22,6 +22,9 @@ export class Header extends DomPart {
     .btn:hover {
       text-decoration: underline;
     }
+    .signUp {
+      margin-left: 10px;
+    }
   `;
 
   constructor(data = {}) {
@@ -44,10 +47,13 @@ export class Header extends DomPart {
     const rightMenu = new DomPart({ class: 'rightMenu', css: { display: 'flex' } });
     container.ins(rightMenu);
 
-    //signName
-
-    const signInBtn = new DomPart({ class: ['signIn', 'btn'], txt: 'Sign In' });
+    const signInBtn = new DomPart({ type: 'a', class: ['signIn', 'btn'], txt: 'Sign In' });
+    signInBtn.setAttr('href', '/sign/in');
     rightMenu.ins(signInBtn);
+
+    const signUpBtn = new DomPart({ type: 'a', class: ['signUp', 'btn'], txt: 'Sign Up' });
+    signUpBtn.setAttr('href', '/sign/up');
+    rightMenu.ins(signUpBtn);
   }
 
   async init() {

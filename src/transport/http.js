@@ -120,6 +120,11 @@ export const rqHandler = async (x) => {
   const url = new URL('http://t.c' + rq.url);
   rq.pathname = url.pathname;
 
+  if (rq.pathname.toLowerCase().includes('state/sys')) {
+    rs.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Access denied');
+    return;
+  }
+
   if (serveFS && await rqResolveFile(rq, rs, fs)) return;
   const query = rqParseQuery(rq);
   const body = await rqParseBody(rq);

@@ -68,6 +68,7 @@ div[contenteditable="true"] {
   font-family: monospace;
   font-size: 1.1em;
   cursor: pointer;
+  margin-right: 5px;
 }
 `;
     return await this.b.p('doc.mk', { type: 'style', txt: css });
@@ -82,6 +83,9 @@ div[contenteditable="true"] {
     const v = await this.getOpenedIds();
     v.add(id);
     await this.b.p('set', { repo: 'idb', id: 'openedIds', v });
+  },
+  async openId(id) {
+    //close id
   },
 
   async init() {
@@ -172,7 +176,7 @@ div[contenteditable="true"] {
     if (id) r.setAttribute('_id', id);
     if (parentId) r.setAttribute('_parent_id', parentId);
 
-    let openCloseBtn = await this.b.p('doc.mk', { txt: '+ ', class: ['openClose', 'hidden', 'inline'] });
+    let openCloseBtn = await this.b.p('doc.mk', { txt: '+', class: ['openClose', 'hidden', 'inline'] });
     r.append(openCloseBtn);
 
     if (k) {
@@ -189,7 +193,7 @@ div[contenteditable="true"] {
       if (t === 'l' || t === 'm') openCloseBtn.classList.remove('hidden');
 
       if (!v.i.openable) {
-        openCloseBtn.innerText = '- ';
+        openCloseBtn.innerText = '-';
         openCloseBtn.classList.add('opened');
       }
     }
@@ -248,11 +252,11 @@ div[contenteditable="true"] {
       obj: children[0],
       open() {
         this.obj.classList.add('opened');
-        this.obj.innerText = '- ';
+        this.obj.innerText = '-';
       },
       close() {
         this.obj.classList.remove('opened');
-        this.obj.innerText = '+ ';
+        this.obj.innerText = '+';
       },
       isOpened() {
         return this.obj.classList.contains('opened');

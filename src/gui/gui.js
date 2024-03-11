@@ -129,7 +129,7 @@ app.ins(header);
 
 const path = doc.location.pathname;
 
-if (path.startsWith('/sign')) {
+if (path.startsWith('/sign/')) {
 
   const act = path === '/sign/in' ? 'Sign In' : 'Sign Up';
 
