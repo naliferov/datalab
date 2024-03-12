@@ -4,44 +4,31 @@ import process from 'node:process';
 import { ulid } from "ulid";
 import {
   X, b,
-  del,
-  get,
   getDateTime,
   getVarIds,
   parseCliArgs,
   pathToArr,
-  set
+  u,
 } from "./src/module/x.js";
 
 const _ = Symbol('sys');
 b.set_(_);
 b.setX(X(_));
 
-await b.s('log', async (x) => {
-  if (typeof x === 'object') {
-    console.log(x.msg);
-    return;
-  }
-  console.log(x);
-});
+await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
 await b.s('getRepo', () => repo);
 await b.s('getUniqId', () => ulid());
-await b.s('fs.readFile', async (x) => {
-  const { path } = x;
-  return await fs.readFile(path, 'utf8');
-});
-
-await b.s('getHtml', async (x) => {
-  return {
-    msg: await b.p('fs.readFile', { path: './src/gui/index.html' }),
-    type: 'text/html',
+await b.s('fs', async (x) => {
+  if (x.get) {
+    const { path } = x.get;
+    return await fs.readFile(path, 'utf8');
+  }
+  if (x.set) {
+    const { path, v } = x.set;
+    return await fs.writeFile(path, v);
   }
 });
-await b.s('set', async (x) => await set(x));
-await b.s('get', async (x) => await get(x));
-await b.s('del', async (x) => await del(x));
-await b.s('port', async (x) => await b.p(x.x, x));
 
 await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true));
 await b.s('state.export', async (x) => {
@@ -69,11 +56,6 @@ const repo = new FsStorage('./state', fs);
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
 
-const users = await b.p('get', { path: ['sys', 'users'] });
-if (!users) {
-  await b.p('set', { path: ['sys', 'users'], v: {}, type: 'm' })
-}
-
 
 const e = {
   'set': async (arg) => {
@@ -87,19 +69,19 @@ const e = {
     }
     const type = arg[3];
 
-    return await b.p('set', { path: pathToArr(path), v, type });
+    return await u({ set: { path: pathToArr(path), v, type } });
   },
   'get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
     const depth = Number(arg[2]) || 0;
-    return await b.p('get', { path, depth });
+    return await u({ set: { path, depth } });
   },
   'del': async (arg) => {
     const path = arg[1];
     if (!path) {
       console.error('path is empty'); return;
     }
-    return await b.p('del', { path: pathToArr(arg[1]) });
+    return await u({ del: { path: pathToArr(arg[1]) } });
   },
   'state.import': async (arg) => {
     const path = arg[1];

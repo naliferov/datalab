@@ -54,24 +54,17 @@ await b.s('port', async (x) => {
     headers.x = JSON.stringify({ ...x2 });
     x = x.v;
   }
-
   const { data } = await (new HttpClient).post('/', x, headers);
   return data;
 });
-await b.s('set', async (x) => {
+
+await b.s('x', async (x) => {
   if (x.repo === 'idb') {
-    return await idb.set(x);
+    if (x.set) await idb.set(x.set);
+    if (x.get) return await idb.get(x.get);
   }
-  return await b.p('port', { ...x, x: 'set' });
+  return await b.p('port', x);
 });
-await b.s('get', async (x) => {
-  if (x.repo === 'idb') {
-    return await idb.get(x);
-  }
-  return await b.p('port', { ...x, x: 'get' });
-});
-await b.s('del', async (x) => await b.p('port', { ...x, x: 'del' }));
-await b.s('cp', async (x) => await b.p('port', { ...x, x: 'cp' }));
 await b.s('signUp', async (x) => {
   console.log(x);
   //await b.p('port', { ...x, x: 'signUp' })

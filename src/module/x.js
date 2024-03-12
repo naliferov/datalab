@@ -24,6 +24,7 @@ export const b = {
       _: this._,
       [this._]: { b, x: event }
     }
+
     return await this.x({ ...data, ...inject });
   },
   async s(e, f) {
@@ -31,6 +32,20 @@ export const b = {
     return await this.x({ [_]: { y: e, f } });
   },
 }
+
+export const u = async (x) => {
+  if (x.getHtml) return await getHtml();
+  if (x.set) return await set(x);
+  if (x.get) return await get(x);
+  if (x.del) return await del(x);
+}
+
+const getHtml = async (x) => {
+  return {
+    msg: await b.p('fs', { get: { path: './src/gui/index.html' } }),
+    type: 'text/html',
+  }
+};
 
 export const set = async (x) => {
 
@@ -204,8 +219,9 @@ export const set = async (x) => {
 }
 
 export const get = async (x) => {
+  const get = x.get;
 
-  let { id, path, subIds, depth, getMeta, varIdsForGet } = x;
+  let { id, path, subIds, depth, getMeta, varIdsForGet } = get;
   const { b } = x[x._];
   const _ = await b.p('get_');
   const repo = await b.p('getRepo');
@@ -242,7 +258,9 @@ export const get = async (x) => {
 
 export const del = async (x) => {
 
-  const { path, id, k, ok } = x;
+  const del = x.del;
+
+  const { path, id, k, ok } = del;
   const { b } = x[x._];
   const _ = await b.p('get_');
   const repo = await b.p('getRepo');
@@ -434,7 +452,7 @@ export const getVarData = async (x) => {
 
     for (let id of v.l) {
 
-      const v2 = await b.p('get', { id });
+      const v2 = await b.p('x', { get: { id } });
 
       v2[_] = { id };
       if (getMeta) v2.i = { id, t: getType(v2) };
@@ -455,7 +473,7 @@ export const getVarData = async (x) => {
 
       const id = v.m[p];
       if (!id) return;
-      const v2 = await b.p('get', { id });
+      const v2 = await b.p('x', { get: { id } });
 
       v2[_] = { id };
       if (getMeta) v2.i = { id, t: getType(v2) };

@@ -139,9 +139,11 @@ export const rqHandler = async (x) => {
     rqResponse(rs, 'error processing rq');
     return;
   }
+  if (msg.bin && !msg.binName) {
+    msg.getHtml = true;
+  }
 
-  if (!msg.x) msg.x = 'getHtml';
-  const out = await b.p('port', msg);
+  const out = await b.p('x', msg);
   if (!out) {
     rqResponse(rs, 'Default response');
     return;

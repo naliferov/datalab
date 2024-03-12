@@ -75,14 +75,14 @@ div[contenteditable="true"] {
   },
 
   async getOpenedIds() {
-    let ids = await this.b.p('get', { repo: 'idb', id: 'openedIds' });
+    let ids = await this.b.p('x', { repo: 'idb', get: { id: 'openedIds' } });
     if (!ids) ids = new Set();
     return ids;
   },
   async openId(id) {
     const v = await this.getOpenedIds();
     v.add(id);
-    await this.b.p('set', { repo: 'idb', id: 'openedIds', v });
+    await this.b.p('x', { repo: 'idb', set: { id: 'openedIds', v } });
   },
   async closeId(id) {
     //close id
@@ -114,7 +114,13 @@ div[contenteditable="true"] {
     container.append(root);
 
     const openedIds = await this.getOpenedIds();
-    const v = await p('get', { id: 'root', subIds: [...openedIds], depth: 1, getMeta: true });
+    const v = await p('x', {
+      get: {
+        id: 'root',
+        subIds: [...openedIds],
+        depth: 1, getMeta: true
+      }
+    });
     console.log(v);
     await this.rend(v, root);
   },
@@ -325,7 +331,7 @@ div[contenteditable="true"] {
 
         const openedIds = await this.getOpenedIds();
         if (id) openedIds.delete(id);
-        await this.b.p('set', { repo: 'idb', id: 'openedIds', v: openedIds });
+        await this.b.p('x', { repo: 'idb', set: { id: 'openedIds', v: openedIds } });
 
         row.openCloseBtn.close();
         row.clearVal();
@@ -334,7 +340,7 @@ div[contenteditable="true"] {
 
         const openedIds = await this.getOpenedIds();
 
-        const data = await this.b.p('get', { id, subIds: [...openedIds], depth: 1, getMeta: true });
+        const data = await this.b.p('x', { get: { id, subIds: [...openedIds], depth: 1, getMeta: true } });
         await this.rend(data, row.dom);
         row.openCloseBtn.open();
       }
