@@ -386,12 +386,12 @@ div[contenteditable="true"] {
 
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
-        const resp = await this.b.p('set', { id: parentId, oldKey: this.markedTxt, newKey: v });
+        const resp = await this.b.p('x', { set: { id: parentId, oldKey: this.markedTxt, newKey: v } });
         console.log(resp);
       } else if (isVal) {
         const id = row.getAttribute('_id');
         if (id === 'vid_stub') return;
-        const resp = await this.b.p('set', { id, v: { v } });
+        const resp = await this.b.p('x', { set: { id, v: { v } } });
         console.log(resp);
       }
 
@@ -447,7 +447,7 @@ div[contenteditable="true"] {
         const newRow = await this.mkRow({ k, v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
 
-        const resp = await p('set', { type: 'm', id, k, ok, v });
+        const resp = await p('x', { set: { type: 'm', id, k, ok, v } });
         console.log(resp);
         if (resp.newId) newRow.setAttribute('_id', resp.newId);
       }
@@ -456,7 +456,7 @@ div[contenteditable="true"] {
         const newRow = await this.mkRow({ v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
 
-        const resp = await p('set', { type: 'l', id, v });
+        const resp = await p('x', { set: { type: 'l', id, v } });
         console.log(resp);
         if (resp.newId) newRow.setAttribute('_id', resp.newId);
       }
@@ -478,9 +478,8 @@ div[contenteditable="true"] {
 
       if (this.isKey(this.marked)) {
 
-        const key = this.marked;
         parentId = row.getAttribute('_parent_id');
-        k = this.getOrderKey(key, 'm');
+        k = this.getOrderKey(this.marked, 'm');
 
       } else if (this.isVal(this.marked)) {
 
@@ -495,7 +494,7 @@ div[contenteditable="true"] {
       if (k === undefined) { console.log('ok not found'); return; }
 
       const ok = { from: k, to: dir === 'up' ? --k : ++k };
-      const v = await this.b.p('set', { id: parentId, ok });
+      const v = await this.b.p('x', { set: { id: parentId, ok } });
       console.log(v);
 
       if (dir === 'up') row.previousSibling.before(row);
@@ -529,12 +528,12 @@ div[contenteditable="true"] {
 
         if (type !== 'm' && type !== 'l') return;
 
-        const data = {
+        const set = {
           oldId: mvRow.getParentId(),
           newId: row.getId(),
           key: mvRow.key.innerText,
         };
-        const resp = await this.b.p('set', data);
+        const resp = await this.b.p('x', { set });
         console.log(resp);
 
         row.val.append(mvRow.dom);
@@ -553,7 +552,7 @@ div[contenteditable="true"] {
       const v = { b: {}, i: { id, t: 'b' } };
       await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
 
-      //const r = await this.b.p('set', { id, v });
+      //const r = await this.b.p('x', { set: { id, v } });
       //console.log(r);
     });
     this.menu.append(btn);
@@ -567,7 +566,7 @@ div[contenteditable="true"] {
       await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
       this.openId(id);
 
-      const r = await this.b.p('set', { id, v });
+      const r = await this.b.p('x', { set: { id, v } });
       console.log(r);
     });
     this.menu.append(btn);
@@ -575,7 +574,7 @@ div[contenteditable="true"] {
       const row = this.marked.parentNode;
       const id = row.getAttribute('_id');
       if (!id) return;
-      const r = await this.b.p('set', { id, v: { l: [] } });
+      const r = await this.b.p('x', { set: { id, v: { l: [] } } });
       console.log(r);
     });
     this.menu.append(btn);
@@ -612,7 +611,9 @@ div[contenteditable="true"] {
     const f = input.getDOM().files[0];
     const r = new FileReader;
     r.onload = async (e) => {
-      const resp = await this.b.p('set', { id: row.getId(), binName: f.name, v: e.target.result });
+      const resp = await this.b.p('x', {
+        set: { id: row.getId(), binName: f.name, v: e.target.result }
+      });
       console.log(resp);
     }
     r.readAsArrayBuffer(f);
