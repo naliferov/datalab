@@ -329,8 +329,6 @@ export const del = async (x) => {
     const isList = Boolean(v1.l);
 
     if (isMap) {
-      console.log(v2ID);
-
       delete v1.m[v2[_].name];
       v1.o = v1.o.filter(key => key !== v2[_].name);
 
@@ -430,7 +428,7 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { b, v, subIds, depth, getMeta } = x;
+  const { b, v, subIds, getMeta, getAll, depth = 1 } = x;
   const _ = await b.p('get_');
 
   let data = { [_]: v[_] };
@@ -438,13 +436,14 @@ export const getVarData = async (x) => {
 
   const isNeedToGet = Boolean(subIds && subIds.has(data.i.id));
 
-  if (depth <= 0 && !isNeedToGet) {
+  if (!getAll && !isNeedToGet && depth <= 0) {
     if (getMeta) data.i.openable = true;
     return data;
   }
 
-  if (v.v) data.v = v.v;
-  if (v.l) {
+  if (v.b) data.b = v.b;
+  else if (v.v) data.v = v.v;
+  else if (v.l) {
 
     data.l = [];
 
@@ -452,13 +451,14 @@ export const getVarData = async (x) => {
 
       const v2 = await b.p('x', { get: { id } });
 
-      v2[_] = { id };
-      if (getMeta) v2.i = { id, t: getType(v2) };
+      const meta = { id, t: getType(v2) };
+      v2[_] = meta;
+      if (getMeta) v2.i = meta;
 
       if (v2.b || v2.v) {
         data.l.push(v2);
       } else if (v2.l || v2.m) {
-        data.l.push(await getVarData({ b, v: v2, subIds, depth: depth - 1, getMeta }));
+        data.l.push(await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 }));
       }
     }
 
@@ -470,16 +470,16 @@ export const getVarData = async (x) => {
     for (let p in v.m) {
 
       const id = v.m[p];
-      if (!id) return;
       const v2 = await b.p('x', { get: { id } });
 
-      v2[_] = { id };
-      if (getMeta) v2.i = { id, t: getType(v2) };
+      const meta = { id, t: getType(v2) };
+      v2[_] = meta;
+      if (getMeta) v2.i = meta;
 
       if (v2.b || v2.v) {
         data.m[p] = v2;
       } else if (v2.l || v2.m) {
-        data.m[p] = await getVarData({ b, v: v2, subIds, depth: depth - 1, getMeta });
+        data.m[p] = await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 });
       }
     }
 
