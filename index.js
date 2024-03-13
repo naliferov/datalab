@@ -5,7 +5,6 @@ import { ulid } from "ulid";
 import {
   X, b,
   getDateTime,
-  getVarData,
   getVarIds,
   parseCliArgs,
   pathToArr,
@@ -41,7 +40,7 @@ await b.s('state.validate', async (x) => {
   const list = await fs.readdir('./state');
   const fSet = new Set;
   for (let i of list) {
-    if (i === '.gitignore' || i === 'root') continue;
+    if (i === '.gitignore' || i === 'root' || i === 'sys') continue;
     fSet.add(i);
   }
   const v = await b.p('x', { get: { id: 'root' } });
@@ -56,13 +55,6 @@ const repo = new FsStorage('./state', fs);
 
 const root = await repo.get('root');
 if (!root) await repo.set('root', { m: {} });
-
-
-const v = await b.p('x', { get: { id: '01HNQ6TQKCY0M1D86T21HERX5K' } });
-
-const vars = await getVarData({ b, v, getAll: true });
-console.log(vars.m.architecture);
-//console.log(v);
 
 const e = {
   'set': async (arg) => {

@@ -10,8 +10,8 @@ import { Header } from "./mod/layout/Header.js";
 import { HttpClient } from "/src/transport/http.js";
 
 if (!Array.prototype.at) {
-  Array.prototype.at = function (index) {
-    return index < 0 ? this[this.length + index] : this[index];
+  Array.prototype.at = function (i) {
+    return i < 0 ? this[this.length + i] : this[i];
   }
 }
 
@@ -20,10 +20,7 @@ const x = X(_);
 b.set_(_);
 b.setX(x);
 
-await b.s('log', async (x) => console.log(x));
-await b.s('get_', () => _);
 await b.s('getUniqId', () => {
-
   if (!window.crypto || !window.crypto.randomUUID) {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
       function (c) {
@@ -40,7 +37,6 @@ await b.s('getUniqIdForDomId', async () => {
     const randomIndex = Math.floor(Math.random() * alphabet.length);
     return alphabet.charAt(randomIndex);
   }
-
   const id = await b.p('getUniqId');
   return id.replace(/^[0-9]/, getRandomLetter());
 });
@@ -62,6 +58,7 @@ await b.s('x', async (x) => {
   if (x.repo === 'idb') {
     if (x.set) await idb.set(x.set);
     if (x.get) return await idb.get(x.get);
+    return;
   }
   return await b.p('port', x);
 });

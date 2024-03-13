@@ -339,6 +339,8 @@ export const del = async (x) => {
   }
 }
 
+export const iterator = async (x) => { }
+
 export const delWithSubVars = async (x) => {
   const { _, b, v } = x;
 
@@ -352,7 +354,7 @@ export const delWithSubVars = async (x) => {
   console.log('del', v[_].id);
 
   return true;
-};
+}
 
 export const createSet = async (x) => {
 

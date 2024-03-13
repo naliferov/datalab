@@ -47,6 +47,7 @@ div[contenteditable="true"] {
     font-weight: bold;
 }
 .val {
+    width: fit-content;
     cursor: pointer;
     border: 1px solid transparent;
 }
@@ -89,8 +90,6 @@ div[contenteditable="true"] {
   },
 
   async init() {
-
-    const _ = this._;
 
     const p = async (event, data) => await this.b.p(event, data);
     this.o = await p('doc.mk', { class: 'dataEditor' });
@@ -137,6 +136,8 @@ div[contenteditable="true"] {
 
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
+      const mod = v.m['__mod'];
+
       for (let k of v.o) {
         if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
 
@@ -144,8 +145,9 @@ div[contenteditable="true"] {
         const curVId = getVId(curV);
         if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
 
-        const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
+        const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId, mod });
         this.rowInterface(parentRow).val.append(row);
+
         await this.rend(curV, row);
       }
 
@@ -167,7 +169,7 @@ div[contenteditable="true"] {
   },
 
   async mkRow(x) {
-    const { k, v, parentId, id, domId } = x;
+    const { k, v, parentId, id, domId, mod, modK } = x;
 
     let r;
     if (domId) {
@@ -193,6 +195,14 @@ div[contenteditable="true"] {
     const val = await this.b.p('doc.mk', { class: 'val' });
     r.append(val);
 
+    const needMod = mod && mod.m && mod.i && mod.i.id !== id;
+    if (needMod) {
+      for (const p in mod.m) {
+        const { v } = mod.m[p];
+        if (p === 'transform') val.style[p] = v;
+      }
+    }
+
     if (v) {
       const t = v.i.t;
       if (t) r.setAttribute('t', t);
@@ -202,34 +212,33 @@ div[contenteditable="true"] {
         openCloseBtn.innerText = '-';
         openCloseBtn.classList.add('opened');
       }
-    }
 
-    if (v && v.v) {
-      let txt = v.v;
-      if (txt && txt.split) txt = txt.split('\n')[0];
-      val.classList.add('inline');
-      val.innerText = txt;
-    }
-    if (v && v.b) {
+      if (v.b) {
 
-      if (v.b.id) {
-        let o;
-        if (v.b.t === 'i') {
-          o = new DomPart({ type: 'img' });
-          o.setAttr('src', `state/${v.b.id}?getFile=1`);
+        if (v.b.id) {
+          let o;
+          if (v.b.t === 'i') {
+            o = new DomPart({ type: 'img' });
+            o.setAttr('src', `state/${v.b.id}?getFile=1`);
+          }
+          if (o) val.append(o.getDOM());
+
+        } else {
+          const i = new DomPart({ type: 'input' });
+          i.setAttr('type', 'file');
+          i.on('change', async (e) => {
+            const row = this.rowInterface(r);
+            return await this.setBinToId(row, i);
+          });
+          val.append(i.getDOM());
         }
-        if (o) val.append(o.getDOM());
 
-      } else {
-        const i = new DomPart({ type: 'input' });
-        i.setAttr('type', 'file');
-        i.on('change', async (e) => {
-          const row = this.rowInterface(r);
-          return await this.setBinToId(row, i);
-        });
-        val.append(i.getDOM());
+      } else if (v.v) {
+        let txt = v.v;
+        if (txt && txt.split) txt = txt.split('\n')[0];
+        val.classList.add('inline');
+        val.innerText = txt;
       }
-
     }
 
     return r;
@@ -269,12 +278,13 @@ div[contenteditable="true"] {
       }
     }
 
-    if (children.length === 2) { //todo better check type
+    if (children.length === 2) {
       o.val = children[1];
     } else {
       o.key = children[1];
       o.val = children[3];
     }
+
     return o;
   },
 
@@ -480,6 +490,8 @@ div[contenteditable="true"] {
 
         parentId = row.getAttribute('_parent_id');
         k = this.getOrderKey(this.marked, 'm');
+
+        console.log(k);
 
       } else if (this.isVal(this.marked)) {
 
