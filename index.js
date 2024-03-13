@@ -43,7 +43,7 @@ await b.s('state.validate', async (x) => {
     if (i === '.gitignore' || i === 'root') continue;
     fSet.add(i);
   }
-  const v = await b.p('get', { id: 'root' });
+  const v = await b.p('x', { get: { id: 'root' } });
   const varIds = await getVarIds({ b, v });
 
   for (let i of varIds) fSet.delete(i);

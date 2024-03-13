@@ -602,7 +602,7 @@ div[contenteditable="true"] {
       const parentId = row.getAttribute('_parent_id');
       if (!parentId || !k) return;
 
-      const v = await this.b.p('del', { id: parentId, k, ok }); console.log(v);
+      const v = await this.b.p('x', { del: { id: parentId, k, ok } }); console.log(v);
       marked.parentNode.remove();
     });
     this.menu.append(btn);

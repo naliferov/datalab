@@ -264,7 +264,7 @@ export const del = async (x) => {
 
   //DELETE KEY IN MAP with subVars
   if (id && k) {
-    const v = await b.p('get', { id });
+    const v = await b.p('x', { get: { id } });
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
@@ -274,7 +274,7 @@ export const del = async (x) => {
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
 
-    const targetV = await b.p('get', { id: targetId });
+    const targetV = await b.p('x', { get: { id: targetId } });
     if (!targetV) return { msg: `targetV not found by [${targetId}]` };
     targetV[_] = { id: targetId };
 
@@ -300,7 +300,7 @@ export const del = async (x) => {
       await b.p('x', { set: { id, v: prepareForTransfer(v) } });
     }
 
-    return;
+    return { id, k };
   }
 
   //DELETE BY ID
@@ -349,8 +349,8 @@ export const delWithSubVars = async (x) => {
   const len = Object.keys(varIds).length;
   if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
-  for (let id of varIds) await b.p('del', { id });
-  await b.p('del', { id: v[_].id });
+  for (let id of varIds) await b.p('x', { del: { id } });
+  await b.p('x', { del: { id: v[_].id } });
   console.log('del', v[_].id);
 
   return true;
@@ -361,7 +361,7 @@ export const createSet = async (x) => {
   const { _, b, path, getMeta, isNeedStopIfVarNotFound } = x;
   const type = x.type || 'v';
 
-  let v1 = await b.p('get', { id: 'root' });
+  let v1 = await b.p('x', { get: { id: 'root' } });
   v1[_] = { id: 'root', name: 'root' };
   if (getMeta) v1.i = { id: 'root' };
 
@@ -382,7 +382,7 @@ export const createSet = async (x) => {
 
     let id = v1.m[name];
     if (id) {
-      v2 = await b.p('get', { id });
+      v2 = await b.p('x', { get: { id } });
       if (v2) v2[_] = { id };
     }
 
@@ -503,12 +503,12 @@ export const getVarIds = async (x) => {
       for (let k in v.m) {
         const id = v.m[k];
         ids.push(id);
-        await getIds(await b.p('get', { id }));
+        await getIds(await b.p('x', { get: { id } }));
       }
     } else if (v.l) {
       for (let id of v.l) {
         ids.push(id);
-        await getIds(await b.p('get', { id }));
+        await getIds(await b.p('x', { get: { id } }));
       }
     }
   }
