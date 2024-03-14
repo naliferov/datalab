@@ -221,21 +221,11 @@ export const set = async (x) => {
 
 export const get = async (x) => {
 
-  let { id, path, subIds, depth, getMeta, varIdsForGet } = x.get;
+  let { id, path, subIds, depth, getMeta, getAll, varIdsForGet } = x.get;
   const { b } = x[x._];
   const repo = await b.p('getRepo');
 
-  if (depth === undefined) depth = 0;
-
-  if (id) {
-    let v = await repo.get(id);
-
-    if (getMeta) {
-      v.i = { id, t: getType(v) };
-      v = await getVarData({ b, v, subIds: new Set(subIds), depth, getMeta });
-    }
-    return v;
-  }
+  if (id) return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta, getAll });
 
   if (path && path !== undefined) {
     if (!Array.isArray(path) && typeof path === 'string') {
@@ -341,7 +331,15 @@ export const del = async (x) => {
 
 export const iterator = async (x) => { }
 
-export const delWithSubVars = async (x) => {
+const signUp = (x) => {
+  const { email, password } = x.signUp;
+
+  //get sys.users
+
+  //await b.p('x', { set: { id: v1[_].id, v: prepareForTransfer(v1) } });
+}
+
+const delWithSubVars = async (x) => {
   const { _, b, v } = x;
 
   const varIds = await getVarIds({ b, v }); console.log('varIds for del', varIds);
@@ -430,16 +428,25 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { b, v, subIds, getMeta, getAll, depth = 1 } = x;
+  const { b, id, subIds, getMeta, getAll, depth = 0 } = x;
+  let v = x.v;
+
   const _ = await b.p('get_');
+  const repo = await b.p('getRepo');
+
+  if (id && !v) {
+    v = await repo.get(id);
+    v[_] = { id, t: getType(v) };
+    if (getMeta) v.i = { ...v[_] };
+  }
 
   let data = { [_]: v[_] };
-  if (getMeta) data.i = v.i;
+  if (v.i) data.i = v.i;
 
-  const isNeedToGet = Boolean(subIds && subIds.has(data.i.id));
+  const isNeededId = Boolean(subIds && data.i && subIds.has(data.i.id));
 
-  if (!getAll && !isNeedToGet && depth <= 0) {
-    if (getMeta) data.i.openable = true;
+  if (!getAll && !isNeededId && depth <= 0) {
+    if (data.i) data.i.openable = true;
     return data;
   }
 
@@ -451,11 +458,10 @@ export const getVarData = async (x) => {
 
     for (let id of v.l) {
 
-      const v2 = await b.p('x', { get: { id } });
+      const v2 = await repo.get(id);
 
-      const meta = { id, t: getType(v2) };
-      v2[_] = meta;
-      if (getMeta) v2.i = meta;
+      v2[_] = { id, t: getType(v2) };
+      if (getMeta) v2.i = { ...v2[_] };
 
       if (v2.b || v2.v) {
         data.l.push(v2);
@@ -472,11 +478,10 @@ export const getVarData = async (x) => {
     for (let p in v.m) {
 
       const id = v.m[p];
-      const v2 = await b.p('x', { get: { id } });
+      const v2 = await repo.get(id);
 
-      const meta = { id, t: getType(v2) };
-      v2[_] = meta;
-      if (getMeta) v2.i = meta;
+      v2[_] = { id, t: getType(v2) };
+      if (getMeta) v2.i = { ...v2[_] };
 
       if (v2.b || v2.v) {
         data.m[p] = v2;

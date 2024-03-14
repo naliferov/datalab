@@ -17,7 +17,7 @@ b.setX(X(_));
 
 await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
-await b.s('getRepo', () => repo);
+await b.s('getRepo', () => mainRepo);
 await b.s('getUniqId', () => ulid());
 await b.s('fs', async (x) => {
   if (x.get) {
@@ -29,11 +29,22 @@ await b.s('fs', async (x) => {
     return await fs.writeFile(path, v);
   }
 });
+await b.s('repo', async (x) => {
+  if (x.get) {
+    const { id, repoType } = x.get;
+    //return await fs.readFile(path, 'utf8');
+  }
+  if (x.set) {
+    const { id, v, repoType } = x.set;
+    console.log(x.set);
+    //return await fs.writeFile(path, v);
+  }
+});
 
-await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(repo.getStatePath(), true));
+await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(mainRepo.getStatePath(), true));
 await b.s('state.export', async (x) => {
   const zip = new AmdZip();
-  zip.addLocalFolder(repo.getStatePath());
+  zip.addLocalFolder(mainRepo.getStatePath());
   zip.writeZip(`./state_${getDateTime()}.zip`);
 });
 await b.s('state.validate', async (x) => {
@@ -51,10 +62,13 @@ await b.s('state.validate', async (x) => {
 });
 
 const { FsStorage } = await import('./src/storage/fsStorage.js');
-const repo = new FsStorage('./state', fs);
+const mainRepo = new FsStorage('./state', fs);
+const sysRepo = new FsStorage('./state/sys', fs);
 
-const root = await repo.get('root');
-if (!root) await repo.set('root', { m: {} });
+let root = await mainRepo.get('root');
+if (!root) await mainRepo.set('root', { m: {} });
+root = await sysRepo.get('root');
+if (!root) await sysRepo.set('root', { m: {} });
 
 const e = {
   'set': async (arg) => {
@@ -86,7 +100,7 @@ const e = {
     const path = arg[1];
     return await b.p('state.import', { path: './' + path });
   },
-  'state.export': async (arg) => await b.p('state.export', { repo }),
+  'state.export': async (arg) => await b.p('state.export', { repo: mainRepo }),
   'state.validate': async (arg) => await b.p('state.validate'),
   'server.start': async (arg) => {
     const x = {

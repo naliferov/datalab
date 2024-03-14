@@ -11,7 +11,6 @@ export const DataEditor = {
 .container {
   font-family: 'Roboto', sans-serif;
   font-size: 1em;
-  margin-top: 15px;
   color: rgb(55, 53, 47);
 }
 .inline { display: inline; }
@@ -117,10 +116,13 @@ div[contenteditable="true"] {
       get: {
         id: 'root',
         subIds: [...openedIds],
-        depth: 1, getMeta: true
+        depth: 1,
+        getMeta: true
       }
     });
     console.log(v);
+
+    //return;
     await this.rend(v, root);
   },
 
@@ -137,6 +139,13 @@ div[contenteditable="true"] {
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
       const mod = v.m['__mod'];
+      if (mod) {
+        //const v = await this.b.p('x', {
+        //  get: { id: 'root' }
+        //});
+        //console.log(v);
+      }
+
 
       for (let k of v.o) {
         if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
@@ -199,7 +208,7 @@ div[contenteditable="true"] {
     if (needMod) {
       for (const p in mod.m) {
         const { v } = mod.m[p];
-        if (p === 'transform') val.style[p] = v;
+        //if (p === 'transform') val.style[p] = v;
       }
     }
 

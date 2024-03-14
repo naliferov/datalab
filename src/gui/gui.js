@@ -5,6 +5,7 @@ import {
 } from "../module/x.js";
 import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
+import { Frame } from "./mod/frame/frame.js";
 import { DomPart } from "./mod/layout/DomPart.js";
 import { Header } from "./mod/layout/Header.js";
 import { HttpClient } from "/src/transport/http.js";
@@ -143,21 +144,28 @@ if (path.startsWith('/sign/')) {
   signForm.ins(btn);
 
   btn.on('pointerdown', async (e) => {
-
     if (act === 'Sign Up') {
-      const user = await b.p('signUp', {
-        email: email.getVal(),
-        password: password.getVal(),
-      });
+      //const user = await b.p('signUp', {
+      //email: email.getVal(),
+      //password: password.getVal(),
+      //});
     }
   });
 
 } else {
+
   const dataEditor = Object.create(DataEditor);
   dataEditor.setB(b);
   dataEditor.set_(_);
   await dataEditor.init();
-  await b.p('doc.ins', { o1: 'app', o2: dataEditor.o });
+  //appDOM.append(dataEditor.o);
+
+  const frame = Object.create(Frame);
+  frame.setB(b);
+  await frame.init();
+  frame.setContent(dataEditor.o);
+
+  appDOM.append(frame.o);
 
   window.onkeydown = (e) => dataEditor.keydown(e);
   window.onpointerdown = (e) => dataEditor.click(e);

@@ -20,6 +20,7 @@ export const Frame = {
         position: absolute;
         /*top: 30px;*/
         overflow: hidden;
+
     }
     /* this create small glitches when after start and drag window */
     .frame.drag {
@@ -66,17 +67,25 @@ export const Frame = {
 
     this.o = await p('doc.mk', {
       class: ['frame'], css: {
-        minWidth: '100px', minHeight: '100px', position: 'absolute',
+        position: 'absolute',
+        minWidth: '100px', minHeight: '100px',
+        boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2)',
+        transition: '0.3s',
       }
     });
     this.oShadow = this.o.attachShadow({ mode: 'open' });
     this.oShadow.appendChild(await this.createStyle());
 
-    const top = await p('doc.mk', { class: ['topBar'] });
-    await p('doc.ins', { o1: this.oShadow, o2: top });
+    //const top = await p('doc.mk', { class: ['topBar'] });
+    //await p('doc.ins', { o1: this.oShadow, o2: top });
 
     //this.container = await p('doc.mk', { class: 'container' });
     //this.oShadow.appendChild(this.container);
+
+    const resizeTop = await p('doc.mk', { class: ['resizer', 'resizeTop'] });
+    await p('doc.ins', { o1: this.oShadow, o2: resizeTop });
+    //resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
+    await p('doc.ins', { o1: this.oShadow, o2: resizeTop });
 
     const slot = await p('doc.mk', { type: 'slot' });
     slot.setAttribute('name', 'content');
@@ -99,13 +108,10 @@ export const Frame = {
 
     return;
 
-    const resizeTop = await p('doc.mk', { class: ['resizer', 'resizeTop'] });
-    await p('doc.ins', { o1: this.oShadow, o2: resizeTop });
-    //resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
-
     const nsResizeBottom = await p('doc.mk', { class: ['resizer', 'resizeBottom'] });
     await p('doc.ins', { o1: this.oShadow, o2: nsResizeBottom });
     await p('doc.on', { e: 'pointerdown', o: nsResizeBottom, f: (e) => this.resizeBottom(e) });
+
 
     //nsResizeBottom.on('pointerdown', (e) => this.resizeBottom(e));
     return;
@@ -188,9 +194,9 @@ export const Frame = {
         this.view.setSize(null, height);
         this.view.setPosition(null, e.clientY);
 
-        this.recalcDimensions();
-        s.e('appFrame.changeSize', { appFrame: this, height });
-        s.e('appFrame.changePosition', { appFrame: this, y: e.clientY });
+        //this.recalcDimensions();
+        //s.e('appFrame.changeSize', { appFrame: this, height });
+        //s.e('appFrame.changePosition', { appFrame: this, y: e.clientY });
       },
       up: (e) => {
         s.e('input.pointer.setHandlers', { move: null, up: null });
