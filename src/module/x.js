@@ -224,14 +224,14 @@ export const set = async (x) => {
 
 export const get = async (x) => {
 
-  let { id, subIds, path, depth, getMeta, getAll, useRepo } = x.get;
+  let { id, subIds, path, depth, getMeta, useRepo } = x.get;
   const { b } = x[x._];
   const repo = await b.p('getRepo');
 
   if (id) {
     if (useRepo) return await repo.get(id);
 
-    return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta, getAll });
+    return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
   if (path && path !== undefined) {
@@ -436,7 +436,7 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { b, id, subIds, getMeta, getAll, depth = 1 } = x;
+  const { b, id, subIds, getMeta, depth = 1 } = x;
   let v = x.v;
 
   const _ = await b.p('get_');
@@ -453,7 +453,7 @@ export const getVarData = async (x) => {
 
   const isNeededId = Boolean(subIds && data.i && subIds.has(data.i.id));
 
-  if (!getAll && !isNeededId && depth <= 0) {
+  if (!isNeededId && depth <= 0) {
 
     if (data.i) data.i.openable = true; //todo openable is only certain data types m, l;
     return data;
@@ -472,7 +472,7 @@ export const getVarData = async (x) => {
     if (v2.b || v2.v) {
       data = v2;
     } else if (v2.l || v2.m) {
-      data = await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 });
+      data = await getVarData({ b, v: v2, subIds, getMeta, depth: depth - 1 });
     }
     if (v.m) v.m[k] = data;
     if (v.l) v.l.push(data);

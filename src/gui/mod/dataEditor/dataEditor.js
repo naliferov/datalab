@@ -117,9 +117,7 @@ div[contenteditable="true"] {
     container.append(root);
 
     const openedIds = await this.getOpenedIds();
-    const v = await p('x', {
-      get: { id: 'root', subIds: [...openedIds], getMeta: true }
-    });
+    const v = await p('x', { get: { id: 'root', subIds: [...openedIds], getMeta: true } });
     console.log(v);
     await this.rend(v, root);
   },
@@ -236,8 +234,9 @@ div[contenteditable="true"] {
       }
     }
 
-    const needMod = mod && mod.i && mod.i.id !== id;
+    const needMod = mod && mod.i;
     if (needMod) {
+      //const target = '';
 
       for (const k in mod.m) {
         const v = mod.m[k];
