@@ -58,9 +58,11 @@ export const set = async (x) => {
 
   if (v && v.i) delete v.i;
 
+  const getFromRepo = async (id) => await b.p('x', { get: { id, useRepo: true } });
+
   //CHANGE ORDER
   if (id && ok && typeof ok === 'object') {
-    const vById = await b.p('x', { get: { id } });
+    const vById = await getFromRepo(id);
     if (!vById) return { ok: 0, msg: 'v not found' };
 
     const { from, to } = ok;
@@ -82,7 +84,7 @@ export const set = async (x) => {
 
   //SET key and value to id of (MAP) or add value (LIST)
   if (type && id && v) {
-    const vById = await b.p('x', { get: { id } });
+    const vById = await getFromRepo(id);
     if (!vById) return { msg: 'v not found' };
 
     if (type === 'm' && vById.m) {
@@ -109,7 +111,7 @@ export const set = async (x) => {
       return { type, id, v, newId };
     }
 
-    return { msg: 'Not found "m" in vById', vById };
+    return { msg: 'Not found logic for change vById', vById };
   }
 
   //SET value by ID
@@ -119,7 +121,8 @@ export const set = async (x) => {
   }
   //SET binary file and save it's ID to specific varID
   if (id && bin && binName) {
-    const v = await b.p('x', { get: { id } });
+
+    const v = await getFromRepo(id);
     if (!v) return { msg: 'v not found by id', id };
     //todo clear previous binary file;
 
@@ -142,8 +145,8 @@ export const set = async (x) => {
   //COPY or MOVE MAP key from one ID to another ID
   if (oldId && newId && oldId !== newId && key) {
 
-    const oldV = await b.p('x', { get: { id: oldId } });
-    const newV = await b.p('x', { get: { id: newId } });
+    const oldV = await getFromRepo(oldId);
+    const newV = await getFromRepo(newId);
 
     if (!oldV || !newV) return { msg: 'oldV or oldV not found' };
     if (!oldV.m || !newV.m) return { msg: 'oldV.m or newV.m not found' };
@@ -167,7 +170,7 @@ export const set = async (x) => {
   //RENAME of MAP key
   if (id && oldKey && newKey) {
 
-    const v = await b.p('x', { get: { id } });
+    const v = await getFromRepo(id);
     if (!v.m || !v.m[oldKey]) {
       return { msg: 'v.m or v.m[oldKey] not found' };
     }
@@ -221,11 +224,15 @@ export const set = async (x) => {
 
 export const get = async (x) => {
 
-  let { id, path, subIds, depth, getMeta, getAll, varIdsForGet } = x.get;
+  let { id, subIds, path, depth, getMeta, getAll, useRepo } = x.get;
   const { b } = x[x._];
   const repo = await b.p('getRepo');
 
-  if (id) return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta, getAll });
+  if (id) {
+    if (useRepo) return await repo.get(id);
+
+    return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta, getAll });
+  }
 
   if (path && path !== undefined) {
     if (!Array.isArray(path) && typeof path === 'string') {
@@ -241,7 +248,7 @@ export const get = async (x) => {
     const v = set.at(-1);
     if (!v) return;
 
-    return await getVarData({ _, b, repo, v, depth, getMeta, varIdsForGet });
+    return await getVarData({ _, b, repo, v, depth, getMeta });
   }
 }
 
@@ -254,7 +261,7 @@ export const del = async (x) => {
 
   //DELETE KEY IN MAP with subVars
   if (id && k) {
-    const v = await b.p('x', { get: { id } });
+    const v = await b.p('x', { get: { id, useRepo: true } });
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
@@ -264,7 +271,7 @@ export const del = async (x) => {
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
 
-    const targetV = await b.p('x', { get: { id: targetId } });
+    const targetV = await b.p('x', { get: { id: targetId, useRepo: true } });
     if (!targetV) return { msg: `targetV not found by [${targetId}]` };
     targetV[_] = { id: targetId };
 
@@ -273,6 +280,7 @@ export const del = async (x) => {
       if (!v.o) return { msg: `v.o is not found by [${id}]` };
       if (!v.o[ok]) return { msg: `v.o[oKey] is not found by key [${ok}]` };
     }
+
 
     const isDelWithSubVars = await delWithSubVars({ _, b, v: targetV });
     if (isDelWithSubVars || true) {
@@ -341,7 +349,7 @@ const signUp = (x) => {
 
 const delWithSubVars = async (x) => {
   const { _, b, v } = x;
-
+  ``
   const varIds = await getVarIds({ b, v }); console.log('varIds for del', varIds);
 
   const len = Object.keys(varIds).length;
@@ -428,7 +436,7 @@ const mkvar = async (b, type, _) => {
 
 export const getVarData = async (x) => {
 
-  const { b, id, subIds, getMeta, getAll, depth = 0 } = x;
+  const { b, id, subIds, getMeta, getAll, depth = 1 } = x;
   let v = x.v;
 
   const _ = await b.p('get_');
@@ -478,7 +486,11 @@ export const getVarData = async (x) => {
   } else if (v.m) {
     if (v.o) data.o = v.o;
     data.m = {};
-    for (let k in v.m) await processItem({ id: v.m[k], k, v: data });
+
+    for (let k in v.m) {
+      //console.log(v.m[k]);
+      await processItem({ id: v.m[k], k, v: data });
+    }
   }
 
   return data;
@@ -499,12 +511,12 @@ export const getVarIds = async (x) => {
       for (let k in v.m) {
         const id = v.m[k];
         ids.push(id);
-        await getIds(await b.p('x', { get: { id } }));
+        await getIds(await b.p('x', { get: { id, useRepo: true } }));
       }
     } else if (v.l) {
       for (let id of v.l) {
         ids.push(id);
-        await getIds(await b.p('x', { get: { id } }));
+        await getIds(await b.p('x', { get: { id, useRepo: true } }));
       }
     }
   }
@@ -594,7 +606,7 @@ export const dmk = (d, x) => {
   return o;
 }
 
-export const getSize = (o) => {
+export const docGetSizes = (o) => {
   let sizes = o.getBoundingClientRect();
   let scrollX = window.scrollX;
   let scrollY = window.scrollY;

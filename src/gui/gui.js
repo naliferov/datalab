@@ -1,7 +1,6 @@
 import {
   X, b,
   dmk,
-  getSize
 } from "../module/x.js";
 import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
@@ -111,7 +110,7 @@ const appDOM = doc.createElement('div');
 appDOM.id = 'app';
 doc.body.appendChild(appDOM);
 
-const app = new DomPart();
+const app = new DomPart;
 app.setDOM(appDOM);
 
 const header = new Header;

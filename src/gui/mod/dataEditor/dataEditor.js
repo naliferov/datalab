@@ -1,3 +1,4 @@
+import { docGetSizes } from "../../../module/x.js";
 import { DomPart } from "../../mod/layout/DomPart.js";
 
 export const DataEditor = {
@@ -74,6 +75,10 @@ div[contenteditable="true"] {
     return await this.b.p('doc.mk', { type: 'style', txt: css });
   },
 
+  getSizes() {
+    return docGetSizes(this.o);
+  },
+
   async getOpenedIds() {
     let ids = await this.b.p('x', { repo: 'idb', get: { id: 'openedIds' } });
     if (!ids) ids = new Set();
@@ -113,11 +118,9 @@ div[contenteditable="true"] {
 
     const openedIds = await this.getOpenedIds();
     const v = await p('x', {
-      get: {
-        id: 'root', subIds: [...openedIds],
-        depth: 1, getMeta: true
-      }
+      get: { id: 'root', subIds: [...openedIds], getMeta: true }
     });
+    console.log(v);
     await this.rend(v, root);
   },
 
@@ -135,8 +138,7 @@ div[contenteditable="true"] {
 
       let mod = v.m['__mod'];
       if (mod && mod.i) {
-        mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2 } });
-        console.log(mod);
+        mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2, getMeta: true } });
       }
 
       for (let k of v.o) {
@@ -170,7 +172,7 @@ div[contenteditable="true"] {
   },
 
   async mkRow(x) {
-    const { k, v, parentId, id, domId, mod, modK } = x;
+    const { k, v, parentId, id, domId, mod } = x;
 
     let r;
     if (domId) {
@@ -195,14 +197,6 @@ div[contenteditable="true"] {
 
     const val = await this.b.p('doc.mk', { class: 'val' });
     r.append(val);
-
-    const needMod = mod && mod.m && mod.i && mod.i.id !== id;
-    if (needMod) {
-      for (const p in mod.m) {
-        const { v } = mod.m[p];
-        //if (p === 'transform') val.style[p] = v;
-      }
-    }
 
     if (v) {
       const t = v.i.t;
@@ -239,6 +233,22 @@ div[contenteditable="true"] {
         if (txt && txt.split) txt = txt.split('\n')[0];
         val.classList.add('inline');
         val.innerText = txt;
+      }
+    }
+
+    const needMod = mod && mod.i && mod.i.id !== id;
+    if (needMod) {
+
+      for (const k in mod.m) {
+        const v = mod.m[k];
+
+        if (k === 'target') continue;
+        if (k === 'css') {
+          for (const p in v.m) {
+            const v2 = v.m[p];
+            r.style[p] = v2.v;
+          }
+        }
       }
     }
 
@@ -322,6 +332,18 @@ div[contenteditable="true"] {
   isMarked(t) {
     return t.classList.contains('mark');
   },
+  async setBinToId(row, input) {
+    const f = input.getDOM().files[0];
+    const r = new FileReader;
+    r.onload = async (e) => {
+      const resp = await this.b.p('x', {
+        set: { id: row.getId(), binName: f.name, v: e.target.result }
+      });
+      console.log(resp);
+    }
+    r.readAsArrayBuffer(f);
+  },
+
   async click(e) {
     const path = e.composedPath();
     const t = path[0];
@@ -351,7 +373,7 @@ div[contenteditable="true"] {
 
         const openedIds = await this.getOpenedIds();
 
-        const data = await this.b.p('x', { get: { id, subIds: [...openedIds], depth: 1, getMeta: true } });
+        const data = await this.b.p('x', { get: { id, subIds: [...openedIds], getMeta: true } });
         await this.rend(data, row.dom);
         row.openCloseBtn.open();
       }
@@ -427,10 +449,13 @@ div[contenteditable="true"] {
     const p = async (event, data) => await this.b.p(event, data);
     const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
+    const sizes = this.getSizes();
+    //window.scrollY
+
     const menu = await p('doc.mk', {
       class: 'menu', css: {
-        left: e.clientX + 'px',
-        top: window.scrollY + e.clientY + 'px',
+        left: e.clientX - sizes.x + 'px',
+        top: e.clientY - sizes.y + 'px',
         padding: '5px',
       }
     });
@@ -453,7 +478,6 @@ div[contenteditable="true"] {
 
       if (type === 'm') {
         const k = 'newKey';
-
         const ok = row.val.children.length;
         const newRow = await this.mkRow({ k, v, id: 'vid_stub', parentId: id });
         row.val.append(newRow);
@@ -620,16 +644,4 @@ div[contenteditable="true"] {
     });
     this.menu.append(btn);
   },
-  async setBinToId(row, input) {
-    const f = input.getDOM().files[0];
-    const r = new FileReader;
-    r.onload = async (e) => {
-      const resp = await this.b.p('x', {
-        set: { id: row.getId(), binName: f.name, v: e.target.result }
-      });
-      console.log(resp);
-    }
-    r.readAsArrayBuffer(f);
-  }
-  //duplicate
 }
