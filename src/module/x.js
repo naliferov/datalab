@@ -446,50 +446,39 @@ export const getVarData = async (x) => {
   const isNeededId = Boolean(subIds && data.i && subIds.has(data.i.id));
 
   if (!getAll && !isNeededId && depth <= 0) {
-    if (data.i) data.i.openable = true;
+
+    if (data.i) data.i.openable = true; //todo openable is only certain data types m, l;
     return data;
+  }
+
+  const processItem = async (x) => {
+
+    const { id, k, v } = x;
+
+    const v2 = await repo.get(id);
+
+    v2[_] = { id, t: getType(v2) };
+    if (getMeta) v2.i = { ...v2[_] };
+
+    let data;
+    if (v2.b || v2.v) {
+      data = v2;
+    } else if (v2.l || v2.m) {
+      data = await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 });
+    }
+    if (v.m) v.m[k] = data;
+    if (v.l) v.l.push(data);
   }
 
   if (v.b) data.b = v.b;
   else if (v.v) data.v = v.v;
   else if (v.l) {
-
     data.l = [];
-
-    for (let id of v.l) {
-
-      const v2 = await repo.get(id);
-
-      v2[_] = { id, t: getType(v2) };
-      if (getMeta) v2.i = { ...v2[_] };
-
-      if (v2.b || v2.v) {
-        data.l.push(v2);
-      } else if (v2.l || v2.m) {
-        data.l.push(await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 }));
-      }
-    }
-
+    for (let id of v.l) await processItem({ id, v: data })
   } else if (v.m) {
-
-    data.m = {};
     if (v.o) data.o = v.o;
-
-    for (let p in v.m) {
-
-      const id = v.m[p];
-      const v2 = await repo.get(id);
-
-      v2[_] = { id, t: getType(v2) };
-      if (getMeta) v2.i = { ...v2[_] };
-
-      if (v2.b || v2.v) {
-        data.m[p] = v2;
-      } else if (v2.l || v2.m) {
-        data.m[p] = await getVarData({ b, v: v2, subIds, getAll, getMeta, depth: depth - 1 });
-      }
-    }
-
+    data.m = {};
+    for (let k in v.m) await processItem({ id: v.m[k], k, v: data });
   }
 
   return data;

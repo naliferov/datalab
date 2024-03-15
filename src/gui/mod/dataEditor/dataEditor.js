@@ -114,15 +114,10 @@ div[contenteditable="true"] {
     const openedIds = await this.getOpenedIds();
     const v = await p('x', {
       get: {
-        id: 'root',
-        subIds: [...openedIds],
-        depth: 1,
-        getMeta: true
+        id: 'root', subIds: [...openedIds],
+        depth: 1, getMeta: true
       }
     });
-    console.log(v);
-
-    //return;
     await this.rend(v, root);
   },
 
@@ -138,14 +133,11 @@ div[contenteditable="true"] {
 
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
-      const mod = v.m['__mod'];
-      if (mod) {
-        //const v = await this.b.p('x', {
-        //  get: { id: 'root' }
-        //});
-        //console.log(v);
+      let mod = v.m['__mod'];
+      if (mod && mod.i) {
+        mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2 } });
+        console.log(mod);
       }
-
 
       for (let k of v.o) {
         if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
