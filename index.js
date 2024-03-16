@@ -65,10 +65,11 @@ const { FsStorage } = await import('./src/storage/fsStorage.js');
 const mainRepo = new FsStorage('./state', fs);
 const sysRepo = new FsStorage('./state/sys', fs);
 
-let root = await mainRepo.get('root');
-if (!root) await mainRepo.set('root', { m: {} });
-root = await sysRepo.get('root');
-if (!root) await sysRepo.set('root', { m: {} });
+const mapV = { m: {}, o: [] };
+let v = await mainRepo.get('root');
+if (!v) await mainRepo.set('root', mapV);
+v = await sysRepo.get('root');
+if (!v) await sysRepo.set('root', mapV);
 
 const e = {
   'set': async (arg) => {

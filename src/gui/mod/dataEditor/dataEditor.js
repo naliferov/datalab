@@ -234,6 +234,8 @@ div[contenteditable="true"] {
       }
     }
 
+    //write to value info about mod of value; and we need to apply this mod to rendered row again;
+
     const needMod = mod && mod.i;
     if (needMod) {
       //const target = '';
@@ -317,19 +319,28 @@ div[contenteditable="true"] {
   isVal(t) { return t.classList.contains('val'); },
   isOpenCloseBtn(t) { return t.classList.contains('openClose'); },
 
+  remark(t) {
+    this.unmark();
+    t.classList.add('mark');
+    this.marked = t;
+  },
   mark() {
     if (this.marked) this.marked.classList.add('mark');
   },
   unmark() {
     if (this.marked) this.marked.classList.remove('mark');
   },
-  remark(t) {
-    this.unmark();
-    t.classList.add('mark');
-    this.marked = t;
-  },
   isMarked(t) {
     return t.classList.contains('mark');
+  },
+  markedEditDisable() {
+    this.marked.removeAttribute('contenteditable');
+
+    if (this.markedTxt && this.marked.innerText !== this.markedTxt) {
+      this.marked.innerText = this.markedTxt;
+    }
+    this.markedTxt = null;
+    this.mark();
   },
   async setBinToId(row, input) {
     const f = input.getDOM().files[0];
@@ -346,13 +357,13 @@ div[contenteditable="true"] {
   async click(e) {
     const path = e.composedPath();
     const t = path[0];
-    const classList = t.classList;
 
     if (this.menu) {
       if (!path.includes(this.menu)) {
         this.menu.remove();
         this.unmark();
       }
+
     } else this.unmark();
 
     if (this.isOpenCloseBtn(t)) {
@@ -388,18 +399,18 @@ div[contenteditable="true"] {
       if (row.isValHasSubItems()) return;
     }
 
+    if (this.marked) this.markedEditDisable();
+
     e.preventDefault();
     this.remark(t);
   },
   async keydown(e) {
 
     if (e.key === 'Escape') {
-      if (this.marked.innerText !== this.markedTxt) this.marked.innerText = this.markedTxt;
-      this.marked.removeAttribute('contenteditable');
-      this.mark();
+      this.markedEditDisable();
       return;
     }
-    if (e.key !== 'Enter' || !this.marked) return;
+    if (e.key !== 'Enter') return;
     e.preventDefault();
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
