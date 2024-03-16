@@ -135,12 +135,29 @@ div[contenteditable="true"] {
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
       let mod = v.m['__mod'];
-      if (mod && mod.i) {
-        mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2, getMeta: true } });
+      if (mod && mod.i) mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2, getMeta: true } });
+
+      const applyMode = (mod, target) => {
+        for (const k in mod.m) {
+          const v = mod.m[k];
+
+          if (k === 'target') { }
+          else if (k === 'css') {
+            for (const p in v.m) {
+              const v2 = v.m[p];
+              target.style[p] = v2.v;
+            }
+          }
+        }
       }
+      if (mod && mod.m) applyMode(mod, parentRow);
+
+      //mark somehow modifierRow
 
       for (let k of v.o) {
         if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
+
+        //if (k === '__mod') console.log(v.m);
 
         const curV = v.m[k];
         const curVId = getVId(curV);
@@ -234,25 +251,6 @@ div[contenteditable="true"] {
       }
     }
 
-    //write to value info about mod of value; and we need to apply this mod to rendered row again;
-
-    const needMod = mod && mod.i;
-    if (needMod) {
-      //const target = '';
-
-      for (const k in mod.m) {
-        const v = mod.m[k];
-
-        if (k === 'target') continue;
-        if (k === 'css') {
-          for (const p in v.m) {
-            const v2 = v.m[p];
-            r.style[p] = v2.v;
-          }
-        }
-      }
-    }
-
     return r;
   },
 
@@ -333,10 +331,10 @@ div[contenteditable="true"] {
   isMarked(t) {
     return t.classList.contains('mark');
   },
-  markedEditDisable() {
+  markedEditDisable(restorePreviousTxt = true) {
     this.marked.removeAttribute('contenteditable');
 
-    if (this.markedTxt && this.marked.innerText !== this.markedTxt) {
+    if (restorePreviousTxt && this.markedTxt && this.marked.innerText !== this.markedTxt) {
       this.marked.innerText = this.markedTxt;
     }
     this.markedTxt = null;
@@ -415,12 +413,13 @@ div[contenteditable="true"] {
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
     if (isEnabled) {
-      this.marked.removeAttribute('contenteditable');
-      this.mark();
 
-      const v = this.marked.innerText;
-      if (v === this.markedTxt) return;
-      if (!v) { alert('No value is set.'); return; }
+      const oldV = this.markedTxt;
+      const newV = this.marked.innerText;
+
+      if (!oldV) { console.log('No oldV is set.'); return; }
+      if (!newV) { console.log('No newV is set.'); return; }
+      if (oldV === newV) return;
 
       const isKey = this.isKey(this.marked);
       const isVal = this.isVal(this.marked);
@@ -429,15 +428,16 @@ div[contenteditable="true"] {
 
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
-        const resp = await this.b.p('x', { set: { id: parentId, oldKey: this.markedTxt, newKey: v } });
+        const resp = await this.b.p('x', { set: { id: parentId, oldKey: oldV, newKey: newV } });
         console.log(resp);
       } else if (isVal) {
         const id = row.getAttribute('_id');
         if (id === 'vid_stub') return;
-        const resp = await this.b.p('x', { set: { id, v: { v } } });
+        const resp = await this.b.p('x', { set: { id, v: { v: newV } } });
         console.log(resp);
       }
 
+      this.markedEditDisable(false);
       return;
     }
 
@@ -599,8 +599,7 @@ div[contenteditable="true"] {
       const v = { b: {}, i: { id, t: 'b' } };
       await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
 
-      //const r = await this.b.p('x', { set: { id, v } });
-      //console.log(r);
+      const r = await this.b.p('x', { set: { id, v } }); console.log(r);
     });
     this.menu.append(btn);
 

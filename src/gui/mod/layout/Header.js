@@ -17,6 +17,7 @@ export class Header extends DomPart {
       flex-grow: 1;
     }
     .btn {
+      color: black;
       cursor: pointer;
     }
     .btn:hover {
@@ -51,7 +52,7 @@ export class Header extends DomPart {
     signInBtn.setAttr('href', '/sign/in');
     rightMenu.ins(signInBtn);
 
-    const signUpBtn = new DomPart({ type: 'a', class: ['signUp', 'btn'], txt: 'Sign Up' });
+    const signUpBtn = new DomPart({ type: 'a', class: ['signUp', 'signBtn', 'btn'], txt: 'Sign Up' });
     signUpBtn.setAttr('href', '/sign/up');
     rightMenu.ins(signUpBtn);
   }
