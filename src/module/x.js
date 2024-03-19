@@ -24,7 +24,6 @@ export const b = {
       _: this._,
       [this._]: { b, x: event }
     }
-
     return await this.x({ ...data, ...inject });
   },
   async s(e, f) {
@@ -444,6 +443,7 @@ export const getVarData = async (x) => {
 
   if (id && !v) {
     v = await repo.get(id);
+    if (!v) { console.error(`v not found by id [${id}]`); return; }
     v[_] = { id, t: getType(v) };
     if (getMeta) v.i = { ...v[_] };
   }

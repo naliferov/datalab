@@ -3,6 +3,7 @@ import { DomPart } from "../../mod/layout/DomPart.js";
 
 export const DataEditor = {
 
+  root: 'root',
   setB(b) { this.b = b; },
   set_(_) { this._ = _; },
 
@@ -47,7 +48,6 @@ div[contenteditable="true"] {
     font-weight: bold;
 }
 .val {
-    width: fit-content;
     cursor: pointer;
     border: 1px solid transparent;
 }
@@ -101,6 +101,7 @@ div[contenteditable="true"] {
     this.oShadow = this.o.attachShadow({ mode: 'open' });
     this.oShadow.append(await this.createStyle());
     this.oShadow.addEventListener('contextmenu', (e) => this.handleContextmenu(e));
+    this.oShadow.addEventListener('pointerdown', (e) => this.click(e));
 
     const container = await p('doc.mk', { class: 'container' });
     this.oShadow.append(container);
@@ -109,64 +110,54 @@ div[contenteditable="true"] {
     const header = await p('doc.mk', { class: 'header', txt: 'Data Editor' });
     container.append(header);
 
+    const k = this.root;
     const root = await this.mkRow({
-      k: 'root',
-      v: { m: {}, o: [], i: { id: 'root', t: 'm' } },
-      id: 'root'
+      k,
+      v: { m: {}, o: [], i: { id: k, t: 'm' } },
+      id: k
     });
     container.append(root);
 
     const openedIds = await this.getOpenedIds();
-    const v = await p('x', { get: { id: 'root', subIds: [...openedIds], getMeta: true } });
-    console.log(v);
+    const v = await p('x', { get: { id: k, subIds: [...openedIds], getMeta: true } });
+    //console.log(v);
     await this.rend(v, root);
   },
 
   async rend(v, parentRow) {
 
-    const getVId = v => {
-      if (v.i) return v.i.id;
-    }
+    const getVId = v => { if (v.i) return v.i.id };
     const id = getVId(v);
     if (!id) { console.log('Unknown VAR', v); return; }
 
     if (v.m) {
-
       if (!v.o) { console.error('No order array for map', id, v); return; }
 
-      let mod = v.m['__mod'];
-      if (mod && mod.i) mod = await this.b.p('x', { get: { id: mod.i.id, depth: 2, getMeta: true } });
-
-      const applyMode = (mod, target) => {
-        for (const k in mod.m) {
-          const v = mod.m[k];
-
-          if (k === 'target') { }
-          else if (k === 'css') {
-            for (const p in v.m) {
-              const v2 = v.m[p];
-              target.style[p] = v2.v;
-            }
-          }
-        }
-      }
-      if (mod && mod.m) applyMode(mod, parentRow);
-
-      //mark somehow modifierRow
+      let mod;
 
       for (let k of v.o) {
         if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
-
-        //if (k === '__mod') console.log(v.m);
 
         const curV = v.m[k];
         const curVId = getVId(curV);
         if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
 
-        const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId, mod });
+        const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
         this.rowInterface(parentRow).val.append(row);
 
+        if (k === '__mod') {
+          mod = curV;
+          this.applyMetadataToMod(mod, this.rowInterface(row).getDomId());
+        }
+        if (curV.i && curV.i.domId) {
+          row.setAttribute('mod_dom_id', curV.i.domId);
+        }
         await this.rend(curV, row);
+      }
+
+      if (mod && !mod.i.modApplied) {
+        mod.i.modApplied = true;
+        await this.applyMod(mod.i.domId);
       }
 
     } else if (v.l) {
@@ -181,22 +172,56 @@ div[contenteditable="true"] {
         await this.rend(curV, row);
       }
     }
-    else if (v.v) { }
-    else if (v.i) { }
+    else if (v.i || v.v) { }
     else console.log('Unknown type of var', v);
   },
 
+  findRow(domId) { return this.container.querySelector('#' + domId); },
+
+  applyMetadataToMod(mod, domId) {
+
+    if (!mod.m) return;
+    mod.i.domId = domId;
+
+    for (let k in mod.m) {
+      const v = mod.m[k];
+      v.i.domId = domId;
+      if (v.i) this.applyMetadataToMod(v, domId);
+    }
+  },
+
+  async applyMod(modDomId) {
+
+    const modRow = this.findRow(modDomId);
+    const id = this.rowInterface(modRow).getId();
+    const mod = await this.b.p('x', { get: { id, depth: 2, getMeta: true } });
+
+    const modParent = modRow.parentNode.parentNode; //todo use special interface method for get parent row
+
+    for (const k in mod.m) {
+      const v = mod.m[k];
+
+      //if (k === 'target') {}
+      if (k === 'css') {
+        for (const p in v.m) {
+          const v2 = v.m[p];
+          modParent.style[p] = v2.v;
+        }
+      }
+    }
+  },
+
   async mkRow(x) {
-    const { k, v, parentId, id, domId, mod } = x;
+    const { k, v, parentId, id, domId } = x;
 
     let r;
     if (domId) {
-      r = this.container.querySelector('#' + domId);
+      r = this.findRow(domId);
       if (!r) return;
       r.innerHTML = '';
     } else {
       r = await this.b.p('doc.mk', { class: 'row' });
-      r.id = await this.b.p('getUniqIdForDomId');
+      r.id = await this.b.p('getUniqIdForDom');
     }
 
     if (id) r.setAttribute('_id', id);
@@ -256,9 +281,11 @@ div[contenteditable="true"] {
 
   rowInterface(row) {
     const children = row.children;
+    const self = this;
 
     const o = {
       dom: row,
+      getDom() { return this.dom },
       getDomId() { return this.dom.getAttribute('id') },
       getId() { return this.dom.getAttribute('_id') },
       getParentId() { return this.dom.getAttribute('_parent_id') },
@@ -270,7 +297,8 @@ div[contenteditable="true"] {
       clearVal() { this.val.innerHTML = ''; },
       isValHasSubItems() {
         return this.val.children.length > 0;
-      }
+      },
+      isRoot() { return self.isRoot(this.dom); }
     }
 
     o.openCloseBtn = {
@@ -283,9 +311,7 @@ div[contenteditable="true"] {
         this.obj.classList.remove('opened');
         this.obj.innerText = '+';
       },
-      isOpened() {
-        return this.obj.classList.contains('opened');
-      }
+      isOpened() { return this.obj.classList.contains('opened'); }
     }
 
     if (children.length === 2) {
@@ -312,7 +338,7 @@ div[contenteditable="true"] {
       }
     }
   },
-  isRoot(t) { return t.getAttribute('_id') === 'root' },
+  isRoot(t) { return t.getAttribute('_id') === this.root },
   isKey(t) { return t.classList.contains('key'); },
   isVal(t) { return t.classList.contains('val'); },
   isOpenCloseBtn(t) { return t.classList.contains('openClose'); },
@@ -377,20 +403,20 @@ div[contenteditable="true"] {
         row.openCloseBtn.close();
         row.clearVal();
       } else {
-        if (id && id !== 'root') await this.openId(id);
+        if (!row.isRoot()) await this.openId(id);
 
         const openedIds = await this.getOpenedIds();
 
         const data = await this.b.p('x', { get: { id, subIds: [...openedIds], getMeta: true } });
-        await this.rend(data, row.dom);
+        await this.rend(data, row.getDom());
         row.openCloseBtn.open();
       }
 
       return;
     }
 
-    if (!this.isKey(t) && !this.isVal(t)) return;
     if (this.isRoot(t)) return;
+    if (!this.isKey(t) && !this.isVal(t)) return;
 
     if (this.isVal(t)) {
       const row = this.rowInterface(t.parentNode);
@@ -425,7 +451,6 @@ div[contenteditable="true"] {
       const isVal = this.isVal(this.marked);
 
       const row = this.marked.parentNode;
-
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
         const resp = await this.b.p('x', { set: { id: parentId, oldKey: oldV, newKey: newV } });
@@ -436,8 +461,11 @@ div[contenteditable="true"] {
         const resp = await this.b.p('x', { set: { id, v: { v: newV } } });
         console.log(resp);
       }
-
       this.markedEditDisable(false);
+
+      const modDomId = row.getAttribute('mod_dom_id');
+      if (modDomId) this.applyMod({ modDomId });
+
       return;
     }
 
@@ -515,9 +543,7 @@ div[contenteditable="true"] {
 
       let parentId, k, row = this.marked.parentNode;
 
-      if (!this.isKey(this.marked) && !this.isVal(this.marked)) {
-        return;
-      }
+      if (!this.isKey(this.marked) && !this.isVal(this.marked)) return;
       if (dir === 'up' && !row.previousSibling) return;
       if (dir === 'down' && !row.nextSibling) return;
 

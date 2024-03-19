@@ -220,9 +220,4 @@ export class HttpClient {
     for (let k in params) str = str + k + '=' + params[k] + '&';
     return str.length ? str.slice(0, -1) : '';
   }
-  async getFile(url, fName) {
-    const fs = new (await s.f('9f0e6908-4f44-49d1-8c8e-10e1b0128858'));
-    const r = await fetch(url);
-    await fs.writeFile(fName, Buffer.from(await r.arrayBuffer()));
-  }
 }

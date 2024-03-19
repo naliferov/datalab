@@ -20,6 +20,8 @@ const x = X(_);
 b.set_(_);
 b.setX(x);
 
+globalThis.vc = b;
+
 await b.s('getUniqId', () => {
   if (!window.crypto || !window.crypto.randomUUID) {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
@@ -30,7 +32,7 @@ await b.s('getUniqId', () => {
   }
   return crypto.randomUUID();
 });
-await b.s('getUniqIdForDomId', async () => {
+await b.s('getUniqIdForDom', async () => {
 
   const getRandomLetter = () => {
     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -157,7 +159,7 @@ if (path.startsWith('/sign/')) {
   dataEditor.setB(b);
   dataEditor.set_(_);
   await dataEditor.init();
-  //appDOM.append(dataEditor.o);
+
 
   const frame = Object.create(Frame);
   frame.setB(b);
@@ -167,5 +169,4 @@ if (path.startsWith('/sign/')) {
   appDOM.append(frame.o);
 
   window.onkeydown = (e) => dataEditor.keydown(e);
-  window.onpointerdown = (e) => dataEditor.click(e);
 }
