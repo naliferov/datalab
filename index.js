@@ -22,7 +22,7 @@ await b.s('getUniqId', () => ulid());
 await b.s('fs', async (x) => {
   if (x.get) {
     const { path } = x.get;
-    return await fs.readFile(path, 'utf8');
+    return await fs.readFile(path);
   }
   if (x.set) {
     const { path, v } = x.set;
@@ -30,14 +30,14 @@ await b.s('fs', async (x) => {
   }
 });
 await b.s('repo', async (x) => {
+  const repo = repoName === 'sys' ? sysRepo : mainRepo;
+
   if (x.get) {
-    const { id, repoType } = x.get;
-    //return await fs.readFile(path, 'utf8');
+    return await repo.get(id);
   }
   if (x.set) {
-    const { id, v, repoType } = x.set;
-    console.log(x.set);
-    //return await fs.writeFile(path, v);
+    const { id, v, repoName } = x.set;
+    return await fs.writeFile(path, v);
   }
 });
 
@@ -104,9 +104,13 @@ const e = {
   'state.export': async (arg) => await b.p('state.export', { repo: mainRepo }),
   'state.validate': async (arg) => await b.p('state.validate'),
   'server.start': async (arg) => {
+
+    const port = arg[1] || 8080;
+    const runtime = arg[_].runtime;
+
     const x = {
       server: (await import('node:http')).createServer({ requestTimeout: 30000 }),
-      port: arg[1] || 8080,
+      port,
     }
     const { rqHandler } = await import('./src/transport/http.js');
 
@@ -118,7 +122,7 @@ const e = {
     });
     x.server.on('request', async (rq, rs) => {
       try {
-        await rqHandler({ b, rq, rs, fs, serveFS: true });
+        await rqHandler({ b, runtime, rq, rs, fs, serveFS: true });
       } catch (e) {
         const m = 'Error in rqHandler';
         console.error(m, e);
@@ -140,9 +144,23 @@ process.on('uncaughtException', (e, origin) => {
   process.exit(1);
 });
 
-const args = parseCliArgs(process.argv);
+const args = parseCliArgs([...process.argv]);
+args[_] = (() => {
+  const runtime = {
+    name: globalThis.Deno ? 'deno' : 'node',
+  }
+
+  if (runtime.name === 'deno') {
+    runtime.Buffer = Deno.Buffer
+  } else {
+    runtime.Buffer = Buffer;
+  }
+
+  return { runtime };
+})();
+
 if (e[args[0]]) {
   console.log(await e[args[0]](args) ?? '');
 } else {
-  console.log('Command not found');
+  //console.log('Command not found');
 }

@@ -42,20 +42,6 @@ await b.s('getUniqIdForDom', async () => {
   const id = await b.p('getUniqId');
   return id.replace(/^[0-9]/, getRandomLetter());
 });
-
-await b.s('port', async (x) => {
-
-  let headers = {};
-  if (x.v instanceof ArrayBuffer) {
-    const x2 = { ...x };
-    delete x2.v;
-    headers.x = JSON.stringify({ ...x2 });
-    x = x.v;
-  }
-  const { data } = await (new HttpClient).post('/', x, headers);
-  return data;
-});
-
 await b.s('x', async (x) => {
   if (x.repo === 'idb') {
     if (x.set) await idb.set(x.set);
@@ -64,9 +50,17 @@ await b.s('x', async (x) => {
   }
   return await b.p('port', x);
 });
-await b.s('signUp', async (x) => {
-  console.log(x);
-  //await b.p('port', { ...x, x: 'signUp' })
+await b.s('port', async (x) => {
+
+  let headers = {};
+  if (x.v instanceof ArrayBuffer) {
+    const x2 = { ...x };
+    delete x2.v;
+    headers.x = JSON.stringify(x2);
+    x = x.v;
+  }
+  const { data } = await (new HttpClient).post('/', x, headers);
+  return data;
 });
 
 await b.s('doc.mk', async (x) => dmk(doc, x));
@@ -146,10 +140,13 @@ if (path.startsWith('/sign/')) {
 
   btn.on('pointerdown', async (e) => {
     if (act === 'Sign Up') {
-      //const user = await b.p('signUp', {
-      //email: email.getVal(),
-      //password: password.getVal(),
-      //});
+      const r = await b.p('x', {
+        signUp: {
+          email: email.getVal(),
+          password: password.getVal(),
+        }
+      });
+      console.log(r);
     }
   });
 
@@ -159,7 +156,6 @@ if (path.startsWith('/sign/')) {
   dataEditor.setB(b);
   dataEditor.set_(_);
   await dataEditor.init();
-
 
   const frame = Object.create(Frame);
   frame.setB(b);

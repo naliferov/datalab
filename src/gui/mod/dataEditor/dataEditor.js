@@ -147,7 +147,7 @@ div[contenteditable="true"] {
 
         if (k === '__mod') {
           mod = curV;
-          this.applyMetadataToMod(mod, this.rowInterface(row).getDomId());
+          this.setDomIdToMod(mod, this.rowInterface(row).getDomId());
         }
         if (curV.i && curV.i.domId) {
           row.setAttribute('mod_dom_id', curV.i.domId);
@@ -178,21 +178,22 @@ div[contenteditable="true"] {
 
   findRow(domId) { return this.container.querySelector('#' + domId); },
 
-  applyMetadataToMod(mod, domId) {
+  setDomIdToMod(mod, domId) {
 
-    if (!mod.m) return;
     mod.i.domId = domId;
 
+    if (!mod.m) return;
     for (let k in mod.m) {
       const v = mod.m[k];
       v.i.domId = domId;
-      if (v.i) this.applyMetadataToMod(v, domId);
+      if (v.i) this.setDomIdToMod(v, domId);
     }
   },
 
   async applyMod(modDomId) {
 
     const modRow = this.findRow(modDomId);
+
     const id = this.rowInterface(modRow).getId();
     const mod = await this.b.p('x', { get: { id, depth: 2, getMeta: true } });
 
@@ -208,6 +209,11 @@ div[contenteditable="true"] {
           modParent.style[p] = v2.v;
         }
       }
+    }
+
+    if (mod.m.favicon) {
+      const link = document.querySelector("link[rel='icon']");
+      if (link) link.setAttribute('href', mod.m.favicon.v);
     }
   },
 

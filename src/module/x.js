@@ -33,16 +33,17 @@ export const b = {
 }
 
 export const u = async (x) => {
-  if (x.getHtml) return await getHtml();
   if (x.set) return await set(x);
   if (x.get) return await get(x);
   if (x.del) return await del(x);
+  if (x.getHtml) return await getHtml();
+  if (x.signUp) return await signUp(x);
 }
 
 const getHtml = async (x) => {
   return {
-    msg: await b.p('fs', { get: { path: './src/gui/index.html' } }),
-    type: 'text/html',
+    bin: await b.p('fs', { get: { path: './src/gui/index.html' } }),
+    isHtml: true,
   }
 };
 
@@ -341,6 +342,7 @@ export const iterator = async (x) => { }
 const signUp = (x) => {
   const { email, password } = x.signUp;
 
+  return { email, password };
   //get sys.users
 
   //await b.p('x', { set: { id: v1[_].id, v: prepareForTransfer(v1) } });

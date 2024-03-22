@@ -1,10 +1,4 @@
-const rqParseQuery = (rq) => {
-  const query = {};
-  const url = new URL('http://t.c' + rq.url);
-  url.searchParams.forEach((v, k) => query[k] = v);
-  return query;
-}
-const rqParseBody = async (rq, limitMb = 12) => {
+const getBody = async ({ rq, limitMb = 12, runtime }) => {
 
   let limit = limitMb * 1024 * 1024;
   return new Promise((resolve, reject) => {
@@ -25,40 +19,43 @@ const rqParseBody = async (rq, limitMb = 12) => {
       reject({ err });
     });
     rq.on('end', () => {
-      b = Buffer.concat(b);
+      if (runtime && !runtime.Buffer.concat) { resolve({ err: 'No buffer' }); return; }
+
+      let msg = {};
+
+      msg.bin = runtime.Buffer.concat(b);
+
       if (rq.headers['content-type'] === 'application/json') {
-        try { b = JSON.parse(b.toString()); }
-        catch (e) { b = { err: 'json parse error', data: b.toString() }; }
+        try { msg = JSON.parse(b.toString()); }
+        catch (e) { msg = { err: 'json parse error', data: b.toString() }; }
       }
-      resolve(b);
+      resolve(msg);
     });
   });
 }
-const rqResolveFile = async (rq, rs, fs) => {
+const resolveFile = async ({ ctx, fs }) => {
 
-  const query = rqParseQuery(rq);
+  const query = ctx.query;
   let ext, mime;
 
-  if (!query.getFile) {
-    const lastPart = rq.pathname.split('/').pop();
+  if (!query.getFile) { //todo rename to getAsFile
+
+    const lastPart = ctx.url.pathname.split('/').pop();
     const split = lastPart.split('.');
-    if (split.length < 2) return false;
+
+    if (split.length < 2) return {};
 
     ext = split[split.length - 1];
-    if (!ext) return;
+    if (!ext) return {};
 
-    const m = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf' };
-    mime = m[ext];
+    mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf' }[ext];
   }
 
   try {
-    if (mime) rs.setHeader('Content-Type', mime);
-
-    rs.end(await fs.readFile('.' + rq.pathname));
-    return true;
+    return { file: await fs.readFile('.' + ctx.url.pathname), mime };
   } catch (e) {
-    console.log(e);
-    return false;
+    if (e.code !== 'ENOENT') console.log('Error of resolve file', e);
+    return { fileNotFound: true };
   }
 }
 const rqGetCookies = rq => {
@@ -83,78 +80,90 @@ const rqGetCookies = rq => {
   }
   return result;
 }
-const rqResponse = (rs, v, contentType) => {
-  const send = (value, type) => {
+const set = ({ rs, code = 200, mime, v, runtime }) => {
+
+  const plain = 'text/plain; charset=utf-8';
+  const send = (value, typeHeader) => {
     try {
-      rs.writeHead(200, { 'Content-Type': type }).end(value);
+      rs.writeHead(code, { 'Content-Type': typeHeader }).end(value);
     } catch (e) {
       console.log('error sending response');
     }
   }
 
-  if (!v) {
-    send('empty val', 'text/plain; charset=utf-8');
-    return;
-  }
+  if (!v) { send('empty val', plain); return; }
 
-  if (v instanceof Buffer) {
-    send(v, '');
+  if (runtime && v instanceof runtime.Buffer) {
+    send(v, mime ?? '');
   } else if (typeof v === 'object') {
     send(JSON.stringify(v), 'application/json');
   } else if (typeof v === 'string' || typeof v === 'number') {
-    send(v, contentType ?? 'text/plain; charset=utf-8');
+    send(v, mime ?? plain);
   } else {
-    send('', 'text/plain; charset=utf-8');
+    send('Empty response', plain);
   }
 }
 export const rqHandler = async (x) => {
 
-  const { b, rq, rs, fs, serveFS } = x;
-  rq.on('error', (e) => {
-    rq.destroy();
-    b.p('log', { msg: 'rq socker err', e });
-  });
+  const { b, runtime, rq, rs, fs, serveFS } = x;
 
-  //const ip = rq.socket.remoteAddress;
-  //const isLocal = ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
-  const url = new URL('http://t.c' + rq.url);
-  rq.pathname = url.pathname;
+  const ctx = {
+    headers: rq.headers,
+    url: new URL('http://t.c' + rq.url),
+    query: {},
+    body: {},
+  };
+  ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
 
-  if (rq.pathname.toLowerCase().includes('state/sys')) {
-    rs.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Access denied');
+  if (runtime === 'node') {
+    rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
+  }
+  if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
+    set({ rs, code: 403, v: 'Access denied', runtime });
     return;
   }
 
-  if (serveFS && await rqResolveFile(rq, rs, fs)) return;
-  const query = rqParseQuery(rq);
-  const body = await rqParseBody(rq);
+  if (serveFS) {
+    const r = await resolveFile({ ctx, fs });
+    if (r.file && r.mime) {
+      set({ rs, v: r.file, mime: r.mime, runtime });
+      return;
+    }
+    if (r.fileNotFound) {
+      set({ rs, code: 404, v: 'File not found', runtime });
+      return;
+    }
+  }
+
+  const body = await getBody({ rq, runtime });
   let msg = body ?? query;
 
-  if (msg instanceof Buffer) {
-    const x = rq.headers['x'] ? JSON.parse(rq.headers['x']) : {};
-    msg = { bin: msg, ...x };
-  }
   if (msg.err) {
     console.log('msg.err', msg.err);
-    rqResponse(rs, 'error processing rq');
-    return;
-  }
-  if (msg.bin && !msg.binName) {
-    msg.getHtml = true;
-  }
-
-  const out = await b.p('x', msg);
-  if (!out) {
-    rqResponse(rs, 'Default response');
-    return;
-  }
-  if (typeof out === 'object' && out.msg && out.type) {
-    const { msg, type } = out;
-    rqResponse(rs, msg, type);
+    set({ rs, v: 'error processing rq', runtime });
     return;
   }
 
-  rqResponse(rs, out);
+  if (msg.bin) {
+    if (ctx.headers.x) {
+      const x = JSON.parse(ctx.headers.x);
+      msg = { bin: msg.bin, ...x };
+    } else {
+      msg.getHtml = true;
+    }
+  }
+
+  const o = await b.p('x', msg);
+  if (!o) {
+    set({ rs, v: 'Default response', runtime });
+    return;
+  }
+  if (o.bin && o.isHtml) {
+    const { bin, isHtml } = o;
+    set({ rs, v: bin, mime: isHtml ? 'text/html' : null, runtime });
+    return;
+  }
+  set({ rs, v: o, runtime });
 };
 
 export class HttpClient {
@@ -164,12 +173,7 @@ export class HttpClient {
     if (baseURL) this.baseURL = baseURL;
   }
 
-  async rq(method, url, params, headers, options = {}) {
-    let timeoutId;
-    const controller = new AbortController();
-    if (options.timeout) {
-      timeoutId = setTimeout(() => controller.abort(), options.timeout);
-    }
+  processHeaders(headers, params) {
     if (!headers['Content-Type']) {
       if (params instanceof ArrayBuffer) {
         headers['Content-Type'] = 'application/octet-stream';
@@ -177,6 +181,16 @@ export class HttpClient {
         headers['Content-Type'] = 'application/json';
       }
     }
+  }
+
+  async rq(method, url, params, headers, options = {}) {
+    let timeoutId;
+    const controller = new AbortController();
+    if (options.timeout) {
+      timeoutId = setTimeout(() => controller.abort(), options.timeout);
+    }
+
+    this.processHeaders(headers, params);
 
     const fetchParams = { method, headers, signal: controller.signal };
 
@@ -191,7 +205,10 @@ export class HttpClient {
     }
 
     const response = await fetch(this.baseURL ? this.baseURL + url : url, fetchParams);
-    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     let r = {
       statusCode: response.status,
@@ -200,8 +217,8 @@ export class HttpClient {
     if (options.blob) {
       r.data = await response.blob();
     } else {
-      const contentType = response.headers.get('content-type') ?? '';
-      r.data = contentType.startsWith('application/json') ? await response.json() : await response.text();
+      const t = response.headers.get('content-type') ?? '';
+      r.data = t.startsWith('application/json') ? await response.json() : await response.text();
     }
     return r;
   }
