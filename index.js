@@ -106,30 +106,36 @@ const e = {
   'server.start': async (arg) => {
 
     const port = arg[1] || 8080;
-    const runtime = arg[_].runtime;
+    const hostname = '0.0.0.0';
+    const ctx = arg[_].ctx;
+    ctx.response = Response;
 
-    const x = {
-      server: (await import('node:http')).createServer({ requestTimeout: 30000 }),
-      port,
-    }
     const { rqHandler } = await import('./src/transport/http.js');
+    const handler = async (rq) => await rqHandler({ b, runtimeCtx: ctx, rq, fs });
 
-    x.server.on('clientError', (err, socket) => {
-      console.log('CLIENT ERROR', err);
+    if (ctx.rtName === 'bun') { Bun.serve({ port, hostname, fetch: handler }); return; }
+    if (ctx.rtName === 'deno') { Deno.serve({ port, hostname, handler }); return; }
+    if (ctx.rtName === 'node') {
+      ctx.Buffer = Buffer;
 
-      if (err.code === 'ECONNRESET' || !socket.writable) return;
-      socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-    });
-    x.server.on('request', async (rq, rs) => {
-      try {
-        await rqHandler({ b, runtime, rq, rs, fs, serveFS: true });
-      } catch (e) {
-        const m = 'Error in rqHandler';
-        console.error(m, e);
-        rs.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end(m);
-      }
-    });
-    x.server.listen(x.port, () => console.log(`Server start on port: [${x.port}].`));
+      const x = {};
+      x.server = (await import('node:http')).createServer({ requestTimeout: 30000 });
+      x.server.on('clientError', (e, sock) => {
+        console.log('CLIENT ERR', e);
+        if (e.code === 'ECONNRESET' || !sock.writable) return;
+        sock.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+      });
+      x.server.on('request', async (rq, rs) => {
+        try {
+          await rqHandler({ b, runtimeCtx: ctx, rq, rs, fs });
+        } catch (e) {
+          const m = 'Error in rqHandler';
+          console.error(m, e);
+          rs.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end(m);
+        }
+      });
+      x.server.listen(port, () => console.log(`Server start on port: [${port}].`));
+    }
   },
 };
 
@@ -144,23 +150,21 @@ process.on('uncaughtException', (e, origin) => {
   process.exit(1);
 });
 
-const args = parseCliArgs([...process.argv]);
-args[_] = (() => {
-  const runtime = {
-    name: globalThis.Deno ? 'deno' : 'node',
-  }
+const processCliArgs = async () => {
 
-  if (runtime.name === 'deno') {
-    runtime.Buffer = Deno.Buffer
+  const args = parseCliArgs([...process.argv]);
+  const ctx = {};
+  if (globalThis.Bun) ctx.rtName = 'bun';
+  else if (globalThis.Deno) ctx.rtName = 'deno';
+  else ctx.rtName = 'node';
+
+  args[_] = { ctx };
+
+  if (e[args[0]]) {
+    console.log(await e[args[0]](args) ?? '');
   } else {
-    runtime.Buffer = Buffer;
+    console.log('Command not found');
   }
-
-  return { runtime };
-})();
-
-if (e[args[0]]) {
-  console.log(await e[args[0]](args) ?? '');
-} else {
-  //console.log('Command not found');
 }
+
+await processCliArgs();

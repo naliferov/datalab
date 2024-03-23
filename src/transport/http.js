@@ -1,6 +1,75 @@
-const getBody = async ({ rq, limitMb = 12, runtime }) => {
+export const rqHandler = async (x) => {
+
+  const { b, runtimeCtx, rq, rs, fs } = x;
+
+  const ctx = {
+    headers: rq.headers,
+    url: new URL('http://t.c' + rq.url),
+    query: {}, body: {},
+  };
+  ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
+
+  if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
+
+    console.log(ctx.headers);
+    return new runtimeCtx.response('Test oooo ppp mmm');
+  }
+
+  if (runtimeCtx.rtName === 'node') {
+    rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
+  }
+  if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
+    set({ rs, code: 403, v: 'Access denied', runtimeCtx });
+    return;
+  }
+
+  if (fs) {
+    const r = await getFile({ ctx, fs });
+    if (r.file && r.mime) {
+      set({ rs, v: r.file, mime: r.mime, runtimeCtx });
+      return;
+    }
+    if (r.fileNotFound) {
+      set({ rs, code: 404, v: 'File not found', runtimeCtx });
+      return;
+    }
+  }
+
+  const body = await getBody({ rq, runtimeCtx });
+  let msg = body ?? query;
+
+  if (msg.err) {
+    console.log('msg.err', msg.err);
+    set({ rs, v: 'error processing rq', runtimeCtx });
+    return;
+  }
+
+  if (msg.bin) {
+    if (ctx.headers.x) {
+      const x = JSON.parse(ctx.headers.x);
+      msg = { bin: msg.bin, ...x };
+    } else {
+      msg.getHtml = true;
+    }
+  }
+
+  const o = await b.p('x', msg);
+  if (!o) {
+    set({ rs, v: 'Default response', runtimeCtx });
+    return;
+  }
+  if (o.bin && o.isHtml) {
+    const { bin, isHtml } = o;
+    set({ rs, v: bin, mime: isHtml ? 'text/html' : null, runtimeCtx });
+    return;
+  }
+  set({ rs, v: o, runtimeCtx });
+};
+
+const getBody = async ({ rq, runtimeCtx, limitMb = 12 }) => {
 
   let limit = limitMb * 1024 * 1024;
+
   return new Promise((resolve, reject) => {
     let b = [];
     let len = 0;
@@ -19,11 +88,10 @@ const getBody = async ({ rq, limitMb = 12, runtime }) => {
       reject({ err });
     });
     rq.on('end', () => {
-      if (runtime && !runtime.Buffer.concat) { resolve({ err: 'No buffer' }); return; }
+      if (runtimeCtx && !runtimeCtx.Buffer.concat) { resolve({ err: 'No buffer' }); return; }
 
       let msg = {};
-
-      msg.bin = runtime.Buffer.concat(b);
+      msg.bin = runtimeCtx.Buffer.concat(b);
 
       if (rq.headers['content-type'] === 'application/json') {
         try { msg = JSON.parse(b.toString()); }
@@ -33,7 +101,7 @@ const getBody = async ({ rq, limitMb = 12, runtime }) => {
     });
   });
 }
-const resolveFile = async ({ ctx, fs }) => {
+const getFile = async ({ ctx, fs }) => {
 
   const query = ctx.query;
   let ext, mime;
@@ -58,29 +126,7 @@ const resolveFile = async ({ ctx, fs }) => {
     return { fileNotFound: true };
   }
 }
-const rqGetCookies = rq => {
-  const header = rq.headers.cookie;
-  if (!header || header.length < 1) {
-    return {};
-  }
-  const cookies = header.split('; ');
-  const result = {};
-  for (let i in cookies) {
-
-    const cookie = cookies[i].trim();
-    const index = cookie.indexOf('=');
-    if (index === -1) continue;
-
-    const k = cookie.slice(0, index);
-    const v = cookie.slice(index + 1);
-
-    if (!k || !v) continue;
-
-    result[k.trim()] = v.trim();
-  }
-  return result;
-}
-const set = ({ rs, code = 200, mime, v, runtime }) => {
+const set = ({ rs, code = 200, mime, v, runtimeCtx }) => {
 
   const plain = 'text/plain; charset=utf-8';
   const send = (value, typeHeader) => {
@@ -93,7 +139,7 @@ const set = ({ rs, code = 200, mime, v, runtime }) => {
 
   if (!v) { send('empty val', plain); return; }
 
-  if (runtime && v instanceof runtime.Buffer) {
+  if (runtimeCtx && v instanceof runtimeCtx.Buffer) {
     send(v, mime ?? '');
   } else if (typeof v === 'object') {
     send(JSON.stringify(v), 'application/json');
@@ -103,68 +149,6 @@ const set = ({ rs, code = 200, mime, v, runtime }) => {
     send('Empty response', plain);
   }
 }
-export const rqHandler = async (x) => {
-
-  const { b, runtime, rq, rs, fs, serveFS } = x;
-
-  const ctx = {
-    headers: rq.headers,
-    url: new URL('http://t.c' + rq.url),
-    query: {},
-    body: {},
-  };
-  ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
-
-  if (runtime === 'node') {
-    rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
-  }
-  if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
-    set({ rs, code: 403, v: 'Access denied', runtime });
-    return;
-  }
-
-  if (serveFS) {
-    const r = await resolveFile({ ctx, fs });
-    if (r.file && r.mime) {
-      set({ rs, v: r.file, mime: r.mime, runtime });
-      return;
-    }
-    if (r.fileNotFound) {
-      set({ rs, code: 404, v: 'File not found', runtime });
-      return;
-    }
-  }
-
-  const body = await getBody({ rq, runtime });
-  let msg = body ?? query;
-
-  if (msg.err) {
-    console.log('msg.err', msg.err);
-    set({ rs, v: 'error processing rq', runtime });
-    return;
-  }
-
-  if (msg.bin) {
-    if (ctx.headers.x) {
-      const x = JSON.parse(ctx.headers.x);
-      msg = { bin: msg.bin, ...x };
-    } else {
-      msg.getHtml = true;
-    }
-  }
-
-  const o = await b.p('x', msg);
-  if (!o) {
-    set({ rs, v: 'Default response', runtime });
-    return;
-  }
-  if (o.bin && o.isHtml) {
-    const { bin, isHtml } = o;
-    set({ rs, v: bin, mime: isHtml ? 'text/html' : null, runtime });
-    return;
-  }
-  set({ rs, v: o, runtime });
-};
 
 export class HttpClient {
 
@@ -189,7 +173,6 @@ export class HttpClient {
     if (options.timeout) {
       timeoutId = setTimeout(() => controller.abort(), options.timeout);
     }
-
     this.processHeaders(headers, params);
 
     const fetchParams = { method, headers, signal: controller.signal };
@@ -222,14 +205,11 @@ export class HttpClient {
     }
     return r;
   }
-
-  async get(url, params = {}, headers = {}, options = {}) { return await this.rq('GET', url, params, headers, options); }
-  async post(url, params = {}, headers = {}, options = {}) { return await this.rq('POST', url, params, headers, options); }
-  async postBuf(url, buffer, query, headers = {}) {
-    if (query) url += '?' + new URLSearchParams(query);
-    headers['Content-Type'] = 'application/octet-stream';
-
-    return await this.rq('POST', url, buffer, headers);
+  async get(url, params = {}, headers = {}, options = {}) {
+    return await this.rq('GET', url, params, headers, options);
+  }
+  async post(url, params = {}, headers = {}, options = {}) {
+    return await this.rq('POST', url, params, headers, options);
   }
   async delete(url, params = {}, headers = {}, options = {}) { return await this.rq('DELETE', url, params, headers, options); }
   strParams(params) {
