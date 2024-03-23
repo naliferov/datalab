@@ -108,17 +108,24 @@ const e = {
     const port = arg[1] || 8080;
     const hostname = '0.0.0.0';
     const ctx = arg[_].ctx;
+    ctx.Buffer = Buffer;
     ctx.Response = Response;
     ctx.Uint8Array = Uint8Array;
 
     const { rqHandler } = await import('./src/transport/http.js');
-    const handler = async (rq) => await rqHandler({ b, runtimeCtx: ctx, rq, fs });
+    const handler = async (rq) => await rqHandler({ b, rq, fs, runtimeCtx: ctx });
 
-    if (ctx.rtName === 'bun') { Bun.serve({ port, hostname, fetch: handler }); return; }
-    if (ctx.rtName === 'deno') { Deno.serve({ port, hostname, handler }); return; }
-    if (ctx.rtName === 'node') {
+    if (ctx.rtName === 'bun') {
+      Bun.serve({ port, hostname, fetch: handler });
+      return;
+    }
+    if (ctx.rtName === 'deno') {
+      const { Buffer } = await import('https://deno.land/std@0.177.0/node/buffer.ts');
       ctx.Buffer = Buffer;
-
+      Deno.serve({ port, hostname, handler });
+      return;
+    }
+    if (ctx.rtName === 'node') {
       const x = {};
       x.server = (await import('node:http')).createServer({ requestTimeout: 30000 });
       x.server.on('clientError', (e, sock) => {

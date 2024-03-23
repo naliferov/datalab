@@ -53,12 +53,13 @@ await b.s('x', async (x) => {
 await b.s('port', async (x) => {
 
   let headers = {};
-  if (x.v instanceof ArrayBuffer) {
-    const x2 = { ...x };
-    delete x2.v;
-    headers.x = JSON.stringify(x2);
-    x = x.v;
+  if (x.set && x.set.v instanceof ArrayBuffer) {
+
+    const v = x.set.v; delete x.set.v;
+    headers.x = JSON.stringify(x);
+    x = v;
   }
+
   const { data } = await (new HttpClient).post('/', x, headers);
   return data;
 });

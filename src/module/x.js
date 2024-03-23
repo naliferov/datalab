@@ -49,7 +49,7 @@ const getHtml = async (x) => {
 
 export const set = async (x) => {
 
-  const set = x.set;
+  const set = { ...x.set, bin: x.bin };
 
   const { type, id, path, k, ok, v, bin, binName } = set;
   const { b } = x[x._];
@@ -337,7 +337,9 @@ export const del = async (x) => {
   }
 }
 
-export const iterator = async (x) => { }
+export const it = async (v) => {
+  if (v) { }
+}
 
 const signUp = (x) => {
   const { email, password } = x.signUp;
@@ -350,7 +352,6 @@ const signUp = (x) => {
 
 const delWithSubVars = async (x) => {
   const { _, b, v } = x;
-  ``
   const varIds = await getVarIds({ b, v }); console.log('varIds for del', varIds);
 
   const len = Object.keys(varIds).length;
@@ -539,7 +540,7 @@ export const getType = (v) => {
 export const prepareForTransfer = (v) => {
   const d = {};
 
-  if (v.i) d.i = v.i; //metaData id, link, type, etc.
+  //if (v.i) d.i = v.i; //metaData id, link, type, etc.
 
   if (v.b) d.b = v.b;
   if (v.v) d.v = v.v;

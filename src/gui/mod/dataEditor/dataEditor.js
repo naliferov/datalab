@@ -377,7 +377,7 @@ div[contenteditable="true"] {
     const r = new FileReader;
     r.onload = async (e) => {
       const resp = await this.b.p('x', {
-        set: { id: row.getId(), binName: f.name, v: e.target.result }
+        set: { id: row.getId(), v: e.target.result, binName: f.name }
       });
       console.log(resp);
     }

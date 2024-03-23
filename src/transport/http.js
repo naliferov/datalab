@@ -37,8 +37,11 @@ export const rqHandler = async (x) => {
 
   const xHeader = ctx.headers.get('x');
   if (msg.bin && xHeader) {
-    const x = JSON.parse(cxHeader);
-    msg = { bin: msg.bin, ...x };
+    msg = { bin: msg.bin, ...JSON.parse(xHeader) };
+
+    if (runtimeCtx.rtName === 'deno') {
+      msg.bin = new runtimeCtx.Buffer(msg.bin);
+    }
   }
   if (Object.keys(msg).length < 1) {
     msg.getHtml = true;
@@ -131,7 +134,6 @@ const getFile = async ({ ctx, fs }) => {
 }
 const set = ({ runtimeCtx, rs, code = 200, mime, v, isBin }) => {
 
-  const plain = 'text/plain; charset=utf-8';
   const send = (v, typeHeader) => {
     const headers = { 'content-type': typeHeader };
     try {
@@ -148,6 +150,8 @@ const set = ({ runtimeCtx, rs, code = 200, mime, v, isBin }) => {
   if (typeof v === 'object') {
     return send(JSON.stringify(v), 'application/json');
   }
+
+  const plain = 'text/plain; charset=utf-8';
   if (typeof v === 'string' || typeof v === 'number') {
     return send(v, mime ?? plain);
   }
