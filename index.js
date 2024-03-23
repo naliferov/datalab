@@ -108,7 +108,8 @@ const e = {
     const port = arg[1] || 8080;
     const hostname = '0.0.0.0';
     const ctx = arg[_].ctx;
-    ctx.response = Response;
+    ctx.Response = Response;
+    ctx.Uint8Array = Uint8Array;
 
     const { rqHandler } = await import('./src/transport/http.js');
     const handler = async (rq) => await rqHandler({ b, runtimeCtx: ctx, rq, fs });

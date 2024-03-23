@@ -260,7 +260,7 @@ div[contenteditable="true"] {
           let o;
           if (v.b.t === 'i') {
             o = new DomPart({ type: 'img' });
-            o.setAttr('src', `state/${v.b.id}?getFile=1`);
+            o.setAttr('src', `state/${v.b.id}?bin=1`);
           }
           if (o) val.append(o.getDOM());
 

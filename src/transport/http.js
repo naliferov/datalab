@@ -1,25 +1,27 @@
 export const rqHandler = async (x) => {
 
   const { b, runtimeCtx, rq, rs, fs } = x;
-
   const ctx = {
     rq, headers: rq.headers,
     url: new URL('http://t.c' + rq.url),
     query: {}, body: {},
   };
-  if (typeof rq.headers.get !== 'function') {
-    ctx.headers = { headers: { ...rq.headers }, get(k) { return this.headers[k]; } };
-  }
   ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
 
+  if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
+    ctx.url = new URL(rq.url);
+  }
+  if (typeof rq.headers.get !== 'function') {
+    ctx.headers = { headers: rq.headers, get(k) { return this.headers[k]; } };
+  }
   if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
     return set({ rs, code: 403, v: 'Access denied', runtimeCtx });
   }
 
   if (fs) {
     const r = await getFile({ ctx, fs });
-    if (r.file && r.mime) {
-      return set({ rs, v: r.file, mime: r.mime, runtimeCtx });
+    if (r.file) {
+      return set({ rs, v: r.file, mime: r.mime, runtimeCtx, isBin: true });
     }
     if (r.fileNotFound) {
       return set({ rs, code: 404, v: 'File not found', runtimeCtx });
@@ -32,23 +34,23 @@ export const rqHandler = async (x) => {
     console.log('msg.err', msg.err);
     return set({ rs, v: 'error processing rq', runtimeCtx });
   }
-  if (msg.bin) {
-    if (ctx.headers.get('x')) {
-      const x = JSON.parse(ctx.headers.x);
-      msg = { bin: msg.bin, ...x };
-    } else {
-      msg.getHtml = true;
-    }
+
+  const xHeader = ctx.headers.get('x');
+  if (msg.bin && xHeader) {
+    const x = JSON.parse(cxHeader);
+    msg = { bin: msg.bin, ...x };
+  }
+  if (Object.keys(msg).length < 1) {
+    msg.getHtml = true;
   }
 
   const o = await b.p('x', msg);
-  if (!o) {
-    return set({ rs, v: 'Default response', runtimeCtx });
-  }
+  if (!o) return set({ rs, v: 'Default response', runtimeCtx });
+
   if (o.bin && o.isHtml) {
     const { bin, isHtml } = o;
     const mime = isHtml ? 'text/html' : null;
-    return set({ rs, v: bin, mime, runtimeCtx });
+    return set({ rs, v: bin, isBin: bin, mime, runtimeCtx });
   }
   return set({ rs, v: o, runtimeCtx });
 };
@@ -56,7 +58,6 @@ const getBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
 
   let limit = limitMb * 1024 * 1024;
   const rq = ctx.rq;
-
   const readAsJson = ctx.headers.get('content-type') === 'application/json';
 
   if (!rq.on) {
@@ -70,11 +71,8 @@ const getBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
     //     return;
     //   }
     // }
-
     const bin = await rq.arrayBuffer();
-    if (readAsJson) {
-      return JSON.parse((new TextDecoder('utf-8')).decode(bin));
-    }
+    if (readAsJson) return JSON.parse((new TextDecoder('utf-8')).decode(bin));
     return { bin };
   }
 
@@ -96,11 +94,8 @@ const getBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
       reject({ err });
     });
     rq.on('end', () => {
-
-      if (runtimeCtx && !runtimeCtx.Buffer.concat) { resolve({ err: 'No buffer' }); return; }
-
       let msg = {};
-      msg.bin = runtimeCtx.Buffer.concat(b);
+      if (b.length > 0) msg.bin = runtimeCtx.Buffer.concat(b);
 
       if (readAsJson) {
         try { msg = JSON.parse(b.toString()); }
@@ -115,14 +110,13 @@ const getFile = async ({ ctx, fs }) => {
   const query = ctx.query;
   let ext, mime;
 
-  if (!query.getFile) { //todo rename to getAsFile
-
+  if (!query.bin) {
     const lastPart = ctx.url.pathname.split('/').pop();
-    const split = lastPart.split('.');
+    const spl = lastPart.split('.');
 
-    if (split.length < 2) return {};
+    if (spl.length < 2) return {};
 
-    ext = split[split.length - 1];
+    ext = spl.at(-1);
     if (!ext) return {};
 
     mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json', woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf' }[ext];
@@ -135,14 +129,14 @@ const getFile = async ({ ctx, fs }) => {
     return { fileNotFound: true };
   }
 }
-const set = ({ runtimeCtx, rs, code = 200, mime, v }) => {
+const set = ({ runtimeCtx, rs, code = 200, mime, v, isBin }) => {
 
   const plain = 'text/plain; charset=utf-8';
   const send = (v, typeHeader) => {
     const headers = { 'content-type': typeHeader };
     try {
       if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
-        return new runtimeCtx.response(v, { status: code, headers });
+        return new runtimeCtx.Response(v, { status: code, headers });
       }
       rs.writeHead(code, headers).end(v);
     } catch (e) {
@@ -150,9 +144,7 @@ const set = ({ runtimeCtx, rs, code = 200, mime, v }) => {
     }
   }
 
-  if (runtimeCtx.Buffer && v instanceof runtimeCtx.Buffer) {
-    return send(v, mime ?? '');
-  }
+  if (isBin) return send(v, mime ?? '');
   if (typeof v === 'object') {
     return send(JSON.stringify(v), 'application/json');
   }
