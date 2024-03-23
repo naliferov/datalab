@@ -61,9 +61,9 @@ await b.s('state.validate', async (x) => {
   console.log('files that not exists in varIds', fSet);
 });
 
-const { FsStorage } = await import('./src/storage/fsStorage.js');
-const mainRepo = new FsStorage('./state', fs);
-const sysRepo = new FsStorage('./state/sys', fs);
+const { storage } = await import('./src/storage/storage.js');
+const mainRepo = new storage('./state', fs);
+const sysRepo = new storage('./state/sys', fs);
 
 const mapV = { m: {}, o: [] };
 let v = await mainRepo.get('root');
@@ -126,6 +126,8 @@ const e = {
         sock.end('HTTP/1.1 400 Bad Request\r\n\r\n');
       });
       x.server.on('request', async (rq, rs) => {
+
+        rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
         try {
           await rqHandler({ b, runtimeCtx: ctx, rq, rs, fs });
         } catch (e) {

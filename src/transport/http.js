@@ -3,49 +3,37 @@ export const rqHandler = async (x) => {
   const { b, runtimeCtx, rq, rs, fs } = x;
 
   const ctx = {
-    headers: rq.headers,
+    rq, headers: rq.headers,
     url: new URL('http://t.c' + rq.url),
     query: {}, body: {},
   };
+  if (typeof rq.headers.get !== 'function') {
+    ctx.headers = { headers: { ...rq.headers }, get(k) { return this.headers[k]; } };
+  }
   ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
 
-  if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
-
-    console.log(ctx.headers);
-    return new runtimeCtx.response('Test oooo ppp mmm');
-  }
-
-  if (runtimeCtx.rtName === 'node') {
-    rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
-  }
   if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
-    set({ rs, code: 403, v: 'Access denied', runtimeCtx });
-    return;
+    return set({ rs, code: 403, v: 'Access denied', runtimeCtx });
   }
 
   if (fs) {
     const r = await getFile({ ctx, fs });
     if (r.file && r.mime) {
-      set({ rs, v: r.file, mime: r.mime, runtimeCtx });
-      return;
+      return set({ rs, v: r.file, mime: r.mime, runtimeCtx });
     }
     if (r.fileNotFound) {
-      set({ rs, code: 404, v: 'File not found', runtimeCtx });
-      return;
+      return set({ rs, code: 404, v: 'File not found', runtimeCtx });
     }
   }
 
-  const body = await getBody({ rq, runtimeCtx });
+  const body = await getBody({ ctx, runtimeCtx });
   let msg = body ?? query;
-
   if (msg.err) {
     console.log('msg.err', msg.err);
-    set({ rs, v: 'error processing rq', runtimeCtx });
-    return;
+    return set({ rs, v: 'error processing rq', runtimeCtx });
   }
-
   if (msg.bin) {
-    if (ctx.headers.x) {
+    if (ctx.headers.get('x')) {
       const x = JSON.parse(ctx.headers.x);
       msg = { bin: msg.bin, ...x };
     } else {
@@ -55,20 +43,40 @@ export const rqHandler = async (x) => {
 
   const o = await b.p('x', msg);
   if (!o) {
-    set({ rs, v: 'Default response', runtimeCtx });
-    return;
+    return set({ rs, v: 'Default response', runtimeCtx });
   }
   if (o.bin && o.isHtml) {
     const { bin, isHtml } = o;
-    set({ rs, v: bin, mime: isHtml ? 'text/html' : null, runtimeCtx });
-    return;
+    const mime = isHtml ? 'text/html' : null;
+    return set({ rs, v: bin, mime, runtimeCtx });
   }
-  set({ rs, v: o, runtimeCtx });
+  return set({ rs, v: o, runtimeCtx });
 };
-
-const getBody = async ({ rq, runtimeCtx, limitMb = 12 }) => {
+const getBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
 
   let limit = limitMb * 1024 * 1024;
+  const rq = ctx.rq;
+
+  const readAsJson = ctx.headers.get('content-type') === 'application/json';
+
+  if (!rq.on) {
+    if (!rq.body) return {};
+    // const b = [];
+    // let len = 0;
+    // for await (const p of rq.body) {
+    //   b.push(p);
+    //   len += p.length;
+    //   if (len > limit) {
+    //     return;
+    //   }
+    // }
+
+    const bin = await rq.arrayBuffer();
+    if (readAsJson) {
+      return JSON.parse((new TextDecoder('utf-8')).decode(bin));
+    }
+    return { bin };
+  }
 
   return new Promise((resolve, reject) => {
     let b = [];
@@ -88,12 +96,13 @@ const getBody = async ({ rq, runtimeCtx, limitMb = 12 }) => {
       reject({ err });
     });
     rq.on('end', () => {
+
       if (runtimeCtx && !runtimeCtx.Buffer.concat) { resolve({ err: 'No buffer' }); return; }
 
       let msg = {};
       msg.bin = runtimeCtx.Buffer.concat(b);
 
-      if (rq.headers['content-type'] === 'application/json') {
+      if (readAsJson) {
         try { msg = JSON.parse(b.toString()); }
         catch (e) { msg = { err: 'json parse error', data: b.toString() }; }
       }
@@ -126,28 +135,31 @@ const getFile = async ({ ctx, fs }) => {
     return { fileNotFound: true };
   }
 }
-const set = ({ rs, code = 200, mime, v, runtimeCtx }) => {
+const set = ({ runtimeCtx, rs, code = 200, mime, v }) => {
 
   const plain = 'text/plain; charset=utf-8';
-  const send = (value, typeHeader) => {
+  const send = (v, typeHeader) => {
+    const headers = { 'content-type': typeHeader };
     try {
-      rs.writeHead(code, { 'Content-Type': typeHeader }).end(value);
+      if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
+        return new runtimeCtx.response(v, { status: code, headers });
+      }
+      rs.writeHead(code, headers).end(v);
     } catch (e) {
       console.log('error sending response');
     }
   }
 
-  if (!v) { send('empty val', plain); return; }
-
-  if (runtimeCtx && v instanceof runtimeCtx.Buffer) {
-    send(v, mime ?? '');
-  } else if (typeof v === 'object') {
-    send(JSON.stringify(v), 'application/json');
-  } else if (typeof v === 'string' || typeof v === 'number') {
-    send(v, mime ?? plain);
-  } else {
-    send('Empty response', plain);
+  if (runtimeCtx.Buffer && v instanceof runtimeCtx.Buffer) {
+    return send(v, mime ?? '');
   }
+  if (typeof v === 'object') {
+    return send(JSON.stringify(v), 'application/json');
+  }
+  if (typeof v === 'string' || typeof v === 'number') {
+    return send(v, mime ?? plain);
+  }
+  return send('empty resp', plain);
 }
 
 export class HttpClient {

@@ -1,4 +1,4 @@
-export class FsStorage {
+export class storage {
 
   constructor(path, fs) {
     this.path = path;
