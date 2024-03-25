@@ -137,14 +137,17 @@ const e = {
 
         rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
         try {
-          await rqHandler({ b, runtimeCtx: ctx, rq, rs, fs });
+          const r = await rqHandler({ b, runtimeCtx: ctx, rq, rs, fs });
+          const v = new Uint8Array(await r.arrayBuffer());
+
+          rs.writeHead(r.status, Object.fromEntries(r.headers)).end(v);
         } catch (e) {
-          const m = 'Error in rqHandler';
-          console.error(m, e);
-          rs.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end(m);
+          const m = 'err in rqHandler';
+          console.log(m, e);
+          rs.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' }).end(m);
         }
       });
-      x.server.listen(port, () => console.log(`Server start on port: [${port}].`));
+      x.server.listen(port, () => console.log(`server start on port: [${port}]`));
     }
   },
 };

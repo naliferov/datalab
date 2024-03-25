@@ -15,16 +15,16 @@ export const rqHandler = async (x) => {
     ctx.headers = { headers: rq.headers, get(k) { return this.headers[k]; } };
   }
   if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
-    return set({ rs, code: 403, v: 'Access denied', runtimeCtx });
+    return mkResp({ code: 403, v: 'Access denied', runtimeCtx });
   }
 
   if (fs) {
     const r = await getFile({ ctx, fs });
     if (r.file) {
-      return set({ rs, v: r.file, mime: r.mime, runtimeCtx, isBin: true });
+      return mkResp({ v: r.file, mime: r.mime, runtimeCtx, isBin: true });
     }
     if (r.fileNotFound) {
-      return set({ rs, code: 404, v: 'File not found', runtimeCtx });
+      return mkResp({ code: 404, v: 'File not found', runtimeCtx });
     }
   }
 
@@ -32,7 +32,7 @@ export const rqHandler = async (x) => {
   let msg = body ?? query;
   if (msg.err) {
     console.log('msg.err', msg.err);
-    return set({ rs, v: 'error processing rq', runtimeCtx });
+    return mkResp({ v: 'error processing rq', runtimeCtx });
   }
 
   const xHeader = ctx.headers.get('x');
@@ -48,14 +48,14 @@ export const rqHandler = async (x) => {
   }
 
   const o = await b.p('x', msg);
-  if (!o) return set({ rs, v: 'Default response', runtimeCtx });
+  if (!o) return mkResp({ v: 'Default response', runtimeCtx });
 
   if (o.bin && o.isHtml) {
     const { bin, isHtml } = o;
     const mime = isHtml ? 'text/html' : null;
-    return set({ rs, v: bin, isBin: bin, mime, runtimeCtx });
+    return mkResp({ v: bin, isBin: bin, mime, runtimeCtx });
   }
-  return set({ rs, v: o, runtimeCtx });
+  return mkResp({ v: o, runtimeCtx });
 };
 const getBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
 
@@ -132,17 +132,14 @@ const getFile = async ({ ctx, fs }) => {
     return { fileNotFound: true };
   }
 }
-const set = ({ runtimeCtx, rs, code = 200, mime, v, isBin }) => {
+const mkResp = ({ runtimeCtx, code = 200, mime, v, isBin }) => {
 
   const send = (v, typeHeader) => {
     const headers = { 'content-type': typeHeader };
     try {
-      if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
-        return new runtimeCtx.Response(v, { status: code, headers });
-      }
-      rs.writeHead(code, headers).end(v);
+      return new runtimeCtx.Response(v, { status: code, headers });
     } catch (e) {
-      console.log('error sending response');
+      console.log('err sending response', e);
     }
   }
 
