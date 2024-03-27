@@ -1,6 +1,6 @@
 export const rqHandler = async (x) => {
 
-  const { b, runtimeCtx, rq, rs, fs } = x;
+  const { b, runtimeCtx, rq, fs } = x;
   const ctx = {
     rq, headers: rq.headers,
     url: new URL('http://t.c' + rq.url),

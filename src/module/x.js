@@ -54,7 +54,6 @@ export const set = async (x) => {
   const { type, id, path, k, ok, v, bin, binName } = set;
   const { b } = x[x._];
   const _ = await b.p('get_');
-  const repo = await b.p('getRepo');
 
   if (v && v.i) delete v.i;
 
@@ -77,7 +76,7 @@ export const set = async (x) => {
       const i = vById.l.splice(from, 1)[0];
       vById.l.splice(to, 0, i);
     }
-    await repo.set(id, vById);
+    await b.p('repo', { set: { id, v: vById } });
 
     return { id, ok };
   }
@@ -96,8 +95,8 @@ export const set = async (x) => {
       vById.m[k] = newId;
       vById.o.splice(ok, 0, k);
 
-      await repo.set(newId, v);
-      await repo.set(id, vById);
+      await b.p('repo', { set: { id: newId, v } });
+      await b.p('repo', { set: { id, v: vById } });
 
       return { type, id, k, v, newId };
     }
@@ -105,8 +104,8 @@ export const set = async (x) => {
       const newId = await b.p('getUniqId');
       vById.l.push(newId);
 
-      await repo.set(newId, v);
-      await repo.set(id, vById);
+      await b.p('repo', { set: { id: newId, v } });
+      await b.p('repo', { set: { id, v: vById } });
 
       return { type, id, v, newId };
     }
@@ -114,16 +113,11 @@ export const set = async (x) => {
     return { msg: 'Not found logic for change vById', vById };
   }
 
-  //SET value by ID
-  if (id && v) {
-    await repo.set(id, v);
-    return { id, v };
-  }
   //SET binary file and save it's ID to specific varID
   if (id && bin && binName) {
 
-    const v = await getFromRepo(id);
-    if (!v) return { msg: 'v not found by id', id };
+    const vById = await getFromRepo(id);
+    if (!vById) return { msg: 'v not found by id', id };
     //todo clear previous binary file;
 
     let ext = binName.split('.').at(-1);
@@ -131,10 +125,17 @@ export const set = async (x) => {
     if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif') t = 'i';
 
     const newId = await b.p('getUniqId');
-    await repo.set(newId, bin, 'raw');
-    await repo.set(id, { b: { id: newId, t } });
+    const v = { b: { id: newId, t } };
+
+    await b.p('repo', { set: { id: newId, v: bin, format: 'raw' } });
+    await b.p('repo', { set: { id, v } });
 
     return { id };
+  }
+  //SET value by ID
+  if (id && v) {
+    await b.p('repo', { set: { id, v } });
+    return { id, v };
   }
 
   const {
@@ -190,7 +191,7 @@ export const set = async (x) => {
   //SET BY PATH
   if (path) {
 
-    const set = await createSet({ _, b, repo, path, type });
+    const set = await createSet({ _, b, path, type });
     if (!set) return;
 
     let data = v;
@@ -203,7 +204,7 @@ export const set = async (x) => {
         if (v.l) {
           const newId = await b.p('getUniqId');
           const newV = { _: { id: newId }, v: data };
-          await b.p('x', { set: { repo, id: newId, v: prepareForTransfer(newV) } });
+          await b.p('x', { set: { id: newId, v: prepareForTransfer(newV) } });
 
           v.l.push(newId);
           if (!v[_].new) v[_].updated = true;
@@ -214,7 +215,7 @@ export const set = async (x) => {
       }
 
       if (v[_].new || v[_].updated) {
-        await b.p('x', { set: { repo, id: v[_].id, v: prepareForTransfer(v) } });
+        await b.p('x', { set: { id: v[_].id, v: prepareForTransfer(v) } });
       }
     }
 
@@ -226,12 +227,11 @@ export const get = async (x) => {
 
   let { id, subIds, path, depth, getMeta, useRepo } = x.get;
   const { b } = x[x._];
-  const repo = await b.p('getRepo');
 
   if (id) {
-    if (useRepo) return await repo.get(id);
+    if (useRepo) return await b.p('repo', { get: { id } });
 
-    return await getVarData({ repo, b, id, subIds: new Set(subIds), depth, getMeta });
+    return await getVarData({ b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
   if (path && path !== undefined) {
@@ -239,8 +239,9 @@ export const get = async (x) => {
       x.path = x.path.split('.');
     }
 
+    //todo refactor createSet to use b.p('repo');
     const set = await createSet({
-      _, b, repo, path, getMeta,
+      _, b, path, getMeta,
       isNeedStopIfVarNotFound: true,
     });
     if (!set) return;
@@ -248,7 +249,7 @@ export const get = async (x) => {
     const v = set.at(-1);
     if (!v) return;
 
-    return await getVarData({ _, b, repo, v, depth, getMeta });
+    return await getVarData({ _, b, v, depth, getMeta });
   }
 }
 
@@ -257,7 +258,6 @@ export const del = async (x) => {
   const { path, id, k, ok } = x.del;
   const { b } = x[x._];
   const _ = await b.p('get_');
-  const repo = await b.p('getRepo');
 
   //DELETE KEY IN MAP with subVars
   if (id && k) {
@@ -302,7 +302,9 @@ export const del = async (x) => {
   }
 
   //DELETE BY ID
-  if (id && id !== 'root') return await repo.del(id);
+  if (id && id !== 'root') {
+    return await b.p('repo', { del: { id } });
+  }
 
   //DELETE BY PATH
   const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
@@ -442,10 +444,9 @@ export const getVarData = async (x) => {
   let v = x.v;
 
   const _ = await b.p('get_');
-  const repo = await b.p('getRepo');
 
   if (id && !v) {
-    v = await repo.get(id);
+    v = await b.p('repo', { get: { id } });
     if (!v) { console.error(`v not found by id [${id}]`); return; }
     v[_] = { id, t: getType(v) };
     if (getMeta) v.i = { ...v[_] };
@@ -466,7 +467,7 @@ export const getVarData = async (x) => {
 
     const { id, k, v } = x;
 
-    const v2 = await repo.get(id);
+    const v2 = await b.p('repo', { get: { id } });
 
     v2[_] = { id, t: getType(v2) };
     if (getMeta) v2.i = { ...v2[_] };
@@ -477,6 +478,7 @@ export const getVarData = async (x) => {
     } else if (v2.l || v2.m) {
       data = await getVarData({ b, v: v2, subIds, getMeta, depth: depth - 1 });
     }
+
     if (v.m) v.m[k] = data;
     if (v.l) v.l.push(data);
   }
@@ -489,11 +491,7 @@ export const getVarData = async (x) => {
   } else if (v.m) {
     if (v.o) data.o = v.o;
     data.m = {};
-
-    for (let k in v.m) {
-      //console.log(v.m[k]);
-      await processItem({ id: v.m[k], k, v: data });
-    }
+    for (let k in v.m) await processItem({ id: v.m[k], k, v: data });
   }
 
   return data;

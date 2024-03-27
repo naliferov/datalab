@@ -17,7 +17,6 @@ b.setX(X(_));
 
 await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
-await b.s('getRepo', () => mainRepo);
 await b.s('getUniqId', () => ulid());
 await b.s('fs', async (x) => {
   if (x.get) {
@@ -30,14 +29,19 @@ await b.s('fs', async (x) => {
   }
 });
 await b.s('repo', async (x) => {
-  const repo = repoName === 'sys' ? sysRepo : mainRepo;
+  const repo = x.repoName === 'sys' ? sysRepo : mainRepo;
 
+  if (x.set) {
+    const { id, v, format } = x.set;
+    return await repo.set(id, v, format);
+  }
   if (x.get) {
+    const { id } = x.get;
     return await repo.get(id);
   }
-  if (x.set) {
-    const { id, v, repoName } = x.set;
-    return await fs.writeFile(path, v);
+  if (x.del) {
+    const { id } = x.del;
+    return await repo.del(id);
   }
 });
 
@@ -66,9 +70,10 @@ const mainRepo = new storage('./state', fs);
 const sysRepo = new storage('./state/sys', fs);
 
 const mapV = { m: {}, o: [] };
-let v = await mainRepo.get('root');
+
+let v = await b.p('repo', { get: { id: 'root' } });
 if (!v) await mainRepo.set('root', mapV);
-v = await sysRepo.get('root');
+v = await b.p('repo', { get: { id: 'root' }, repoName: 'sys' });
 if (!v) await sysRepo.set('root', mapV);
 
 const e = {
@@ -137,8 +142,8 @@ const e = {
 
         rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
         try {
-          const r = await rqHandler({ b, runtimeCtx: ctx, rq, rs, fs });
-          const v = new Uint8Array(await r.arrayBuffer());
+          const r = await rqHandler({ b, runtimeCtx: ctx, rq, fs });
+          const v = new ctx.Uint8Array(await r.arrayBuffer());
 
           rs.writeHead(r.status, Object.fromEntries(r.headers)).end(v);
         } catch (e) {
