@@ -270,6 +270,7 @@ div[contenteditable="true"] {
           i.on('change', async (e) => {
             const row = this.rowInterface(r);
             return await this.setBinToId(row, i);
+            //todo after this rerender rowen
           });
           val.append(i.getDOM());
         }
@@ -494,12 +495,10 @@ div[contenteditable="true"] {
     const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
     const sizes = this.getSizes();
-    //window.scrollY
-
     const menu = await p('doc.mk', {
       class: 'menu', css: {
         left: e.clientX - sizes.x + 'px',
-        top: e.clientY - sizes.y + 'px',
+        top: window.scrollY + e.clientY - sizes.y + 'px',
         padding: '5px',
       }
     });

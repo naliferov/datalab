@@ -100,8 +100,6 @@ await b.s('doc.getSize', async (x) => {
 const idb = new IndexedDb();
 await idb.open();
 
-
-
 const doc = globalThis.document;
 const appDOM = doc.createElement('div');
 appDOM.id = 'app';
@@ -164,6 +162,11 @@ if (path.startsWith('/sign/')) {
   frame.setContent(dataEditor.o);
 
   appDOM.append(frame.o);
+
+
+  //const customHtml = await b.p('doc.mk', { html: 'okokok', class: 'customHtml' });
+  //appDOM.append(customHtml);
+
 
   window.onkeydown = (e) => dataEditor.keydown(e);
 }

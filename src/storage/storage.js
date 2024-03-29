@@ -1,24 +1,24 @@
 export class storage {
 
-  constructor(path, fs) {
+  constructor(path, b) {
     this.path = path;
-    this.fs = fs;
+    this.b = b;
   }
   getStatePath() { return this.path; }
 
   async set(id, v, format = 'json') {
-    const data = format === 'json' ? JSON.stringify(v) : v;
-    await this.fs.writeFile(`${this.path}/${id}`, data);
+    const path = `${this.path}/${id}`;
+
+    this.b.p('storage', { set: { id, path, v, format } });
   }
   async get(id, format = 'json') {
-    try {
-      const data = await this.fs.readFile(`${this.path}/${id}`);
-      return format === 'json' ? JSON.parse(data) : data;
-    } catch (e) {
-      console.log(e.message);
-    }
+    const path = `${this.path}/${id}`;
+
+    return this.b.p('storage', { get: { id, path, format } });
   }
   async del(id) {
-    await this.fs.unlink(`${this.path}/${id}`);
+    const path = `${this.path}/${id}`;
+
+    return this.b.p('storage', { del: { id, path } });
   }
 }

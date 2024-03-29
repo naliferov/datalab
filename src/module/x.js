@@ -122,7 +122,10 @@ export const set = async (x) => {
 
     let ext = binName.split('.').at(-1);
     let t = '';
-    if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif') t = 'i';
+
+    if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif' || ext === 'webp') {
+      t = 'i';
+    }
 
     const newId = await b.p('getUniqId');
     const v = { b: { id: newId, t } };
@@ -576,7 +579,7 @@ export const parseCliArgs = cliArgs => {
     }
   }
   return args;
-};
+}
 export const getDateTime = () => {
   const d = new Date;
 
@@ -625,21 +628,6 @@ export const docGetSizes = (o) => {
   }
 }
 
-export const mkOb = (x) => {
-  //todo opObject //dataObj // tick, add, subtract
-  //o, msg, num, list, symbol, comment
-  const data = {
-    txt: x.txt,
-    event: {
-      //can attach any custom handler with specific connection mechanics build in UI.
-      //click: () => {}
-    },
-  }
-  if (x.style) data.style = x.style;
-
-  return data;
-}
-
 export const mkOp = {
   txt: '+',
   style: {
@@ -656,7 +644,7 @@ export const mkOp = {
   // }
 };
 
-const on = (id, eventName, callback) => {
+const don = (id, eventName, callback) => {
   //add event to id!
   //dom.addEventListener(eventName, callback);
 }

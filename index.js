@@ -19,14 +19,34 @@ await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
 await b.s('getUniqId', () => ulid());
 await b.s('fs', async (x) => {
-  if (x.get) {
-    const { path } = x.get;
-    return await fs.readFile(path);
-  }
+
   if (x.set) {
-    const { path, v } = x.set;
-    return await fs.writeFile(path, v);
+    const { path, v, format } = x.set;
+
+    const data = format === 'json' ? JSON.stringify(v) : v;
+    return await fs.writeFile(path, data);
   }
+  if (x.get) {
+    const { path, format } = x.get;
+
+    try {
+      const data = await fs.readFile(path);
+      return format === 'json' ? JSON.parse(data) : data;
+    } catch (e) {
+      console.log(e.message);
+    }
+  }
+  if (x.del) {
+    const { path } = x.del;
+    return await await fs.unlink(path);
+  }
+});
+//if use remote storage
+await b.s('storage', async (x) => {
+  //const repo = x.storageName === 'remote' ? sysRepo : mainRepo;
+  //send request to http storage with machine token, need to add permissions and private space
+
+  return await b.p('fs', x);
 });
 await b.s('repo', async (x) => {
   const repo = x.repoName === 'sys' ? sysRepo : mainRepo;
@@ -66,8 +86,8 @@ await b.s('state.validate', async (x) => {
 });
 
 const { storage } = await import('./src/storage/storage.js');
-const mainRepo = new storage('./state', fs);
-const sysRepo = new storage('./state/sys', fs);
+const mainRepo = new storage('./state', b);
+const sysRepo = new storage('./state/sys', b);
 
 const mapV = { m: {}, o: [] };
 
