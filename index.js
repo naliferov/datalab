@@ -98,29 +98,26 @@ if (!v) await sysRepo.set('root', mapV);
 
 const e = {
   'set': async (arg) => {
-    const path = arg[1];
-    if (!path) {
-      console.error('path is empty'); return;
-    }
+    const path = pathToArr(arg[1]);
+    if (!path) { console.error('path is empty'); return; }
+
     const v = arg[2];
-    if (!v) {
-      console.error('data is empty'); return;
-    }
+    if (!v) { console.error('data is empty'); return; }
     const type = arg[3];
 
-    return await u({ set: { path: pathToArr(path), v, type } });
+    return await b.p('x', { set: { path, v, type } });
   },
   'get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
-    const depth = Number(arg[2]) || 0;
-    return await u({ set: { path, depth } });
+    const depth = arg[2] || 1;
+
+    return b.p('x', { get: { path, depth } });
   },
   'del': async (arg) => {
-    const path = arg[1];
-    if (!path) {
-      console.error('path is empty'); return;
-    }
-    return await u({ del: { path: pathToArr(arg[1]) } });
+    const path = pathToArr(arg[1]);
+    if (!path) { console.error('path is empty'); return; }
+
+    return b.p('x', { del: { path } });
   },
   'state.import': async (arg) => {
     const path = arg[1];

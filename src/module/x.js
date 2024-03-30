@@ -17,12 +17,13 @@ export const X = (symbol) => {
 }
 
 export const b = {
-  setX(x) { this.x = x; },
   set_(_) { this._ = _; },
-  async p(event, data) {
+  setX(x) { this.x = x; },
+  async p(e, data) {
+    const _ = this._;
     const inject = {
-      _: this._,
-      [this._]: { b, x: event }
+      _: _,
+      [_]: { b, x: e }
     }
     return await this.x({ ...data, ...inject });
   },
@@ -207,7 +208,7 @@ export const set = async (x) => {
         if (v.l) {
           const newId = await b.p('getUniqId');
           const newV = { _: { id: newId }, v: data };
-          await b.p('x', { set: { id: newId, v: prepareForTransfer(newV) } });
+          await b.p('x', { set: { id: newId, v: newV } });
 
           v.l.push(newId);
           if (!v[_].new) v[_].updated = true;
@@ -216,9 +217,8 @@ export const set = async (x) => {
           if (!v[_].new) v[_].updated = true;
         }
       }
-
       if (v[_].new || v[_].updated) {
-        await b.p('x', { set: { id: v[_].id, v: prepareForTransfer(v) } });
+        await b.p('x', { set: { id: v[_].id, v } });
       }
     }
 
@@ -237,19 +237,17 @@ export const get = async (x) => {
     return await getVarData({ b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
+  const _ = await b.p('get_');
+
   if (path && path !== undefined) {
     if (!Array.isArray(path) && typeof path === 'string') {
-      x.path = x.path.split('.');
+      path = path.split('.');
     }
 
-    //todo refactor createSet to use b.p('repo');
-    const set = await createSet({
-      _, b, path, getMeta,
-      isNeedStopIfVarNotFound: true,
-    });
-    if (!set) return;
+    const pathSet = await createSet({ _, b, path, getMeta, isNeedStopIfVarNotFound: true });
+    if (!pathSet) return;
 
-    const v = set.at(-1);
+    const v = pathSet.at(-1);
     if (!v) return;
 
     return await getVarData({ _, b, v, depth, getMeta });
@@ -284,7 +282,6 @@ export const del = async (x) => {
       if (!v.o[ok]) return { msg: `v.o[oKey] is not found by key [${ok}]` };
     }
 
-
     const isDelWithSubVars = await delWithSubVars({ _, b, v: targetV });
     if (isDelWithSubVars || true) {
 
@@ -292,13 +289,10 @@ export const del = async (x) => {
         delete v.m[k];
         v.o = v.o.filter(currentK => currentK !== k);
       } else if (isList) {
-        const l = v.l;
-        for (let i = 0; i < l.length; i++) {
-          if (l[i] === k) l.splice(i, 1);
-        }
+        v.l = v.l.filter(currentK => currentK !== k);
       }
 
-      await b.p('x', { set: { id, v: prepareForTransfer(v) } });
+      await b.p('x', { set: { id, v } });
     }
 
     return { id, k };
@@ -310,51 +304,47 @@ export const del = async (x) => {
   }
 
   //DELETE BY PATH
-  const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
+  if (path) {
 
-  if (!set || set.length < 2) {
-    console.log('log', { msg: 'Var set not found' });
-    return;
-  }
+    const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
 
-  const v1 = set.at(-2);
-  const v2 = set.at(-1);
+    if (!set || set.length < 2) return { msg: 'var set not found' };
 
-  const v2ID = v1.m[v2[_].name];
-  if (!v2ID) {
-    console.log('log', { msg: `key [${v2[_].name}] not found in v1` });
-    return;
-  }
+    const parentV = set.at(-2);
+    const v = set.at(-1);
+    const k = v[_].name;
+    const isMap = Boolean(parentV.m);
+    const isList = Boolean(parentV.l);
 
-  const isDelWithSubVars = await delWithSubVars({ _, b, v: v2 });
-  if (isDelWithSubVars) {
-    const isMap = Boolean(v1.m);
-    const isList = Boolean(v1.l);
+    const vId = parentV.m[k];
+    if (!vId) { console.log('log', { msg: `key [${k}] not found in v1` }); return; }
 
-    if (isMap) {
-      delete v1.m[v2[_].name];
-      v1.o = v1.o.filter(key => key !== v2[_].name);
+    const isDelWithSubVars = await delWithSubVars({ _, b, v });
+    if (isDelWithSubVars) {
 
-      await b.p('x', { set: { id: v1[_].id, v: prepareForTransfer(v1) } });
-    } else if (isList) {
-      console.log('isList', v1);
+      if (isMap) {
+        delete parentV.m[k];
+        parentV.o = parentV.o.filter(currentK => currentK !== k);
+
+        await b.p('x', { set: { id: parentV[_].id, v: parentV } });
+
+      } else if (isList) {
+        console.log('isList', v);
+      }
     }
   }
 }
-
 export const it = async (v) => {
   if (v) { }
 }
-
 const signUp = (x) => {
   const { email, password } = x.signUp;
 
   return { email, password };
   //get sys.users
 
-  //await b.p('x', { set: { id: v1[_].id, v: prepareForTransfer(v1) } });
+  //await b.p('x', { set: { id: v1[_].id, v: v1 } });
 }
-
 const delWithSubVars = async (x) => {
   const { _, b, v } = x;
   const varIds = await getVarIds({ b, v }); console.log('varIds for del', varIds);
@@ -371,18 +361,19 @@ const delWithSubVars = async (x) => {
 
 export const createSet = async (x) => {
 
-  const { _, b, path, getMeta, isNeedStopIfVarNotFound } = x;
+  const { _, b, repoName, path, isNeedStopIfVarNotFound } = x;
+  const pathArr = [...path];
   const type = x.type || 'v';
 
-  let v1 = await b.p('x', { get: { id: 'root' } });
+  let v1 = await b.p('repo', { get: { id: 'root' } });
   v1[_] = { id: 'root', name: 'root' };
-  if (getMeta) v1.i = { id: 'root' };
+  //if (getMeta) v1.i = { id: 'root' };
+  if (pathArr[0] === 'root') pathArr.shift();
 
   let set = [v1];
-  if (path[0] === 'root') return set;
 
-  for (let i = 0; i < path.length; i++) {
-    const name = path[i];
+  for (let i = 0; i < pathArr.length; i++) {
+    const name = pathArr[i];
     if (!name) return;
 
     const v1 = set.at(-1);
@@ -394,15 +385,17 @@ export const createSet = async (x) => {
     }
 
     let id = v1.m[name];
+
     if (id) {
-      v2 = await b.p('x', { get: { id } });
+      //todo ability to use different repoName
+      v2 = await b.p('repo', { get: { id } });
       if (v2) v2[_] = { id };
     }
 
     if (!v2) {
       if (isNeedStopIfVarNotFound) return;
 
-      const vType = (i === path.length - 1) ? type : 'm';
+      const vType = (i === pathArr.length - 1) ? type : 'm';
       v2 = await mkvar(b, vType, _);
 
       v1.m[name] = v2[_].id;
@@ -459,7 +452,6 @@ export const getVarData = async (x) => {
   if (v.i) data.i = v.i;
 
   const isNeededId = Boolean(subIds && data.i && subIds.has(data.i.id));
-
   if (!isNeededId && depth <= 0) {
 
     if (data.i) data.i.openable = true; //todo openable is only certain data types m, l;
@@ -541,8 +533,6 @@ export const getType = (v) => {
 export const prepareForTransfer = (v) => {
   const d = {};
 
-  //if (v.i) d.i = v.i; //metaData id, link, type, etc.
-
   if (v.b) d.b = v.b;
   if (v.v) d.v = v.v;
   if (v.m) d.m = v.m;
@@ -556,7 +546,10 @@ export const prepareForTransfer = (v) => {
 
 // UTILS //
 export const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
-export const pathToArr = path => Array.isArray(path) ? path : path.split('.');
+export const pathToArr = path => {
+  if (!path) return [];
+  return Array.isArray(path) ? path : path.split('.');
+}
 export const parseCliArgs = cliArgs => {
   const args = {};
   let num = 0;
