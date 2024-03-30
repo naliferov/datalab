@@ -15,6 +15,8 @@ const _ = Symbol('sys');
 b.set_(_);
 b.setX(X(_));
 
+//u({ set: { e: 'get_', f: () => { } } });
+
 await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
 await b.s('getUniqId', () => ulid());
