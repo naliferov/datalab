@@ -491,7 +491,7 @@ div[contenteditable="true"] {
     e.preventDefault();
     this.remark(t);
 
-    const p = async (event, data) => await this.b.p(event, data);
+    const p = async (e, d) => await this.b.p(e, d);
     const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
     const sizes = this.getSizes();

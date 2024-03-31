@@ -18,30 +18,55 @@ export const X = (symbol) => {
 
 export const b = {
   set_(_) { this._ = _; },
-  setX(x) { this.x = x; },
-  async p(e, data) {
+  get_() { return this._; },
+
+  setExec(exec) { this.exec = exec; },
+  async p(e, d) {
     const _ = this._;
     const inject = {
       _: _,
-      [_]: { b, x: e }
+      [_]: { b: this, x: e }
     }
-    return await this.x({ ...data, ...inject });
+    return await this.exec({ ...d, ...inject });
   },
   async s(e, f) {
     const _ = this._;
-    return await this.x({ [_]: { y: e, f } });
+    return await this.exec({ [_]: { y: e, f } });
   },
+  async x(d) {
+    return this.p('x', d);
+  },
+}
+
+export const busFactory = () => {
+
+  const _ = Symbol();
+
+  const B = Object.create(b);
+  B.set_(_);
+  B.setExec(X(_));
+
+  const proxy = new Proxy(function () { }, {
+    get(t, p) { return B[p]; },
+
+    apply(t, thisArg, args) {
+      return B.p('x', args[0]);
+    }
+  });
+
+  return proxy;
 }
 
 export const u = async (x) => {
   if (x.set) return await set(x);
   if (x.get) return await get(x);
   if (x.del) return await del(x);
-  if (x.getHtml) return await getHtml();
+  if (x.getHtml) return await getHtml(x);
   if (x.signUp) return await signUp(x);
 }
 
 const getHtml = async (x) => {
+  const { b } = x[x._];
   return {
     bin: await b.p('fs', { get: { path: './src/gui/index.html' } }),
     isHtml: true,
@@ -237,9 +262,10 @@ export const get = async (x) => {
     return await getVarData({ b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
-  const _ = await b.p('get_');
+  if (path) {
 
-  if (path && path !== undefined) {
+    const _ = await b.p('get_');
+
     if (!Array.isArray(path) && typeof path === 'string') {
       path = path.split('.');
     }
@@ -250,7 +276,7 @@ export const get = async (x) => {
     const v = pathSet.at(-1);
     if (!v) return;
 
-    return await getVarData({ _, b, v, depth, getMeta });
+    return await getVarData({ b, v, depth, getMeta });
   }
 }
 
@@ -262,7 +288,7 @@ export const del = async (x) => {
 
   //DELETE KEY IN MAP with subVars
   if (id && k) {
-    const v = await b.p('x', { get: { id, useRepo: true } });
+    const v = await b.x({ get: { id, useRepo: true } });
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
@@ -272,7 +298,7 @@ export const del = async (x) => {
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
 
-    const targetV = await b.p('x', { get: { id: targetId, useRepo: true } });
+    const targetV = await b.x({ get: { id: targetId, useRepo: true } });
     if (!targetV) return { msg: `targetV not found by [${targetId}]` };
     targetV[_] = { id: targetId };
 
@@ -335,7 +361,7 @@ export const del = async (x) => {
   }
 }
 export const it = async (v) => {
-  if (v) { }
+  //if (v.m) {}
 }
 const signUp = (x) => {
   const { email, password } = x.signUp;

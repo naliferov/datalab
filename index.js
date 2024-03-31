@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import process from 'node:process';
 import { ulid } from "ulid";
 import {
-  X, b,
+  busFactory,
   getDateTime,
   getVarIds,
   parseCliArgs,
@@ -11,15 +11,41 @@ import {
   u
 } from "./src/module/x.js";
 
-const _ = Symbol('sys');
-b.set_(_);
-b.setX(X(_));
+const b = busFactory();
+const _ = b.get_();
 
-//u({ set: { e: 'get_', f: () => { } } });
+await b.s('u', () => u);
+await b.s('x', async x => {
+  const u = await b.p('u');
+  return await u(x);
+});
 
-await b.s('x', async x => await u(x));
 await b.s('get_', () => _);
 await b.s('getUniqId', () => ulid());
+//if use remote storage
+await b.s('storage', async (x) => {
+  //const repo = x.storageName === 'remote' ? sysRepo : mainRepo;
+  //send request to http storage with machine token, need to add permissions and private space
+
+  return await b.p('fs', x);
+});
+
+await b.s('repo', async (x) => {
+  const repo = x.repoName === 'sys' ? sysRepo : mainRepo;
+
+  if (x.set) {
+    const { id, v, format } = x.set;
+    return await repo.set(id, v, format);
+  }
+  if (x.get) {
+    const { id } = x.get;
+    return await repo.get(id);
+  }
+  if (x.del) {
+    const { id } = x.del;
+    return await repo.del(id);
+  }
+});
 await b.s('fs', async (x) => {
 
   if (x.set) {
@@ -43,29 +69,6 @@ await b.s('fs', async (x) => {
     return await await fs.unlink(path);
   }
 });
-//if use remote storage
-await b.s('storage', async (x) => {
-  //const repo = x.storageName === 'remote' ? sysRepo : mainRepo;
-  //send request to http storage with machine token, need to add permissions and private space
-
-  return await b.p('fs', x);
-});
-await b.s('repo', async (x) => {
-  const repo = x.repoName === 'sys' ? sysRepo : mainRepo;
-
-  if (x.set) {
-    const { id, v, format } = x.set;
-    return await repo.set(id, v, format);
-  }
-  if (x.get) {
-    const { id } = x.get;
-    return await repo.get(id);
-  }
-  if (x.del) {
-    const { id } = x.del;
-    return await repo.del(id);
-  }
-});
 
 await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(mainRepo.getStatePath(), true));
 await b.s('state.export', async (x) => {
@@ -80,7 +83,7 @@ await b.s('state.validate', async (x) => {
     if (i === '.gitignore' || i === 'root' || i === 'sys') continue;
     fSet.add(i);
   }
-  const v = await b.p('x', { get: { id: 'root', useRepo: true } });
+  const v = await b.x({ get: { id: 'root', useRepo: true } });
   const varIds = await getVarIds({ b, v });
 
   for (let i of varIds) fSet.delete(i);
@@ -107,19 +110,19 @@ const e = {
     if (!v) { console.error('data is empty'); return; }
     const type = arg[3];
 
-    return await b.p('x', { set: { path, v, type } });
+    return await b({ set: { path, v, type } });
   },
   'get': async (arg) => {
     const path = arg[1] ? pathToArr(arg[1]) : [];
     const depth = arg[2] || 1;
 
-    return b.p('x', { get: { path, depth } });
+    return await b({ get: { path, depth } });
   },
   'del': async (arg) => {
     const path = pathToArr(arg[1]);
     if (!path) { console.error('path is empty'); return; }
 
-    return b.p('x', { del: { path } });
+    return b({ del: { path } });
   },
   'state.import': async (arg) => {
     const path = arg[1];

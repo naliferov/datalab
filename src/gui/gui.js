@@ -1,6 +1,6 @@
 import {
-  X, b,
-  dmk,
+  busFactory,
+  dmk
 } from "../module/x.js";
 import { IndexedDb } from "../storage/indexedDb.js";
 import { DataEditor } from "./mod/dataEditor/dataEditor.js";
@@ -15,10 +15,8 @@ if (!Array.prototype.at) {
   }
 }
 
-const _ = Symbol('sys');
-const x = X(_);
-b.set_(_);
-b.setX(x);
+const b = busFactory();
+const _ = b.get_();
 
 globalThis.vc = b;
 
