@@ -1,4 +1,13 @@
-export const X = (symbol) => {
+const x = (o) => {
+  if (o.isStoped) {
+    return x;
+  }
+
+  o.isStoped = true;
+  return x(o);
+};
+
+export const BigX = (symbol) => {
 
   const _ = symbol;
   const f = {};
@@ -44,7 +53,7 @@ export const busFactory = () => {
 
   const B = Object.create(b);
   B.set_(_);
-  B.setExec(X(_));
+  B.setExec(BigX(_));
 
   const proxy = new Proxy(function () { }, {
     get(t, p) { return B[p]; },
@@ -73,17 +82,17 @@ const getHtml = async (x) => {
   }
 };
 
-export const set = async (x) => {
+const set = async (x) => {
 
   const set = { ...x.set, bin: x.bin };
 
-  const { type, id, path, k, ok, v, bin, binName } = set;
+  const { type, id, path, k, ok, v, bin, binName, repoName } = set;
   const { b } = x[x._];
   const _ = await b.p('get_');
 
   if (v && v.i) delete v.i;
 
-  const getFromRepo = async (id) => await b.p('x', { get: { id, useRepo: true } });
+  const getFromRepo = async (id) => await b({ get: { id, useRepo: true } });
 
   //CHANGE ORDER
   if (id && ok && typeof ok === 'object') {
@@ -163,7 +172,7 @@ export const set = async (x) => {
   }
   //SET value by ID
   if (id && v) {
-    await b.p('repo', { set: { id, v } });
+    await b.p('repo', { set: { id, v }, repoName });
     return { id, v };
   }
 
@@ -192,8 +201,8 @@ export const set = async (x) => {
     if (index !== -1) oldV.o.splice(index, 1);
     newV.o.push(key);
 
-    await b.p('x', { set: { id: oldId, v: prepareForTransfer(oldV) } });
-    await b.p('x', { set: { id: newId, v: prepareForTransfer(newV) } });
+    await b({ set: { id: oldId, v: prepareForTransfer(oldV) } });
+    await b({ set: { id: newId, v: prepareForTransfer(newV) } });
     return { oldId, newId, key };
   }
 
@@ -213,7 +222,7 @@ export const set = async (x) => {
     if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
     v.o[ok] = newKey;
 
-    await b.p('x', { set: { id, v } });
+    await b({ set: { id, v } });
     return { id, oldKey, newKey };
   }
 
@@ -233,7 +242,7 @@ export const set = async (x) => {
         if (v.l) {
           const newId = await b.p('getUniqId');
           const newV = { _: { id: newId }, v: data };
-          await b.p('x', { set: { id: newId, v: newV } });
+          await b({ set: { id: newId, v: newV } });
 
           v.l.push(newId);
           if (!v[_].new) v[_].updated = true;
@@ -243,7 +252,7 @@ export const set = async (x) => {
         }
       }
       if (v[_].new || v[_].updated) {
-        await b.p('x', { set: { id: v[_].id, v } });
+        await b({ set: { id: v[_].id, v } });
       }
     }
 
@@ -251,36 +260,37 @@ export const set = async (x) => {
   }
 }
 
-export const get = async (x) => {
+const get = async (x) => {
 
-  let { id, subIds, path, depth, getMeta, useRepo } = x.get;
+  let { id, subIds, path, depth, getMeta, useRepo, repoName } = x.get;
   const { b } = x[x._];
 
   if (id) {
-    if (useRepo) return await b.p('repo', { get: { id } });
+    if (useRepo) return await b.p('repo', { get: { id }, repoName });
 
     return await getVarData({ b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
   if (path) {
-
     const _ = await b.p('get_');
 
     if (!Array.isArray(path) && typeof path === 'string') {
       path = path.split('.');
     }
 
-    const pathSet = await createSet({ _, b, path, getMeta, isNeedStopIfVarNotFound: true });
+    const pathSet = await createSet({ _, b, path, getMeta, repoName, isNeedStopIfVarNotFound: true });
     if (!pathSet) return;
 
     const v = pathSet.at(-1);
     if (!v) return;
 
+    if (useRepo) return v;
+
     return await getVarData({ b, v, depth, getMeta });
   }
 }
 
-export const del = async (x) => {
+const del = async (x) => {
 
   const { path, id, k, ok } = x.del;
   const { b } = x[x._];
@@ -318,7 +328,7 @@ export const del = async (x) => {
         v.l = v.l.filter(currentK => currentK !== k);
       }
 
-      await b.p('x', { set: { id, v } });
+      await b({ set: { id, v } });
     }
 
     return { id, k };
@@ -352,7 +362,7 @@ export const del = async (x) => {
         delete parentV.m[k];
         parentV.o = parentV.o.filter(currentK => currentK !== k);
 
-        await b.p('x', { set: { id: parentV[_].id, v: parentV } });
+        await b({ set: { id: parentV[_].id, v: parentV } });
 
       } else if (isList) {
         console.log('isList', v);
@@ -363,13 +373,38 @@ export const del = async (x) => {
 export const it = async (v) => {
   //if (v.m) {}
 }
-const signUp = (x) => {
+const signUp = async (x) => {
   const { email, password } = x.signUp;
+  const { b } = x[x._];
+  const _ = await b.p('get_');
+
+  let users = await b({ get: { path: 'users', useRepo: true } });
+  if (!users) {
+
+    const root = await b({ get: { id: 'root', useRepo: true } });
+    users = await mkvar(b, 'm');
+
+    if (users[_].id) {
+      root.m.users = users[_].id;
+      root.o.push('users');
+
+      await b({ set: { id: users[_].id, v: users } });
+      await b({ set: { id: 'root', v: root } });
+    }
+  }
+
+  const user = await mkvar(b, 'm');
+  user.m.password = password;
+  user.o.push('password');
+
+  if (users.m[email]) return { msg: 'user with this email already exists' };
+
+  users.m[email] = user[_].id;
+
+  await b({ set: { id: user[_].id, v: user } });
+  await b({ set: { id: users[_].id, v: users } });
 
   return { email, password };
-  //get sys.users
-
-  //await b.p('x', { set: { id: v1[_].id, v: v1 } });
 }
 const delWithSubVars = async (x) => {
   const { _, b, v } = x;
@@ -378,8 +413,8 @@ const delWithSubVars = async (x) => {
   const len = Object.keys(varIds).length;
   if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
 
-  for (let id of varIds) await b.p('x', { del: { id } });
-  await b.p('x', { del: { id: v[_].id } });
+  for (let id of varIds) await b({ del: { id } });
+  await b({ del: { id: v[_].id } });
   console.log('del', v[_].id);
 
   return true;
@@ -391,7 +426,7 @@ export const createSet = async (x) => {
   const pathArr = [...path];
   const type = x.type || 'v';
 
-  let v1 = await b.p('repo', { get: { id: 'root' } });
+  let v1 = await b.p('repo', { get: { id: 'root' }, repoName });
   v1[_] = { id: 'root', name: 'root' };
   //if (getMeta) v1.i = { id: 'root' };
   if (pathArr[0] === 'root') pathArr.shift();
@@ -413,8 +448,7 @@ export const createSet = async (x) => {
     let id = v1.m[name];
 
     if (id) {
-      //todo ability to use different repoName
-      v2 = await b.p('repo', { get: { id } });
+      v2 = await b.p('repo', { get: { id }, repoName });
       if (v2) v2[_] = { id };
     }
 
@@ -439,8 +473,9 @@ export const createSet = async (x) => {
   return set;
 }
 
-const mkvar = async (b, type, _) => {
+const mkvar = async (b, type) => {
 
+  const _ = await b.p('get_');
   const id = await b.p('getUniqId');
   let v = {
     [_]: { id, new: true }
@@ -533,12 +568,12 @@ export const getVarIds = async (x) => {
       for (let k in v.m) {
         const id = v.m[k];
         ids.push(id);
-        await getIds(await b.p('x', { get: { id, useRepo: true } }));
+        await getIds(await b({ get: { id, useRepo: true } }));
       }
     } else if (v.l) {
       for (let id of v.l) {
         ids.push(id);
-        await getIds(await b.p('x', { get: { id, useRepo: true } }));
+        await getIds(await b({ get: { id, useRepo: true } }));
       }
     }
   }
