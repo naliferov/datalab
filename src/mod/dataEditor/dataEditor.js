@@ -1,5 +1,5 @@
-import { docGetSizes } from "../../../module/x.js";
-import { DomPart } from "../../mod/layout/DomPart.js";
+import { docGetSizes } from "../../../x.js";
+import { DomPart } from "../layout/DomPart.js";
 
 export const DataEditor = {
 
@@ -122,6 +122,9 @@ div[contenteditable="true"] {
     const v = await p('x', { get: { id: k, subIds: [...openedIds], getMeta: true } });
     //console.log(v);
     await this.rend(v, root);
+
+    //const v = await p('x', { get: { path: 'settings', subIds: [...openedIds], getMeta: true } });
+    //apply setting from
   },
 
   async rend(v, parentRow) {
@@ -149,15 +152,13 @@ div[contenteditable="true"] {
           mod = curV;
           this.setDomIdToMod(mod, this.rowInterface(row).getDomId());
         }
-        if (curV.i && curV.i.domId) {
-          row.setAttribute('mod_dom_id', curV.i.domId);
-        }
+
         await this.rend(curV, row);
       }
 
       if (mod && !mod.i.modApplied) {
-        mod.i.modApplied = true;
         await this.applyMod(mod.i.domId);
+        mod.i.modApplied = true;
       }
 
     } else if (v.l) {
@@ -183,6 +184,7 @@ div[contenteditable="true"] {
     mod.i.domId = domId;
 
     if (!mod.m) return;
+
     for (let k in mod.m) {
       const v = mod.m[k];
       v.i.domId = domId;
@@ -470,9 +472,6 @@ div[contenteditable="true"] {
       }
       this.markedEditDisable(false);
 
-      const modDomId = row.getAttribute('mod_dom_id');
-      if (modDomId) this.applyMod({ modDomId });
-
       return;
     }
 
@@ -654,6 +653,7 @@ div[contenteditable="true"] {
       const r = await this.b.p('x', { set: { id, v: { l: [] } } });
       console.log(r);
     });
+
     this.menu.append(btn);
     btn = await mkBtn('Convert to val', (e) => console.log(e));
     this.menu.append(btn);
