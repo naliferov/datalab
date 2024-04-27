@@ -2487,13 +2487,11 @@ const run = async () => {
     },
     'deploy': async (arg) => {
 
-      //${ctx.fileName}
-
       const ctx = arg[_].ctx;
 
       const stop = 'pkill -9 node';
       const nodePath = '/root/.nvm/versions/node/v20.8.0/bin/node';
-      const run = `${nodePath} x.js server.start 80 > output.log 2>&1 &`;
+      const run = `${nodePath} ${ctx.fileName} server.start 80 > output.log 2>&1 &`;
       const c = `ssh root@164.90.232.3 "cd varcraft; git pull; ${stop}; ${run}"`;
 
       await b.p('sh', { cmd: c });
