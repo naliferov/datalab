@@ -2183,7 +2183,7 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
-  console.log('test6');
+  console.log('test7');
 
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
@@ -2380,7 +2380,7 @@ const run = async () => {
 
     exec(x.cmd, (error, stdout, stderr) => {
       if (error) {
-        console.error(`exec error: ${error}`);
+        console.error(`exec err: ${error}`);
         return;
       }
       console.log(`stdout: ${stdout}`);
