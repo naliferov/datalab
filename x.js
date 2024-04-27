@@ -2183,7 +2183,7 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
-  console.log('test3');
+  console.log('test4');
 
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
@@ -2361,7 +2361,6 @@ const run = async () => {
     await runFrontend(b);
     return;
   }
-
   ctx.fileName = process.argv[1].split('/').at(-1);
 
   const { promises } = await import('node:fs');
@@ -2481,11 +2480,15 @@ const run = async () => {
       return b({ del: { path } });
     },
     'deploy': async (arg) => {
-      const stop = 'pkill -9 node';
 
+      const ctx = arg[_].ctx;
+
+      // ssh root @164.90.232.3 "cd varcraft; git pull; pkill -9 node; /root/.nvm/versions/node/v20.8.0/bin/node x.js server.start 80 > output.log 2>&1 &"
+
+      const stop = 'pkill node';
       const nodePath = '/root/.nvm/versions/node/v20.8.0/bin/node';
-      const run = `${nodePath} x.js server.start 80 > output.log 2>&1`;
-      const c = `ssh root@164.90.232.3 cd varcraft && git pull && ${stop} && ${run}`;
+      const run = `${nodePath} ${ctx.fileName} server.start 80 > output.log 2>&1 &`;
+      const c = `ssh root@164.90.232.3 "cd varcraft; git pull; ${stop}; && ${run}"`;
       await b.p('sh', { cmd: c });
     },
     'state.import': async (arg) => {
