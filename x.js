@@ -973,11 +973,13 @@ export class IndexedDb {
 }
 
 // FRONTEND //
-export const dmk = (d, x) => {
-  const { type, txt, events, css } = x;
+export const docMk = (d, x) => {
+  const { id, type, txt, events, css } = x;
 
   const o = d.createElement(type || 'div');
   if (txt) o.innerText = txt;
+
+  if (id) o.id = id;
 
   const classD = x['class'];
   if (classD) {
@@ -1006,8 +1008,6 @@ export const docGetSizes = (o) => {
     y: sizes.y + scrollY,
   }
 }
-
-const dragAndDrop = () => { }
 
 export const Frame = {
 
@@ -2178,6 +2178,8 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
+  console.log('test1');
+
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
       return i < 0 ? this[this.length + i] : this[i];
@@ -2187,17 +2189,6 @@ const runFrontend = async (b) => {
   const _ = b.get_();
 
   globalThis.vc = b;
-
-  await b.s('getUniqId', () => {
-    if (!window.crypto || !window.crypto.randomUUID) {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
-        function (c) {
-          const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
-          return uuid.toString(16);
-        });
-    }
-    return crypto.randomUUID();
-  });
   await b.s('getUniqIdForDom', async () => {
 
     const getRandomLetter = () => {
@@ -2230,7 +2221,7 @@ const runFrontend = async (b) => {
     return data;
   });
 
-  await b.s('doc.mk', async (x) => dmk(doc, x));
+  await b.s('doc.mk', async (x) => docMk(doc, x));
   await b.s('doc.on', async (x) => {
     const { o, e, f } = x;
     o.addEventListener(e, f);
@@ -2238,24 +2229,24 @@ const runFrontend = async (b) => {
   await b.s('doc.get', async (x) => doc.getElementById(x.id));
   await b.s('doc.ins', async (x) => {
     const { o1, o2 } = x;
-    let o1Object;
+
+    let first;
     if (typeof o1 === 'string') {
-      o1Object = await b.p('doc.get', { id: o1 });
+      first = await b.p('doc.get', { id: o1 });
     } else {
-      o1Object = o1;
+      first = o1;
     }
 
-    let o2ob;
+    let second;
     if (typeof o2 === 'string') {
-      o2ob = await b.p('doc.get', { id: o2 });
+      second = await b.p('doc.get', { id: o2 });
     } else if (o2 instanceof Node) {
-      o2ob = o2;
+      second = o2;
     } else {
-      o2ob = await b.p('doc.mk', o2);
+      second = await b.p('doc.mk', o2);
     }
 
-    o1Object.appendChild(o2ob);
-    return o2ob;
+    first.appendChild(second);
   });
   await b.s('doc.mv', async (x) => { });
   await b.s('doc.getSize', async (x) => {
@@ -2266,18 +2257,21 @@ const runFrontend = async (b) => {
   const idb = new IndexedDb();
   await idb.open();
 
+  //BUILD APP
   const doc = globalThis.document;
-  const appDOM = doc.createElement('div');
-  appDOM.id = 'app';
-  doc.body.appendChild(appDOM);
+
+  const appDOM = await b.p('doc.mk', { id: 'app' });
+  doc.body.append(appDOM);
 
   const app = new DomPart;
   app.setDOM(appDOM);
 
   const header = new Header;
-  app.ins(header);
+  await b.p('doc.ins', { o1: app.dom, o2: header.dom });
 
 
+
+  //SIMPLE ROUTING
   const path = doc.location.pathname;
 
   if (path.startsWith('/sign/')) {
@@ -2347,6 +2341,17 @@ const run = async () => {
 
   const b = busFactory();
 
+  await b.s('getUniqId', () => {
+    if (!window.crypto || !window.crypto.randomUUID) {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
+        function (c) {
+          const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
+          return uuid.toString(16);
+        });
+    }
+    return crypto.randomUUID();
+  });
+
   if (ctx.rtName === 'browser') {
     await runFrontend(b);
     return;
@@ -2362,19 +2367,21 @@ const run = async () => {
     const u = await b.p('u');
     return await u(x);
   });
-
   await b.s('get_', () => _);
-  await b.s('getUniqId', () => ulid());
-  //if use remote storage
-  await b.s('storage', async (x) => {
-    //const repo = x.storageName === 'remote' ? sysRepo : mainRepo;
-    //send request to http storage with machine token, need to add permissions and private space
+  await b.s('getUniqId', () => crypto.randomUUID());
+  await b.s('sh', async (x) => {
+    const { spawn } = await import('node:child_process');
 
-    return await b.p('fs', x);
+    const cmd = x.cmd.split(' ');
+    const ls = spawn(cmd[0], cmd.slice(1));
+    ls.stdout.on('data', (data) => console.log(`stdout: ${data}`));
+    ls.stderr.on('data', (data) => console.error(`stderr: ${data}`));
+    ls.on('close', (code) => console.log(`exit code ${code}`));
   });
 
+  await b.s('storage', async (x) => await b.p('fs', x));
   await b.s('repo', async (x) => {
-    const repo = x.repoName === 'sys' ? sysRepo : mainRepo;
+    const repo = mainRepo;
 
     if (x.set) {
       const { id, v, format } = x.set;
@@ -2412,12 +2419,11 @@ const run = async () => {
       return await await fs.unlink(path);
     }
   });
+  await b.s('state.import', async x => {
 
-  await b.s('state.import', async x => (new AmdZip(x.path)).extractAllTo(mainRepo.getStatePath(), true));
+  });
   await b.s('state.export', async (x) => {
-    const zip = new AmdZip();
-    zip.addLocalFolder(mainRepo.getStatePath());
-    zip.writeZip(`./state_${getDateTime()}.zip`);
+    await b.p('sh', { cmd: 'zip -vr state.zip state' });
   });
   await b.s('state.validate', async (x) => {
     const list = await fs.readdir('./state');
@@ -2463,11 +2469,23 @@ const run = async () => {
 
       return b({ del: { path } });
     },
+    'deploy': async (arg) => {
+      const stop = 'pkill -9 node';
+
+      const nodePath = '/root/.nvm/versions/node/v20.8.0/bin/node';
+      const run = `${nodePath} x.js server.start 80 > output.log 2>&1`;
+      const c = `ssh root@164.90.232.3 cd varcraft && git pull && ${stop} && ${run}`;
+      await b.p('sh', { cmd: c });
+    },
     'state.import': async (arg) => {
       const path = arg[1];
       return await b.p('state.import', { path: './' + path });
     },
-    'state.export': async (arg) => await b.p('state.export', { repo: mainRepo }),
+    'state.import': async (arg) => {
+      const path = arg[1];
+      return await b.p('state.import', { path: './' + path });
+    },
+    'state.export': async (arg) => await b.p('state.export'),
     'state.validate': async (arg) => await b.p('state.validate'),
     'server.start': async (arg) => {
 
@@ -2538,7 +2556,6 @@ const run = async () => {
   }
 
   await processCliArgs();
-
 }
 
 run();
