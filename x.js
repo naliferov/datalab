@@ -72,6 +72,10 @@ export const u = async (x) => {
 }
 
 const getHtml = async (x) => {
+
+  const { b } = x[x._];
+  const { mtimeMs } = await b.p('fs', { stat: { path: x.jsFileName } });
+
   return {
     bin: `
 <!DOCTYPE html>
@@ -82,7 +86,7 @@ const getHtml = async (x) => {
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body><script type="module" src="x.js"></script></body>
+<body><script type="module" src="${x.jsFileName}?${mtimeMs}"></script></body>
 </html>
     `,
     isHtml: true,
@@ -702,6 +706,7 @@ export const httpHandler = async (x) => {
   }
   if (Object.keys(msg).length < 1) {
     msg.getHtml = true;
+    msg.jsFileName = runtimeCtx.fileName;
   }
 
   const o = await b.p('x', msg);
@@ -2178,7 +2183,7 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
-  console.log('test2');
+  console.log('test3');
 
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
@@ -2357,6 +2362,8 @@ const run = async () => {
     return;
   }
 
+  ctx.fileName = process.argv[1].split('/').at(-1);
+
   const { promises } = await import('node:fs');
   const fs = promises;
 
@@ -2417,6 +2424,10 @@ const run = async () => {
     if (x.del) {
       const { path } = x.del;
       return await await fs.unlink(path);
+    }
+    if (x.stat) {
+      const { path } = x.stat;
+      return await fs.stat(path);
     }
   });
   await b.s('state.import', async x => {
