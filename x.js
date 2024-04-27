@@ -2178,7 +2178,7 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
-  console.log('test1');
+  console.log('test2');
 
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
