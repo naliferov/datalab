@@ -2183,8 +2183,6 @@ div[contenteditable="true"] {
 
 const runFrontend = async (b) => {
 
-  console.log('test7');
-
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
       return i < 0 ? this[this.length + i] : this[i];
@@ -2377,7 +2375,6 @@ const run = async () => {
   await b.s('getUniqId', () => crypto.randomUUID());
   await b.s('sh', async (x) => {
     const { spawn, exec } = await import('node:child_process');
-
     exec(x.cmd, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec err: ${error}`);
@@ -2386,7 +2383,6 @@ const run = async () => {
       console.log(`stdout: ${stdout}`);
       console.error(`stderr: ${stderr}`);
     });
-
     // const cmd = x.cmd.split(' ');
     // const ls = spawn(cmd[0], cmd.slice(1));
     // ls.stdout.on('data', (data) => console.log(`stdout: ${data}`));
