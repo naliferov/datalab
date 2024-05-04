@@ -187,10 +187,7 @@ const set = async (x) => {
     return { id, v };
   }
 
-  const {
-    oldId, newId, key,
-    oldKey, newKey
-  } = set;
+  const { oldId, newId, key } = set;
 
   //COPY or MOVE MAP key from one ID to another ID
   if (oldId && newId && oldId !== newId && key) {
@@ -217,24 +214,25 @@ const set = async (x) => {
     return { oldId, newId, key };
   }
 
-  //RENAME of MAP key
-  if (id && oldKey && newKey) {
+  const { oldK, newK } = set;
+  //RENAME of key
+  if (id && oldK && newK) {
 
     const v = await getFromRepo(id);
-    if (!v.m || !v.m[oldKey]) {
-      return { msg: 'v.m or v.m[oldKey] not found' };
+    if (!v.m || !v.m[oldK]) {
+      return { msg: 'v.m or v.m[oldK] not found' };
     }
 
-    v.m[newKey] = v.m[oldKey];
-    delete v.m[oldKey];
+    v.m[newK] = v.m[oldK];
+    delete v.m[oldK];
 
     if (!v.o) return { msg: 'o not found in map' };
-    const ok = v.o.indexOf(oldKey);
-    if (ok === -1) return { msg: `order key for key [${oldKey}] not found` };
-    v.o[ok] = newKey;
+    const ok = v.o.indexOf(oldK);
+    if (ok === -1) return { msg: `order key for key [${oldK}] not found` };
+    v.o[ok] = newK;
 
     await b({ set: { id, v } });
-    return { id, oldKey, newKey };
+    return { id, oldK, newK };
   }
 
   //SET BY PATH
@@ -279,7 +277,7 @@ const get = async (x) => {
   if (id) {
     if (useRepo) return await b.p('repo', { get: { id }, repoName });
 
-    return await getVarData({ b, id, subIds: new Set(subIds), depth, getMeta });
+    return await fillVar({ b, id, subIds: new Set(subIds), depth, getMeta });
   }
 
   if (path) {
@@ -297,7 +295,7 @@ const get = async (x) => {
 
     if (useRepo) return v;
 
-    return await getVarData({ b, v, depth, getMeta });
+    return await fillVar({ b, v, depth, getMeta });
   }
 }
 
@@ -313,8 +311,7 @@ const del = async (x) => {
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
-    const isMap = Boolean(v.m);
-    const isList = Boolean(v.l);
+    const isMap = Boolean(v.m); const isList = Boolean(v.l);
 
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
@@ -346,9 +343,7 @@ const del = async (x) => {
   }
 
   //DELETE BY ID
-  if (id && id !== 'root') {
-    return await b.p('repo', { del: { id } });
-  }
+  if (id && id !== 'root') return await b.p('repo', { del: { id } });
 
   //DELETE BY PATH
   if (path) {
@@ -380,9 +375,6 @@ const del = async (x) => {
       }
     }
   }
-}
-export const it = async (v) => {
-  //if (v.m) {}
 }
 const signUp = async (x) => {
   const { email, password } = x.signUp;
@@ -433,13 +425,12 @@ const delWithSubVars = async (x) => {
 
 export const createSet = async (x) => {
 
-  const { _, b, repoName, path, isNeedStopIfVarNotFound } = x;
+  const { _, b, path, isNeedStopIfVarNotFound } = x;
   const pathArr = [...path];
   const type = x.type || 'v';
 
-  let v1 = await b.p('repo', { get: { id: 'root' }, repoName });
+  let v1 = await b.p('repo', { get: { id: 'root' } });
   v1[_] = { id: 'root', name: 'root' };
-  //if (getMeta) v1.i = { id: 'root' };
   if (pathArr[0] === 'root') pathArr.shift();
 
   let set = [v1];
@@ -459,7 +450,7 @@ export const createSet = async (x) => {
     let id = v1.m[name];
 
     if (id) {
-      v2 = await b.p('repo', { get: { id }, repoName });
+      v2 = await b.p('repo', { get: { id } });
       if (v2) v2[_] = { id };
     }
 
@@ -506,62 +497,53 @@ const mkvar = async (b, type) => {
   return v;
 }
 
-export const getVarData = async (x) => {
+export const it = async (v, cb) => {
+  if (v.l) {
+    for (let k = 0; k < v.l.length; k++) {
+      await cb({ parent: v.l, k, v: v.l[k] });
+    }
+    return;
+  }
+
+  if (v.m) {
+    for (let k in v.m) {
+      await cb({ parent: v.m, k, v: v.m[k] });
+    }
+  }
+}
+export const fillVar = async (x) => {
 
   const { b, id, subIds, getMeta, depth = 1 } = x;
-  let v = x.v;
+  let { v } = x;
 
-  const _ = await b.p('get_');
-
-  if (id && !v) {
+  if (!v && id) {
     v = await b.p('repo', { get: { id } });
     if (!v) { console.error(`v not found by id [${id}]`); return; }
-    v[_] = { id, t: getType(v) };
-    if (getMeta) v.i = { ...v[_] };
   }
+  if (getMeta) v.i = { id, t: getType(v) };
 
-  let data = { [_]: v[_] };
-  if (v.i) data.i = v.i;
+  const isNeedGetVar = Boolean(subIds && v.i && subIds.has(v.i.id));
+  if (!isNeedGetVar && depth <= 0) {
 
-  const isNeededId = Boolean(subIds && data.i && subIds.has(data.i.id));
-  if (!isNeededId && depth <= 0) {
-
-    if (data.i) data.i.openable = true; //todo openable is only certain data types m, l;
-    return data;
-  }
-
-  const processItem = async (x) => {
-
-    const { id, k, v } = x;
-
-    const v2 = await b.p('repo', { get: { id } });
-
-    v2[_] = { id, t: getType(v2) };
-    if (getMeta) v2.i = { ...v2[_] };
-
-    let data;
-    if (v2.b || v2.v) {
-      data = v2;
-    } else if (v2.l || v2.m) {
-      data = await getVarData({ b, v: v2, subIds, getMeta, depth: depth - 1 });
+    let vMeta = {};
+    if (v.m || v.l) {
+      if (v.i) {
+        vMeta.i = v.i;
+        vMeta.i.openable = true;
+      }
+    } else {
+      vMeta = v;
     }
-
-    if (v.m) v.m[k] = data;
-    if (v.l) v.l.push(data);
+    return vMeta;
   }
 
-  if (v.b) data.b = v.b;
-  else if (v.v) data.v = v.v;
-  else if (v.l) {
-    data.l = [];
-    for (let id of v.l) await processItem({ id, v: data })
-  } else if (v.m) {
-    if (v.o) data.o = v.o;
-    data.m = {};
-    for (let k in v.m) await processItem({ id: v.m[k], k, v: data });
+  if (v.l || v.m) {
+    await it(v, async ({ parent, k, v }) => {
+      parent[k] = await fillVar({ b, id: v, subIds, getMeta, depth: depth - 1 });
+    });
   }
 
-  return data;
+  return v;
 }
 
 export const getVarIds = async (x) => {
@@ -883,32 +865,6 @@ export class HttpClient {
     let str = '';
     for (let k in params) str = str + k + '=' + params[k] + '&';
     return str.length ? str.slice(0, -1) : '';
-  }
-}
-
-//STORAGE
-export class Storage {
-
-  constructor(path, b) {
-    this.path = path;
-    this.b = b;
-  }
-  getStatePath() { return this.path; }
-
-  async set(id, v, format = 'json') {
-    const path = `${this.path}/${id}`;
-
-    this.b.p('storage', { set: { id, path, v, format } });
-  }
-  async get(id, format = 'json') {
-    const path = `${this.path}/${id}`;
-
-    return this.b.p('storage', { get: { id, path, format } });
-  }
-  async del(id) {
-    const path = `${this.path}/${id}`;
-
-    return this.b.p('storage', { del: { id, path } });
   }
 }
 
@@ -1583,9 +1539,6 @@ div[contenteditable="true"] {
     v.add(id);
     await this.b.p('x', { repo: 'idb', set: { id: 'openedIds', v } });
   },
-  async closeId(id) {
-    //close id
-  },
 
   async init() {
 
@@ -1637,7 +1590,7 @@ div[contenteditable="true"] {
 
         const curV = v.m[k];
         const curVId = getVId(curV);
-        if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+        if (!curVId) { console.log('id not found', v); return; }
 
         const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
         this.rowInterface(parentRow).val.append(row);
@@ -1660,7 +1613,7 @@ div[contenteditable="true"] {
       for (let curV of v.l) {
 
         const curVId = getVId(curV);
-        if (!curVId) { console.log('2: Unknown type of VAR', curV); return; }
+        if (!curVId) { console.log('2: Unknown type of VAR', curV, v.l); return; }
 
         const row = await this.mkRow({ v: curV, parentId: id, id: curVId });
         this.rowInterface(parentRow).val.append(row);
@@ -1957,7 +1910,7 @@ div[contenteditable="true"] {
       const row = this.marked.parentNode;
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
-        const resp = await this.b.p('x', { set: { id: parentId, oldKey: oldV, newKey: newV } });
+        const resp = await this.b.p('x', { set: { id: parentId, oldK: oldV, newK: newV } });
         console.log(resp);
       } else if (isVal) {
         const id = row.getAttribute('_id');
@@ -2391,21 +2344,27 @@ const run = async () => {
     // ls.on('close', (code) => console.log(`exit code ${code}`));
   });
 
-  await b.s('storage', async (x) => await b.p('fs', x));
   await b.s('repo', async (x) => {
-    const repo = mainRepo;
+
+    const statePath = './state';
 
     if (x.set) {
-      const { id, v, format } = x.set;
-      return await repo.set(id, v, format);
+      const { id, v, format = 'json' } = x.set;
+      const path = `${statePath}/${id}`;
+
+      return await b.p('fs', { set: { id, path, v, format } });
     }
     if (x.get) {
-      const { id } = x.get;
-      return await repo.get(id);
+      const { id, format = 'json' } = x.get;
+      const path = `${statePath}/${id}`;
+
+      return b.p('fs', { get: { id, path, format } });
     }
     if (x.del) {
       const { id } = x.del;
-      return await repo.del(id);
+      const path = `${statePath}/${id}`;
+
+      return b.p('fs', { del: { id, path } });
     }
   });
   await b.s('fs', async (x) => {
@@ -2436,7 +2395,7 @@ const run = async () => {
     }
   });
   await b.s('state.import', async x => {
-
+    //await b.p('sh', { cmd: 'unzip state.zip state' });
   });
   await b.s('state.export', async (x) => {
     await b.p('sh', { cmd: 'zip -vr state.zip state' });
@@ -2455,12 +2414,12 @@ const run = async () => {
     console.log('files that not exists in varIds', fSet);
   });
 
-  const mainRepo = new Storage('./state', b);
-
   const mapV = { m: {}, o: [] };
 
   let v = await b.p('repo', { get: { id: 'root' } });
-  if (!v) await mainRepo.set('root', mapV);
+  if (!v) {
+    await b.p('repo', { set: { id: 'root', v: mapV } });
+  }
 
   const e = {
     'set': async (arg) => {
@@ -2486,7 +2445,6 @@ const run = async () => {
       return b({ del: { path } });
     },
     'deploy': async (arg) => {
-
       const ctx = arg[_].ctx;
 
       const stop = 'pkill -9 node';
