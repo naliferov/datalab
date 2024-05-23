@@ -2351,6 +2351,7 @@ const runFrontend = async (b) => {
     dataEditor.setB(b);
     await dataEditor.init();
 
+    const frameSettingsPath = ['settings', 'openedApps', 'dataEditor'];
     const frame = Object.create(Frame);
     frame.setB(b);
     await frame.init();
@@ -2359,7 +2360,7 @@ const runFrontend = async (b) => {
     frame.setEventHandler(async (o) => {
       const { left, top, width, height } = o;
       const set = async (name, v) => {
-        await b({ set: { path: ['settings', 'dataEditor', name], v } });
+        await b({ set: { path: [...frameSettingsPath, name], v } });
       }
       if (left) set('left', left);
       if (top) set('top', top);
@@ -2368,7 +2369,7 @@ const runFrontend = async (b) => {
     });
     appDOM.append(frame.o.getDOM());
 
-    let settings = await b({ get: { path: ['settings', 'dataEditor'] } });
+    let settings = await b({ get: { path: frameSettingsPath } });
     if (settings.m) {
       const m = settings.m;
       frame.setStyle({
