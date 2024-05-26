@@ -1,12 +1,8 @@
 const x = (o) => {
-  if (o.isStoped) return x;
-
-  o.isStoped = true;
   return x(o);
 };
 
 export const BigX = (symbol) => {
-
   const _ = symbol;
   const f = {};
 
@@ -20,20 +16,26 @@ export const BigX = (symbol) => {
     if (subscribeName) {
       f[subscribeName] = x[_].f;
     }
-  }
-}
+  };
+};
 
 export const b = {
-  set_(_) { this._ = _; },
-  get_() { return this._; },
+  set_(_) {
+    this._ = _;
+  },
+  get_() {
+    return this._;
+  },
 
-  setExec(exec) { this.exec = exec; },
+  setExec(exec) {
+    this.exec = exec;
+  },
   async p(e, d) {
     const _ = this._;
     const inject = {
       _: _,
-      [_]: { b: this, x: e }
-    }
+      [_]: { b: this, x: e },
+    };
     return await this.exec({ ...d, ...inject });
   },
   async s(e, f) {
@@ -43,10 +45,9 @@ export const b = {
   async x(d) {
     return this.p('x', d);
   },
-}
+};
 
 export const busFactory = () => {
-
   const _ = Symbol();
 
   const bus = Object.create(b);
@@ -54,14 +55,16 @@ export const busFactory = () => {
   bus.setExec(BigX(_));
 
   const proxy = new Proxy(function () { }, {
-    get(t, p) { return bus[p]; },
+    get(t, p) {
+      return bus[p];
+    },
     apply(t, thisArg, args) {
       return bus.p('x', args[0]);
-    }
+    },
   });
 
   return proxy;
-}
+};
 
 export const u = async (x) => {
   if (x.set) return await set(x);
@@ -69,10 +72,9 @@ export const u = async (x) => {
   if (x.del) return await del(x);
   if (x.getHtml) return await getHtml(x);
   if (x.signUp) return await signUp(x);
-}
+};
 
 const getHtml = async (x) => {
-
   const { b } = x[x._];
   const { mtimeMs } = await b.p('fs', { stat: { path: x.jsFileName } });
 
@@ -102,11 +104,10 @@ const getHtml = async (x) => {
 </html>
     `,
     isHtml: true,
-  }
+  };
 };
 
 const set = async (x) => {
-
   const set = { ...x.set, bin: x.bin };
 
   const { type, id, path, k, ok, v, bin, binName, repoName } = set;
@@ -176,14 +177,19 @@ const set = async (x) => {
   {
     const { id, bin, binName } = set;
     if (id && bin && binName) {
-
       const vById = await getFromRepo(id);
       if (!vById) return { msg: 'v not found by id', id };
       //todo clear previous binary file;
 
       let ex = binName.split('.').at(-1);
       let t = '';
-      if (ex === 'jpg' || ex === 'jpeg' || ex === 'png' || ex === 'gif' || ex === 'webp') {
+      if (
+        ex === 'jpg' ||
+        ex === 'jpeg' ||
+        ex === 'png' ||
+        ex === 'gif' ||
+        ex === 'webp'
+      ) {
         t = 'i';
       }
 
@@ -211,7 +217,6 @@ const set = async (x) => {
     const { oldId, newId, key } = set;
 
     if (oldId && newId && oldId !== newId && key) {
-
       const oldV = await getFromRepo(oldId);
       const newV = await getFromRepo(newId);
 
@@ -239,7 +244,6 @@ const set = async (x) => {
   {
     const { id, oldK, newK } = set;
     if (id && oldK && newK) {
-
       const v = await getFromRepo(id);
       if (!v.m || !v.m[oldK]) {
         return { msg: 'v.m or v.m[oldK] not found' };
@@ -263,7 +267,6 @@ const set = async (x) => {
     const { path, type, v } = set;
 
     if (path) {
-
       const setPath = await createSet({ _, b, path, type });
       if (!set) return;
 
@@ -287,7 +290,6 @@ const set = async (x) => {
         }
 
         if (v[_].new || v[_].updated) {
-
           await b({ set: { id: v[_].id, v } });
         }
       }
@@ -295,10 +297,9 @@ const set = async (x) => {
       return setPath.at(-1);
     }
   }
-}
+};
 
 const get = async (x) => {
-
   let { id, subIds, path, depth, getMeta, useRepo, repoName } = x.get;
   const { b } = x[x._];
 
@@ -315,7 +316,14 @@ const get = async (x) => {
       path = path.split('.');
     }
 
-    const pathSet = await createSet({ _, b, path, getMeta, repoName, isNeedStopIfVarNotFound: true });
+    const pathSet = await createSet({
+      _,
+      b,
+      path,
+      getMeta,
+      repoName,
+      isNeedStopIfVarNotFound: true,
+    });
     if (!pathSet) return;
 
     const v = pathSet.at(-1);
@@ -325,10 +333,9 @@ const get = async (x) => {
 
     return await fillVar({ b, v, depth, getMeta });
   }
-}
+};
 
 const del = async (x) => {
-
   const { path, id, k, ok } = x.del;
   const { b } = x[x._];
   const _ = await b.p('get_');
@@ -339,7 +346,8 @@ const del = async (x) => {
     if (!v) return { msg: 'v not found' };
     if (!v.m && !v.l) return { msg: 'v is not map and not list' };
 
-    const isMap = Boolean(v.m); const isList = Boolean(v.l);
+    const isMap = Boolean(v.m);
+    const isList = Boolean(v.l);
 
     const targetId = isMap ? v.m[k] : k;
     if (!targetId) return { msg: `targetId not found by [${k}]` };
@@ -356,12 +364,11 @@ const del = async (x) => {
 
     const isDelWithSubVars = await delWithSubVars({ _, b, v: targetV });
     if (isDelWithSubVars || true) {
-
       if (isMap) {
         delete v.m[k];
-        v.o = v.o.filter(currentK => currentK !== k);
+        v.o = v.o.filter((currentK) => currentK !== k);
       } else if (isList) {
-        v.l = v.l.filter(currentK => currentK !== k);
+        v.l = v.l.filter((currentK) => currentK !== k);
       }
 
       await b({ set: { id, v } });
@@ -375,7 +382,6 @@ const del = async (x) => {
 
   //DELETE BY PATH
   if (path) {
-
     const set = await createSet({ _, b, path, isNeedStopIfVarNotFound: true });
 
     if (!set || set.length < 2) return { msg: 'var set not found' };
@@ -387,23 +393,24 @@ const del = async (x) => {
     const isList = Boolean(parentV.l);
 
     const vId = parentV.m[k];
-    if (!vId) { console.log('log', { msg: `key [${k}] not found in v1` }); return; }
+    if (!vId) {
+      console.log('log', { msg: `key [${k}] not found in v1` });
+      return;
+    }
 
     const isDelWithSubVars = await delWithSubVars({ _, b, v });
     if (isDelWithSubVars) {
-
       if (isMap) {
         delete parentV.m[k];
-        parentV.o = parentV.o.filter(currentK => currentK !== k);
+        parentV.o = parentV.o.filter((currentK) => currentK !== k);
 
         await b({ set: { id: parentV[_].id, v: parentV } });
-
       } else if (isList) {
         console.log('isList', v);
       }
     }
   }
-}
+};
 const signUp = async (x) => {
   const { email, password } = x.signUp;
   const { b } = x[x._];
@@ -411,7 +418,6 @@ const signUp = async (x) => {
 
   let users = await b({ get: { path: 'users', useRepo: true } });
   if (!users) {
-
     const root = await b({ get: { id: 'root', useRepo: true } });
     users = await mkvar(b, 'm');
 
@@ -436,13 +442,16 @@ const signUp = async (x) => {
   await b({ set: { id: users[_].id, v: users } });
 
   return { email, password };
-}
+};
 const delWithSubVars = async (x) => {
   const { _, b, v } = x;
   const varIds = await getVarIds({ b, v });
 
   const len = Object.keys(varIds).length;
-  if (len > 50) { await b.p('log', { msg: `Try to delete ${len} keys at once` }); return; }
+  if (len > 50) {
+    await b.p('log', { msg: `Try to delete ${len} keys at once` });
+    return;
+  }
 
   for (let id of varIds) await b({ del: { id } });
   await b({ del: { id: v[_].id } });
@@ -451,10 +460,9 @@ const delWithSubVars = async (x) => {
   console.log('varIds for del', varIds);
 
   return true;
-}
+};
 
 export const createSet = async (x) => {
-
   const { _, b, path, isNeedStopIfVarNotFound } = x;
   const pathArr = [...path];
   const type = x.type || 'v';
@@ -487,7 +495,7 @@ export const createSet = async (x) => {
     if (!v2) {
       if (isNeedStopIfVarNotFound) return;
 
-      const vType = (i === pathArr.length - 1) ? type : 'm';
+      const vType = i === pathArr.length - 1 ? type : 'm';
       v2 = await mkvar(b, vType, _);
 
       v1.m[name] = v2[_].id;
@@ -503,14 +511,13 @@ export const createSet = async (x) => {
   }
 
   return set;
-}
+};
 
 const mkvar = async (b, type) => {
-
   const _ = await b.p('get_');
   const id = await b.p('getUniqId');
   let v = {
-    [_]: { id, new: true }
+    [_]: { id, new: true },
   };
 
   if (type === 'b') v.b = {};
@@ -518,14 +525,13 @@ const mkvar = async (b, type) => {
   else if (type === 'm') {
     v.m = {};
     v.o = [];
-  }
-  else if (type === 'l') v.l = [];
+  } else if (type === 'l') v.l = [];
   else if (type === 'f') v.f = {};
   else if (type === 'x') v.x = {};
   else throw new Error(`Unknown type [${type}]`);
 
   return v;
-}
+};
 
 export const it = async (v, cb) => {
   if (v.l) {
@@ -540,21 +546,22 @@ export const it = async (v, cb) => {
       await cb({ parent: v.m, k, v: v.m[k] });
     }
   }
-}
+};
 export const fillVar = async (x) => {
-
   const { b, id, subIds, getMeta, depth = 1 } = x;
   let { v } = x;
 
   if (!v && id) {
     v = await b.p('repo', { get: { id } });
-    if (!v) { console.error(`v not found by id [${id}]`); return; }
+    if (!v) {
+      console.error(`v not found by id [${id}]`);
+      return;
+    }
   }
   if (getMeta) v.i = { id, t: getType(v) };
 
   const isNeedGetVar = Boolean(subIds && v.i && subIds.has(v.i.id));
   if (!isNeedGetVar && depth <= 0) {
-
     let vMeta = {};
     if (v.m || v.l) {
       if (v.i) {
@@ -569,22 +576,26 @@ export const fillVar = async (x) => {
 
   if (v.l || v.m) {
     await it(v, async ({ parent, k, v }) => {
-      parent[k] = await fillVar({ b, id: v, subIds, getMeta, depth: depth - 1 });
+      parent[k] = await fillVar({
+        b,
+        id: v,
+        subIds,
+        getMeta,
+        depth: depth - 1,
+      });
     });
   }
 
   return v;
-}
+};
 
 export const getVarIds = async (x) => {
-
   const { b, v } = x;
 
   const ids = [];
   if (!v.b && !v.m && !v.l) return ids;
 
   const getIds = async (v) => {
-
     if (v.b) {
       if (v.b.id) ids.push(v.b.id);
     } else if (v.m) {
@@ -599,12 +610,12 @@ export const getVarIds = async (x) => {
         await getIds(await b({ get: { id, useRepo: true } }));
       }
     }
-  }
+  };
 
   await getIds(v);
 
   return ids;
-}
+};
 
 export const getType = (v) => {
   if (v.b) return 'b';
@@ -612,7 +623,7 @@ export const getType = (v) => {
   if (v.l) return 'l';
   if (v.v) return 'v';
   return 'unknown';
-}
+};
 
 export const prepareForTransfer = (v) => {
   const d = {};
@@ -626,15 +637,16 @@ export const prepareForTransfer = (v) => {
   if (v.x) d.x = v.x;
 
   return d;
-}
+};
 
 // UTILS //
-export const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
-export const pathToArr = path => {
+export const isObj = (v) =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+export const pathToArr = (path) => {
   if (!path) return [];
   return Array.isArray(path) ? path : path.split('.');
-}
-export const parseCliArgs = cliArgs => {
+};
+export const parseCliArgs = (cliArgs) => {
   const args = {};
   let num = 0;
 
@@ -656,9 +668,9 @@ export const parseCliArgs = cliArgs => {
     }
   }
   return args;
-}
+};
 export const getDateTime = () => {
-  const d = new Date;
+  const d = new Date();
 
   let year = d.getFullYear();
   let month = ('0' + (d.getMonth() + 1)).slice(-2); // Months are zero-based
@@ -667,25 +679,33 @@ export const getDateTime = () => {
   const minutes = ('0' + d.getMinutes()).slice(-2);
   const seconds = ('0' + d.getSeconds()).slice(-2);
 
-  return year + '-' + month + '-' + day + '_' + hours + ':' + minutes + ':' + seconds;
-}
+  return (
+    year + '-' + month + '-' + day + '_' + hours + ':' + minutes + ':' + seconds
+  );
+};
 
 //TRANSPORT
 export const httpHandler = async (x) => {
-
   const { b, runtimeCtx, rq, fs } = x;
   const ctx = {
-    rq, headers: rq.headers,
+    rq,
+    headers: rq.headers,
     url: new URL('http://t.c' + rq.url),
-    query: {}, body: {},
+    query: {},
+    body: {},
   };
-  ctx.url.searchParams.forEach((v, k) => ctx.query[k] = v);
+  ctx.url.searchParams.forEach((v, k) => (ctx.query[k] = v));
 
   if (runtimeCtx.rtName === 'deno' || runtimeCtx.rtName === 'bun') {
     ctx.url = new URL(rq.url);
   }
   if (typeof rq.headers.get !== 'function') {
-    ctx.headers = { headers: rq.headers, get(k) { return this.headers[k]; } };
+    ctx.headers = {
+      headers: rq.headers,
+      get(k) {
+        return this.headers[k];
+      },
+    };
   }
   if (ctx.url.pathname.toLowerCase().includes('state/sys')) {
     return httpMkResp({ code: 403, v: 'Access denied', runtimeCtx });
@@ -732,7 +752,6 @@ export const httpHandler = async (x) => {
   return httpMkResp({ v: o, runtimeCtx });
 };
 const httpGetBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
-
   let limit = limitMb * 1024 * 1024;
   const rq = ctx.rq;
   const readAsJson = ctx.headers.get('content-type') === 'application/json';
@@ -749,7 +768,7 @@ const httpGetBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
     //   }
     // }
     const bin = await rq.arrayBuffer();
-    if (readAsJson) return JSON.parse((new TextDecoder('utf-8')).decode(bin));
+    if (readAsJson) return JSON.parse(new TextDecoder('utf-8').decode(bin));
     return { bin };
   }
 
@@ -757,7 +776,7 @@ const httpGetBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
     let b = [];
     let len = 0;
 
-    rq.on('data', chunk => {
+    rq.on('data', (chunk) => {
       len += chunk.length;
       if (len > limit) {
         rq.destroy();
@@ -766,7 +785,7 @@ const httpGetBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
       }
       b.push(chunk);
     });
-    rq.on('error', err => {
+    rq.on('error', (err) => {
       rq.destroy();
       reject({ err });
     });
@@ -775,15 +794,17 @@ const httpGetBody = async ({ ctx, runtimeCtx, limitMb = 12 }) => {
       if (b.length > 0) msg.bin = runtimeCtx.Buffer.concat(b);
 
       if (readAsJson) {
-        try { msg = JSON.parse(b.toString()); }
-        catch (e) { msg = { err: 'json parse error', data: b.toString() }; }
+        try {
+          msg = JSON.parse(b.toString());
+        } catch (e) {
+          msg = { err: 'json parse error', data: b.toString() };
+        }
       }
       resolve(msg);
     });
   });
-}
+};
 const httpGetFile = async ({ ctx, fs }) => {
-
   const query = ctx.query;
   let ext, mime;
 
@@ -796,7 +817,12 @@ const httpGetFile = async ({ ctx, fs }) => {
     ext = spl.at(-1);
     if (!ext) return {};
 
-    mime = { html: 'text/html', js: 'text/javascript', css: 'text/css', map: 'application/json' }[ext];
+    mime = {
+      html: 'text/html',
+      js: 'text/javascript',
+      css: 'text/css',
+      map: 'application/json',
+    }[ext];
   }
 
   try {
@@ -805,9 +831,8 @@ const httpGetFile = async ({ ctx, fs }) => {
     if (e.code !== 'ENOENT') console.log('Error of resolve file', e);
     return { fileNotFound: true };
   }
-}
+};
 const httpMkResp = ({ runtimeCtx, code = 200, mime, v, isBin }) => {
-
   const send = (v, typeHeader) => {
     const headers = { 'content-type': typeHeader };
     try {
@@ -815,7 +840,7 @@ const httpMkResp = ({ runtimeCtx, code = 200, mime, v, isBin }) => {
     } catch (e) {
       console.log('err sending response', e);
     }
-  }
+  };
 
   if (isBin) return send(v, mime ?? '');
   if (typeof v === 'object') {
@@ -827,10 +852,9 @@ const httpMkResp = ({ runtimeCtx, code = 200, mime, v, isBin }) => {
     return send(v, mime ?? plain);
   }
   return send('empty resp', plain);
-}
+};
 
 export class HttpClient {
-
   constructor(baseURL = '', headers = {}) {
     this.headers = headers;
     if (baseURL) this.baseURL = baseURL;
@@ -860,13 +884,19 @@ export class HttpClient {
       if (params instanceof ArrayBuffer) {
         fetchParams.body = params;
       } else {
-        fetchParams.body = headers['Content-Type'] === 'application/json' ? JSON.stringify(params) : this.strParams(params);
+        fetchParams.body =
+          headers['Content-Type'] === 'application/json'
+            ? JSON.stringify(params)
+            : this.strParams(params);
       }
     } else {
       if (Object.keys(params).length) url += '?' + new URLSearchParams(params);
     }
 
-    const response = await fetch(this.baseURL ? this.baseURL + url : url, fetchParams);
+    const response = await fetch(
+      this.baseURL ? this.baseURL + url : url,
+      fetchParams,
+    );
     if (timeoutId) {
       clearTimeout(timeoutId);
       timeoutId = null;
@@ -874,13 +904,15 @@ export class HttpClient {
 
     let r = {
       statusCode: response.status,
-      headers: response.headers
+      headers: response.headers,
     };
     if (options.blob) {
       r.data = await response.blob();
     } else {
       const t = response.headers.get('content-type') ?? '';
-      r.data = t.startsWith('application/json') ? await response.json() : await response.text();
+      r.data = t.startsWith('application/json')
+        ? await response.json()
+        : await response.text();
     }
     return r;
   }
@@ -890,7 +922,9 @@ export class HttpClient {
   async post(url, params = {}, headers = {}, options = {}) {
     return await this.rq('POST', url, params, headers, options);
   }
-  async delete(url, params = {}, headers = {}, options = {}) { return await this.rq('DELETE', url, params, headers, options); }
+  async delete(url, params = {}, headers = {}, options = {}) {
+    return await this.rq('DELETE', url, params, headers, options);
+  }
   strParams(params) {
     let str = '';
     for (let k in params) str = str + k + '=' + params[k] + '&';
@@ -899,7 +933,6 @@ export class HttpClient {
 }
 
 export class IndexedDb {
-
   async open() {
     return new Promise((resolve, reject) => {
       const openRequest = indexedDB.open('varcraft');
@@ -920,11 +953,9 @@ export class IndexedDb {
   }
 
   async set(x) {
-
     const { id, v } = x;
 
     return new Promise((resolve, reject) => {
-
       const t = this.db.transaction('vars', 'readwrite');
       const vars = t.objectStore('vars');
 
@@ -935,7 +966,6 @@ export class IndexedDb {
   }
 
   async get(x) {
-
     const { id } = x;
 
     return new Promise((resolve, reject) => {
@@ -949,7 +979,6 @@ export class IndexedDb {
   }
 
   async del(x) {
-
     const { id } = x;
 
     return new Promise((resolve, reject) => {
@@ -982,7 +1011,7 @@ const docMk = (d, x) => {
   if (css) for (let k in css) o.style[k] = css[k];
 
   return o;
-}
+};
 
 const docGetSizes = (o) => {
   let sizes = o.getBoundingClientRect();
@@ -999,8 +1028,8 @@ const docGetSizes = (o) => {
     right: sizes.right + scrollX,
     x: sizes.x + scrollX,
     y: sizes.y + scrollY,
-  }
-}
+  };
+};
 
 const q = {
   calls: [],
@@ -1022,15 +1051,15 @@ const q = {
       }
       await this.worker(x);
     }
-    this.isOn = false
-  }
-}
+    this.isOn = false;
+  },
+};
 
 const Frame = {
-
-  setB(b) { this.b = b },
+  setB(b) {
+    this.b = b;
+  },
   async createStyle() {
-
     const css = `
     .shadow {
         box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
@@ -1113,7 +1142,6 @@ const Frame = {
   },
 
   async init() {
-
     const p = async (event, data) => await this.b.p(event, data);
 
     this.o = await p('doc.mk', {
@@ -1121,11 +1149,12 @@ const Frame = {
       class: ['frame'],
       css: {
         position: 'absolute',
-        minWidth: '100px', minHeight: '100px',
+        minWidth: '100px',
+        minHeight: '100px',
         boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2)',
         transition: '0.3s',
         overflow: 'hidden',
-      }
+      },
     });
     this.oShadow = this.o.attachShadow({ mode: 'open' });
     this.oShadow.append(await this.createStyle());
@@ -1135,7 +1164,6 @@ const Frame = {
 
     this.frameTitle = await p('doc.mk', { class: ['frameTitle'], txt: '' });
     topBar.append(this.frameTitle);
-
 
     const slot = await p('doc.mk', { type: 'slot' });
     slot.setAttribute('name', 'content');
@@ -1155,45 +1183,75 @@ const Frame = {
     //     s.e('appFrame.close', { appFrame: this });
     // });
 
-    const resizeTop = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeTop'] });
+    const resizeTop = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeTop'],
+    });
     this.oShadow.append(resizeTop.getDOM());
     resizeTop.on('pointerdown', (e) => this.resizeTop(e, resizeTop));
 
-    const resizeBottom = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeBottom'] });
+    const resizeBottom = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeBottom'],
+    });
     this.oShadow.append(resizeBottom.getDOM());
     resizeBottom.on('pointerdown', (e) => this.resizeBottom(e, resizeTop));
 
-    const resizeLeft = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeLeft'] });
+    const resizeLeft = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeLeft'],
+    });
     this.oShadow.append(resizeLeft.getDOM());
     resizeLeft.on('pointerdown', (e) => this.resizeLeft(e));
 
-    const resizeRight = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeRight'] });
+    const resizeRight = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeRight'],
+    });
     this.oShadow.append(resizeRight.getDOM());
     resizeRight.on('pointerdown', (e) => this.resizeRight(e));
 
-    const resizeTopLeft = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeTopLeft'] });
+    const resizeTopLeft = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeTopLeft'],
+    });
     this.oShadow.append(resizeTopLeft.getDOM());
     resizeTopLeft.on('pointerdown', (e) => this.resizeTopLeft(e));
 
-    const resizeTopRight = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeTopRight'] });
+    const resizeTopRight = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeTopRight'],
+    });
     this.oShadow.append(resizeTopRight.getDOM());
     resizeTopRight.on('pointerdown', (e) => this.resizeTopRight(e));
 
-    const resizeBottomLeft = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeBottomLeft'] });
+    const resizeBottomLeft = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeBottomLeft'],
+    });
     this.oShadow.append(resizeBottomLeft.getDOM());
     resizeBottomLeft.on('pointerdown', (e) => this.resizeBottomLeft(e));
 
-    const resizeBottomRight = await p('doc.mk', { mkApi: true, class: ['resizer', 'resizeBottomRight'] });
+    const resizeBottomRight = await p('doc.mk', {
+      mkApi: true,
+      class: ['resizer', 'resizeBottomRight'],
+    });
     this.oShadow.append(resizeBottomRight.getDOM());
     resizeBottomRight.on('pointerdown', (e) => this.resizeBottomRight(e));
   },
-  setStyle(o) { this.o.setStyle(o); },
-  setTitle(title) { this.frameTitle.innerText = title; },
+  setStyle(o) {
+    this.o.setStyle(o);
+  },
+  setTitle(title) {
+    this.frameTitle.innerText = title;
+  },
   setContent(content) {
     content.setAttribute('slot', 'content');
     this.o.append(content);
   },
-  setEventHandler(cb) { this.q.worker = cb; },
+  setEventHandler(cb) {
+    this.q.worker = cb;
+  },
   setOnPointerup() {
     window.onpointerup = () => {
       window.onpointermove = null;
@@ -1211,7 +1269,7 @@ const Frame = {
       const top = e.clientY - shift.y;
       this.o.setStyle({
         left: left + 'px',
-        top: top + 'px'
+        top: top + 'px',
       });
       this.q.push({ left });
       this.q.push({ top });
@@ -1235,7 +1293,7 @@ const Frame = {
       });
       this.q.push({ top });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
   resizeBottom(e) {
@@ -1246,7 +1304,7 @@ const Frame = {
       const height = e.clientY - sizes.top;
       this.o.setStyle({ height: height + 'px' });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
   resizeLeft(e) {
@@ -1262,7 +1320,7 @@ const Frame = {
       });
       this.q.push({ left });
       this.q.push({ width });
-    }
+    };
     this.setOnPointerup();
   },
   resizeRight(e) {
@@ -1273,7 +1331,7 @@ const Frame = {
       const width = e.clientX - sizes.left;
       this.o.setStyle({ width: width + 'px' });
       this.q.push({ width });
-    }
+    };
     this.setOnPointerup();
   },
   resizeTopLeft(e) {
@@ -1297,7 +1355,7 @@ const Frame = {
       this.q.push({ top });
       this.q.push({ width });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
   resizeTopRight(e) {
@@ -1317,7 +1375,7 @@ const Frame = {
       this.q.push({ top });
       this.q.push({ width });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
   resizeBottomLeft(e) {
@@ -1336,7 +1394,7 @@ const Frame = {
       this.q.push({ left });
       this.q.push({ width });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
   resizeBottomRight(e) {
@@ -1352,15 +1410,13 @@ const Frame = {
       });
       this.q.push({ width });
       this.q.push({ height });
-    }
+    };
     this.setOnPointerup();
   },
-}
+};
 
 export class Dom {
-
   constructor(data) {
-
     this.data = data || {};
 
     const { id, type, txt, events, css, addShadowDOM } = this.data;
@@ -1378,19 +1434,39 @@ export class Dom {
     if (css) for (let k in css) o.style[k] = css[k];
   }
 
-  setDOM(dom) { this.dom = dom; }
-  getDOM() { return this.dom; }
-  getId() { return this.dom.id; }
+  setDOM(dom) {
+    this.dom = dom;
+  }
+  getDOM() {
+    return this.dom;
+  }
+  getId() {
+    return this.dom.id;
+  }
 
-  on(eventName, callback) { this.getDOM().addEventListener(eventName, callback); }
-  off(eventName, callback) { this.getDOM().removeEventListener(eventName, callback); }
+  on(eventName, callback) {
+    this.getDOM().addEventListener(eventName, callback);
+  }
+  off(eventName, callback) {
+    this.getDOM().removeEventListener(eventName, callback);
+  }
 
-  setTxt(txt) { this.getDOM().innerText = txt; }
-  getTxt() { return this.getDOM().innerText; }
-  setHtml(txt) { this.getDOM().innerHTML = txt; }
+  setTxt(txt) {
+    this.getDOM().innerText = txt;
+  }
+  getTxt() {
+    return this.getDOM().innerText;
+  }
+  setHtml(txt) {
+    this.getDOM().innerHTML = txt;
+  }
 
-  setVal(val) { this.getDOM().value = val; }
-  getVal() { return this.getDOM().value; }
+  setVal(val) {
+    this.getDOM().value = val;
+  }
+  getVal() {
+    return this.getDOM().value;
+  }
 
   setAttr(k, v) {
     this.getDOM().setAttribute(k, v);
@@ -1412,7 +1488,7 @@ export class Dom {
     this.getDOM().classList.remove(className);
   }
   attachCSS() {
-    const css = new Dom({ type: 'style', txt: this.css })
+    const css = new Dom({ type: 'style', txt: this.css });
     this.ins(css);
   }
   attachShadow() {
@@ -1433,7 +1509,6 @@ export class Dom {
 }
 
 export class Header extends Dom {
-
   css = `
     .container {
       display: flex;
@@ -1461,7 +1536,6 @@ export class Header extends Dom {
   `;
 
   constructor(data = {}) {
-
     data.type = 'header';
 
     super(data);
@@ -1480,17 +1554,24 @@ export class Header extends Dom {
     const rightMenu = new Dom({ class: 'rightMenu', css: { display: 'flex' } });
     container.ins(rightMenu);
 
-    const signInBtn = new Dom({ type: 'a', class: ['signIn', 'btn'], txt: 'Sign In' });
+    const signInBtn = new Dom({
+      type: 'a',
+      class: ['signIn', 'btn'],
+      txt: 'Sign In',
+    });
     signInBtn.setAttr('href', '/sign/in');
     rightMenu.ins(signInBtn);
 
-    const signUpBtn = new Dom({ type: 'a', class: ['signUp', 'signBtn', 'btn'], txt: 'Sign Up' });
+    const signUpBtn = new Dom({
+      type: 'a',
+      class: ['signUp', 'signBtn', 'btn'],
+      txt: 'Sign Up',
+    });
     signUpBtn.setAttr('href', '/sign/up');
     rightMenu.ins(signUpBtn);
   }
 
   async init() {
-
     const b = this.b;
 
     this.o = await b.p('doc.mk', { type: 'header' });
@@ -1507,12 +1588,12 @@ export class Header extends Dom {
 }
 
 export const DataEditor = {
-
   root: 'root',
-  setB(b) { this.b = b; },
+  setB(b) {
+    this.b = b;
+  },
 
   async createStyle() {
-
     const css = `
 .container {
   font-family: 'Roboto', sans-serif;
@@ -1590,13 +1671,14 @@ div[contenteditable="true"] {
   },
 
   async init() {
-
     const p = async (event, data) => await this.b.p(event, data);
     this.o = await p('doc.mk', { class: 'dataEditor' });
 
     this.oShadow = this.o.attachShadow({ mode: 'open' });
     this.oShadow.append(await this.createStyle());
-    this.oShadow.addEventListener('contextmenu', (e) => this.handleContextmenu(e));
+    this.oShadow.addEventListener('contextmenu', (e) =>
+      this.handleContextmenu(e),
+    );
     this.oShadow.addEventListener('pointerdown', (e) => this.click(e));
 
     const container = await p('doc.mk', { class: 'container' });
@@ -1607,12 +1689,14 @@ div[contenteditable="true"] {
     const root = await this.mkRow({
       k,
       v: { m: {}, o: [], i: { id: k, t: 'm' } },
-      id: k
+      id: k,
     });
     container.append(root);
 
     const openedIds = await this.getOpenedIds();
-    const v = await p('x', { get: { id: k, subIds: [...openedIds], getMeta: true } });
+    const v = await p('x', {
+      get: { id: k, subIds: [...openedIds], getMeta: true },
+    });
     //console.log(v);
     await this.rend(v, root);
 
@@ -1621,22 +1705,35 @@ div[contenteditable="true"] {
   },
 
   async rend(v, parentRow) {
-
-    const getVId = v => { if (v.i) return v.i.id };
+    const getVId = (v) => {
+      if (v.i) return v.i.id;
+    };
     const id = getVId(v);
-    if (!id) { console.log('Unknown VAR', v); return; }
+    if (!id) {
+      console.log('Unknown VAR', v);
+      return;
+    }
 
     if (v.m) {
-      if (!v.o) { console.error('No order array for map', id, v); return; }
+      if (!v.o) {
+        console.error('No order array for map', id, v);
+        return;
+      }
 
       let mod;
 
       for (let k of v.o) {
-        if (!v.m[k]) { console.error(`Warning key [${k}] not found in map`, v.o, v.m); return; }
+        if (!v.m[k]) {
+          console.error(`Warning key [${k}] not found in map`, v.o, v.m);
+          return;
+        }
 
         const curV = v.m[k];
         const curVId = getVId(curV);
-        if (!curVId) { console.log('id not found', v); return; }
+        if (!curVId) {
+          console.log('id not found', v);
+          return;
+        }
 
         const row = await this.mkRow({ k, v: curV, parentId: id, id: curVId });
         this.rowInterface(parentRow).val.append(row);
@@ -1653,26 +1750,26 @@ div[contenteditable="true"] {
         await this.applyMod(mod.i.domId);
         mod.i.modApplied = true;
       }
-
     } else if (v.l) {
-
       for (let curV of v.l) {
-
         const curVId = getVId(curV);
-        if (!curVId) { console.log('2: Unknown type of VAR', curV, v.l); return; }
+        if (!curVId) {
+          console.log('2: Unknown type of VAR', curV, v.l);
+          return;
+        }
 
         const row = await this.mkRow({ v: curV, parentId: id, id: curVId });
         this.rowInterface(parentRow).val.append(row);
         await this.rend(curV, row);
       }
-    }
-    else if (v.i || v.v) { }
-    else console.log('Unknown type of var', v);
+    } else if (v.i || v.v) {
+    } else console.log('Unknown type of var', v);
   },
 
-  findRow(domId) { return this.container.querySelector('#' + domId); },
+  findRow(domId) {
+    return this.container.querySelector('#' + domId);
+  },
   setDomIdToMod(mod, domId) {
-
     mod.i.domId = domId;
 
     if (!mod.m) return;
@@ -1685,7 +1782,6 @@ div[contenteditable="true"] {
   },
 
   async applyMod(modDomId) {
-
     const modRow = this.findRow(modDomId);
 
     const id = this.rowInterface(modRow).getId();
@@ -1729,12 +1825,17 @@ div[contenteditable="true"] {
     if (id) r.setAttribute('_id', id);
     if (parentId) r.setAttribute('_parent_id', parentId);
 
-    let openCloseBtn = await this.b.p('doc.mk', { txt: '+', class: ['openClose', 'hidden', 'inline'] });
+    let openCloseBtn = await this.b.p('doc.mk', {
+      txt: '+',
+      class: ['openClose', 'hidden', 'inline'],
+    });
     r.append(openCloseBtn);
 
     if (k) {
       r.append(await this.b.p('doc.mk', { txt: k, class: 'key' }));
-      r.append(await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }));
+      r.append(
+        await this.b.p('doc.mk', { txt: ': ', class: ['sep', 'inline'] }),
+      );
     }
 
     const val = await this.b.p('doc.mk', { class: 'val' });
@@ -1751,7 +1852,6 @@ div[contenteditable="true"] {
       }
 
       if (v.b) {
-
         if (v.b.id) {
           let o;
           if (v.b.t === 'i') {
@@ -1759,7 +1859,6 @@ div[contenteditable="true"] {
             o.setAttr('src', `state/${v.b.id}?bin=1`);
           }
           if (o) val.append(o.getDOM());
-
         } else {
           const i = new Dom({ type: 'input' });
           i.setAttr('type', 'file');
@@ -1770,7 +1869,6 @@ div[contenteditable="true"] {
           });
           val.append(i.getDOM());
         }
-
       } else if (v.v) {
         let txt = v.v;
         if (txt && txt.split) txt = txt.split('\n')[0];
@@ -1788,21 +1886,37 @@ div[contenteditable="true"] {
 
     const o = {
       dom: row,
-      getDom() { return this.dom },
-      getDomId() { return this.dom.getAttribute('id') },
-      getId() { return this.dom.getAttribute('_id') },
-      getParent() { return self.rowInterface(this.dom.parentNode.parentNode); },
-      getParentId() { return this.dom.getAttribute('_parent_id') },
-      getType() { return this.dom.getAttribute('t') },
+      getDom() {
+        return this.dom;
+      },
+      getDomId() {
+        return this.dom.getAttribute('id');
+      },
+      getId() {
+        return this.dom.getAttribute('_id');
+      },
+      getParent() {
+        return self.rowInterface(this.dom.parentNode.parentNode);
+      },
+      getParentId() {
+        return this.dom.getAttribute('_parent_id');
+      },
+      getType() {
+        return this.dom.getAttribute('t');
+      },
       getKeyValue() {
         if (!this.key) return;
         return this.key.innerText;
       },
-      clearVal() { this.val.innerHTML = ''; },
+      clearVal() {
+        this.val.innerHTML = '';
+      },
       isValHasSubItems() {
         return this.val.children.length > 0;
       },
-      isRoot() { return self.isRoot(this.dom); },
+      isRoot() {
+        return self.isRoot(this.dom);
+      },
       getBucketName() {
         const path = [];
 
@@ -1816,7 +1930,7 @@ div[contenteditable="true"] {
 
         console.log(path);
       },
-    }
+    };
 
     o.openCloseBtn = {
       obj: children[0],
@@ -1828,8 +1942,10 @@ div[contenteditable="true"] {
         this.obj.classList.remove('opened');
         this.obj.innerText = '+';
       },
-      isOpened() { return this.obj.classList.contains('opened'); }
-    }
+      isOpened() {
+        return this.obj.classList.contains('opened');
+      },
+    };
 
     if (children.length === 2) {
       o.val = children[1];
@@ -1842,10 +1958,8 @@ div[contenteditable="true"] {
   },
 
   getOrderKey(item, type) {
-
     const rows = item.parentNode.parentNode.children;
     for (let i = 0; i < rows.length; i++) {
-
       let element;
       if (type === 'm') element = this.rowInterface(rows[i]).key;
       else if (type === 'l') element = this.rowInterface(rows[i]).val;
@@ -1855,10 +1969,18 @@ div[contenteditable="true"] {
       }
     }
   },
-  isRoot(t) { return t.getAttribute('_id') === this.root },
-  isKey(t) { return t.classList.contains('key'); },
-  isVal(t) { return t.classList.contains('val'); },
-  isOpenCloseBtn(t) { return t.classList.contains('openClose'); },
+  isRoot(t) {
+    return t.getAttribute('_id') === this.root;
+  },
+  isKey(t) {
+    return t.classList.contains('key');
+  },
+  isVal(t) {
+    return t.classList.contains('val');
+  },
+  isOpenCloseBtn(t) {
+    return t.classList.contains('openClose');
+  },
 
   remark(t) {
     this.unmark();
@@ -1877,7 +1999,11 @@ div[contenteditable="true"] {
   markedEditDisable(restorePreviousTxt = true) {
     this.marked.removeAttribute('contenteditable');
 
-    if (restorePreviousTxt && this.markedTxt && this.marked.innerText !== this.markedTxt) {
+    if (
+      restorePreviousTxt &&
+      this.markedTxt &&
+      this.marked.innerText !== this.markedTxt
+    ) {
       this.marked.innerText = this.markedTxt;
     }
     this.markedTxt = null;
@@ -1885,13 +2011,13 @@ div[contenteditable="true"] {
   },
   async setBinToId(row, input) {
     const f = input.getDOM().files[0];
-    const r = new FileReader;
+    const r = new FileReader();
     r.onload = async (e) => {
       const resp = await this.b.p('x', {
-        set: { id: row.getId(), v: e.target.result, binName: f.name }
+        set: { id: row.getId(), v: e.target.result, binName: f.name },
       });
       console.log(resp);
-    }
+    };
     r.readAsArrayBuffer(f);
   },
   async click(e) {
@@ -1903,7 +2029,6 @@ div[contenteditable="true"] {
         this.menu.remove();
         this.unmark();
       }
-
     } else this.unmark();
 
     if (this.isOpenCloseBtn(t)) {
@@ -1911,10 +2036,12 @@ div[contenteditable="true"] {
       const id = row.getId();
 
       if (row.openCloseBtn.isOpened()) {
-
         const openedIds = await this.getOpenedIds();
         if (id) openedIds.delete(id);
-        await this.b.p('x', { repo: 'idb', set: { id: 'openedIds', v: openedIds } });
+        await this.b.p('x', {
+          repo: 'idb',
+          set: { id: 'openedIds', v: openedIds },
+        });
 
         row.openCloseBtn.close();
         row.clearVal();
@@ -1923,7 +2050,9 @@ div[contenteditable="true"] {
 
         const openedIds = await this.getOpenedIds();
 
-        const data = await this.b.p('x', { get: { id, subIds: [...openedIds], getMeta: true } });
+        const data = await this.b.p('x', {
+          get: { id, subIds: [...openedIds], getMeta: true },
+        });
         await this.rend(data, row.getDom());
         row.openCloseBtn.open();
       }
@@ -1945,7 +2074,6 @@ div[contenteditable="true"] {
     this.remark(t);
   },
   async keydown(e) {
-
     if (e.key === 'Escape') {
       this.markedEditDisable();
       return;
@@ -1955,12 +2083,17 @@ div[contenteditable="true"] {
 
     const isEnabled = this.marked.getAttribute('contenteditable') === 'true';
     if (isEnabled) {
-
       const oldV = this.markedTxt;
       const newV = this.marked.innerText;
 
-      if (!oldV) { console.log('No oldV is set.'); return; }
-      if (!newV) { console.log('No newV is set.'); return; }
+      if (!oldV) {
+        console.log('No oldV is set.');
+        return;
+      }
+      if (!newV) {
+        console.log('No newV is set.');
+        return;
+      }
       if (oldV === newV) return;
 
       const isKey = this.isKey(this.marked);
@@ -1969,7 +2102,9 @@ div[contenteditable="true"] {
       const row = this.marked.parentNode;
       if (isKey) {
         const parentId = row.getAttribute('_parent_id');
-        const resp = await this.b.p('x', { set: { id: parentId, oldK: oldV, newK: newV } });
+        const resp = await this.b.p('x', {
+          set: { id: parentId, oldK: oldV, newK: newV },
+        });
         console.log(resp);
       } else if (isVal) {
         const id = row.getAttribute('_id');
@@ -1998,16 +2133,18 @@ div[contenteditable="true"] {
     this.remark(t);
 
     const p = async (e, d) => await this.b.p(e, d);
-    const mkBtn = async (txt, fn) => await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
+    const mkBtn = async (txt, fn) =>
+      await p('doc.mk', { txt, class: 'menuBtn', events: { click: fn } });
 
     const sizes = docGetSizes(this.o);
 
     const menu = await p('doc.mk', {
-      class: 'menu', css: {
+      class: 'menu',
+      css: {
         left: e.clientX - sizes.x + 'px',
         top: e.clientY - sizes.y + 'px', //window.scrollY +
         padding: '5px',
-      }
+      },
     });
     if (this.menu) this.menu.remove();
     this.menu = menu;
@@ -2016,7 +2153,6 @@ div[contenteditable="true"] {
     //todo expand, collapse, structural stream;
     let btn = await mkBtn('Open', (e) => console.log(e));
     btn = await mkBtn('Add', async (e) => {
-
       const mark = this.marked;
       if (!mark) return;
       if (!this.isKey(mark) && !this.isVal(mark)) return;
@@ -2050,22 +2186,19 @@ div[contenteditable="true"] {
     });
     this.menu.append(btn);
 
-
     const mv = async (dir) => {
-
-      let parentId, k, row = this.marked.parentNode;
+      let parentId,
+        k,
+        row = this.marked.parentNode;
 
       if (!this.isKey(this.marked) && !this.isVal(this.marked)) return;
       if (dir === 'up' && !row.previousSibling) return;
       if (dir === 'down' && !row.nextSibling) return;
 
       if (this.isKey(this.marked)) {
-
         parentId = row.getAttribute('_parent_id');
         k = this.getOrderKey(this.marked, 'm');
-
       } else if (this.isVal(this.marked)) {
-
         const parentRowInterface = this.rowInterface(row.parentNode.parentNode);
         if (parentRowInterface.getType() !== 'l') return;
 
@@ -2073,8 +2206,14 @@ div[contenteditable="true"] {
         k = this.getOrderKey(this.marked, 'l');
       }
 
-      if (parentId === undefined) { console.log('parentId is empty'); return; }
-      if (k === undefined) { console.log('ok not found'); return; }
+      if (parentId === undefined) {
+        console.log('parentId is empty');
+        return;
+      }
+      if (k === undefined) {
+        console.log('ok not found');
+        return;
+      }
 
       const ok = { from: k, to: dir === 'up' ? --k : ++k };
       const v = await this.b.p('x', { set: { id: parentId, ok } });
@@ -2082,7 +2221,7 @@ div[contenteditable="true"] {
 
       if (dir === 'up') row.previousSibling.before(row);
       if (dir === 'down') row.nextSibling.after(row);
-    }
+    };
     btn = await mkBtn('Move up', async (e) => await mv('up'));
     this.menu.append(btn);
     btn = await mkBtn('Move down', async (e) => await mv('down'));
@@ -2139,7 +2278,8 @@ div[contenteditable="true"] {
       const v = { b: {}, i: { id, t: 'b' } };
       await this.mkRow({ domId: row.getDomId(), k: row.getKeyValue(), v });
 
-      const r = await this.b.p('x', { set: { id, v } }); console.log(r);
+      const r = await this.b.p('x', { set: { id, v } });
+      console.log(r);
     });
     this.menu.append(btn);
 
@@ -2179,8 +2319,10 @@ div[contenteditable="true"] {
         row = marked.parentNode;
         k = marked.innerText;
         ok = this.getOrderKey(marked, 'm'); //todo this need to be found automatically on backend
-        if (ok === undefined) { console.log('ok not found'); return; }
-
+        if (ok === undefined) {
+          console.log('ok not found');
+          return;
+        }
       } else if (this.isVal(marked)) {
         row = marked.parentNode;
         k = row.getAttribute('_id');
@@ -2189,15 +2331,18 @@ div[contenteditable="true"] {
       const parentId = row.getAttribute('_parent_id');
       if (!parentId || !k) return;
 
-      const v = await this.b.p('x', { del: { id: parentId, k, ok } }); console.log(v);
+      const v = await this.b.p('x', { del: { id: parentId, k, ok } });
+      console.log(v);
       marked.parentNode.remove();
     });
     this.menu.append(btn);
   },
-}
+};
 
 const TxtEditor = {
-  setB(b) { this.b = b; },
+  setB(b) {
+    this.b = b;
+  },
   //set_(_) { this._ = _; },
   async init() {
     const p = async (event, data) => await this.b.p(event, data);
@@ -2212,27 +2357,25 @@ const TxtEditor = {
 
     const someTxt = await p('doc.mk', { type: 'pre', txt: 'alert(10)' });
     this.container.append(someTxt);
-  }
-}
+  },
+};
 
 const runFrontend = async (b) => {
-
   if (!Array.prototype.at) {
     Array.prototype.at = function (i) {
       return i < 0 ? this[this.length + i] : this[i];
-    }
+    };
   }
 
   const _ = b.get_();
 
   globalThis.vc = b;
   await b.s('getUniqIdForDom', async () => {
-
     const getRandomLetter = () => {
       const alphabet = 'abcdefghijklmnopqrstuvwxyz';
       const randomIndex = Math.floor(Math.random() * alphabet.length);
       return alphabet.charAt(randomIndex);
-    }
+    };
     const id = await b.p('getUniqId');
     return id.replace(/^[0-9]/, getRandomLetter());
   });
@@ -2245,16 +2388,15 @@ const runFrontend = async (b) => {
     return await b.p('port', x);
   });
   await b.s('port', async (x) => {
-
     let headers = {};
     if (x.set && x.set.v instanceof ArrayBuffer) {
-
-      const v = x.set.v; delete x.set.v;
+      const v = x.set.v;
+      delete x.set.v;
       headers.x = JSON.stringify(x);
       x = v;
     }
 
-    const { data } = await (new HttpClient).post('/', x, headers);
+    const { data } = await new HttpClient().post('/', x, headers);
     return data;
   });
   await b.s('doc.mk', async (x) => docMk(doc, x));
@@ -2299,19 +2441,16 @@ const runFrontend = async (b) => {
   const appDOM = await b.p('doc.mk', { id: 'app' });
   doc.body.append(appDOM);
 
-  const app = new Dom;
+  const app = new Dom();
   app.setDOM(appDOM);
 
-  const header = new Header;
+  const header = new Header();
   await b.p('doc.ins', { o1: app.dom, o2: header.dom });
-
-
 
   //SIMPLE ROUTING
   const path = doc.location.pathname;
 
   if (path.startsWith('/sign/')) {
-
     const act = path === '/sign/in' ? 'Sign In' : 'Sign Up';
 
     const signForm = new Dom({ class: 'signForm' });
@@ -2344,9 +2483,7 @@ const runFrontend = async (b) => {
         // console.log(r);
       }
     });
-
   } else {
-
     const dataEditor = Object.create(DataEditor);
     dataEditor.setB(b);
     await dataEditor.init();
@@ -2361,7 +2498,7 @@ const runFrontend = async (b) => {
       const { left, top, width, height } = o;
       const set = async (name, v) => {
         await b({ set: { path: [...frameSettingsPath, name], v } });
-      }
+      };
       if (left) set('left', left);
       if (top) set('top', top);
       if (width) set('width', width);
@@ -2401,11 +2538,10 @@ const runFrontend = async (b) => {
 
     window.onkeydown = (e) => dataEditor.keydown(e);
   }
-}
+};
 
 //BACKEND
 const run = async () => {
-
   const ctx = {};
   if (globalThis.Bun) ctx.rtName = 'bun';
   else if (globalThis.Deno) ctx.rtName = 'deno';
@@ -2416,11 +2552,14 @@ const run = async () => {
 
   await b.s('getUniqId', () => {
     if (!window.crypto || !window.crypto.randomUUID) {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+        /[xy]/g,
         function (c) {
-          const uuid = Math.random() * 16 | 0, v = c == 'x' ? uuid : (uuid & 0x3 | 0x8);
+          const uuid = (Math.random() * 16) | 0,
+            v = c == 'x' ? uuid : (uuid & 0x3) | 0x8;
           return uuid.toString(16);
-        });
+        },
+      );
     }
     return crypto.randomUUID();
   });
@@ -2437,7 +2576,7 @@ const run = async () => {
   const _ = b.get_();
 
   await b.s('u', () => u);
-  await b.s('x', async x => {
+  await b.s('x', async (x) => {
     const u = await b.p('u');
     return await u(x);
   });
@@ -2462,7 +2601,6 @@ const run = async () => {
   });
 
   await b.s('repo', async (x) => {
-
     const statePath = 'state';
 
     if (x.set) {
@@ -2485,7 +2623,6 @@ const run = async () => {
     }
   });
   await b.s('fs', async (x) => {
-
     if (x.set) {
       const { path, v, format } = x.set;
 
@@ -2511,7 +2648,7 @@ const run = async () => {
       return await fs.stat(path);
     }
   });
-  await b.s('state.import', async x => {
+  await b.s('state.import', async (x) => {
     //await b.p('sh', { cmd: 'unzip state.zip state' });
   });
   await b.s('state.export', async (x) => {
@@ -2519,7 +2656,7 @@ const run = async () => {
   });
   await b.s('state.validate', async (x) => {
     const list = await fs.readdir('./state');
-    const fSet = new Set;
+    const fSet = new Set();
     for (let i of list) {
       if (i === '.gitignore' || i === 'root' || i === 'sys') continue;
       fSet.add(i);
@@ -2544,29 +2681,38 @@ const run = async () => {
   }
 
   const e = {
-    'set': async (arg) => {
+    set: async (arg) => {
       const path = pathToArr(arg[1]);
-      if (!path) { console.error('path is empty'); return; }
+      if (!path) {
+        console.error('path is empty');
+        return;
+      }
 
       const v = arg[2];
-      if (!v) { console.error('data is empty'); return; }
+      if (!v) {
+        console.error('data is empty');
+        return;
+      }
       const type = arg[3];
 
       return await b({ set: { path, v, type } });
     },
-    'get': async (arg) => {
+    get: async (arg) => {
       const path = arg[1] ? pathToArr(arg[1]) : [];
       const depth = arg[2] || 1;
 
       return await b({ get: { path, depth } });
     },
-    'del': async (arg) => {
+    del: async (arg) => {
       const path = pathToArr(arg[1]);
-      if (!path) { console.error('path is empty'); return; }
+      if (!path) {
+        console.error('path is empty');
+        return;
+      }
 
       return b({ del: { path } });
     },
-    'deploy': async (arg) => {
+    deploy: async (arg) => {
       const stop = 'pkill -9 node';
       const nodePath = '/root/.nvm/versions/node/v20.8.0/bin/node';
       const fileName = arg[_].ctx.fileName;
@@ -2586,7 +2732,6 @@ const run = async () => {
     'state.export': async (arg) => await b.p('state.export'),
     'state.validate': async (arg) => await b.p('state.validate'),
     'server.start': async (arg) => {
-
       const port = arg[1] || 8080;
       const hostname = '0.0.0.0';
       const ctx = arg[_].ctx;
@@ -2594,24 +2739,31 @@ const run = async () => {
       ctx.Response = Response;
       ctx.Uint8Array = Uint8Array;
 
-      const handler = async (rq) => await httpHandler({ b, rq, fs, runtimeCtx: ctx });
+      const handler = async (rq) =>
+        await httpHandler({ b, rq, fs, runtimeCtx: ctx });
 
       if (ctx.rtName === 'bun') {
         Bun.serve({ port, hostname, fetch: handler });
         return;
       }
       if (ctx.rtName === 'deno') {
-        const { Buffer } = await import('https://deno.land/std@0.177.0/node/buffer.ts');
+        const { Buffer } = await import(
+          'https://deno.land/std@0.177.0/node/buffer.ts'
+        );
         ctx.Buffer = Buffer;
         Deno.serve({ port, hostname, handler });
         return;
       }
       if (ctx.rtName === 'node') {
         const x = {};
-        x.server = (await import('node:http')).createServer({ requestTimeout: 30000 });
+        x.server = (await import('node:http')).createServer({
+          requestTimeout: 30000,
+        });
         x.server.on('request', async (rq, rs) => {
-
-          rq.on('error', (e) => { rq.destroy(); console.log('request no error', e); });
+          rq.on('error', (e) => {
+            rq.destroy();
+            console.log('request no error', e);
+          });
           try {
             const r = await httpHandler({ b, runtimeCtx: ctx, rq, fs });
             const v = new ctx.Uint8Array(await r.arrayBuffer());
@@ -2620,11 +2772,15 @@ const run = async () => {
           } catch (e) {
             const m = 'err in rqHandler';
             console.log(m, e);
-            rs.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' }).end(m);
+            rs.writeHead(503, {
+              'content-type': 'text/plain; charset=utf-8',
+            }).end(m);
           }
         });
 
-        x.server.listen(port, () => console.log(`server start on port: [${port}]`));
+        x.server.listen(port, () =>
+          console.log(`server start on port: [${port}]`),
+        );
       }
     },
   };
@@ -2641,19 +2797,18 @@ const run = async () => {
   });
 
   const processCliArgs = async () => {
-
     const args = parseCliArgs([...process.argv]);
 
     args[_] = { ctx };
 
     if (e[args[0]]) {
-      console.log(await e[args[0]](args) ?? '');
+      console.log((await e[args[0]](args)) ?? '');
     } else {
       console.log('Command not found');
     }
-  }
+  };
 
   await processCliArgs();
-}
+};
 
 run();
