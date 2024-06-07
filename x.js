@@ -1,8 +1,4 @@
-const x = (o) => {
-  return x(o);
-};
-
-export const BigX = (symbol) => {
+export const X = (symbol) => {
   const _ = symbol;
   const f = {};
 
@@ -52,7 +48,7 @@ export const busFactory = () => {
 
   const bus = Object.create(b);
   bus.set_(_);
-  bus.setExec(BigX(_));
+  bus.setExec(X(_));
 
   const proxy = new Proxy(function () { }, {
     get(t, p) {
@@ -119,58 +115,64 @@ const set = async (x) => {
   const getFromRepo = async (id) => await b({ get: { id, useRepo: true } });
 
   //CHANGE ORDER
-  if (id && ok && typeof ok === 'object') {
-    const vById = await getFromRepo(id);
-    if (!vById) return { ok: 0, msg: 'v not found' };
+  {
+    const { id, ok } = set;
+    if (id && ok && typeof ok === 'object') {
+      const vById = await getFromRepo(id);
+      if (!vById) return { ok: 0, msg: 'v not found' };
 
-    const { from, to } = ok;
+      const { from, to } = ok;
 
-    if (vById.m) {
-      if (!vById.o) return { ok: 0, msg: 'v.o not found' };
+      if (vById.m) {
+        if (!vById.o) return { ok: 0, msg: 'v.o not found' };
 
-      const i = vById.o.splice(from, 1)[0];
-      vById.o.splice(to, 0, i);
+        const i = vById.o.splice(from, 1)[0];
+        vById.o.splice(to, 0, i);
+      }
+      if (vById.l) {
+        const i = vById.l.splice(from, 1)[0];
+        vById.l.splice(to, 0, i);
+      }
+      await b.p('repo', { set: { id, v: vById } });
+
+      return { id, ok };
     }
-    if (vById.l) {
-      const i = vById.l.splice(from, 1)[0];
-      vById.l.splice(to, 0, i);
-    }
-    await b.p('repo', { set: { id, v: vById } });
-
-    return { id, ok };
   }
 
   //SET key and value to id of (MAP) or add value (LIST)
-  if (type && id && v) {
-    const vById = await getFromRepo(id);
-    if (!vById) return { msg: 'v not found' };
+  {
+    const { id, k, v } = set;
+    if (type && id && v) {
+      const vById = await getFromRepo(id);
+      if (!vById) return { msg: 'v not found' };
 
-    let newId = await b.p('getUniqId');
-    if (id.includes('/')) newId = id.split('/')[0] + '/' + newId;
+      let newId = await b.p('getUniqId');
+      if (id.includes('/')) newId = id.split('/')[0] + '/' + newId;
 
-    if (type === 'm' && vById.m) {
-      if (vById.m[k]) return { msg: `k [${k}] already exists in vById` };
-      if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-      if (ok === undefined) return { msg: `ok is empty` };
+      if (type === 'm' && vById.m) {
+        if (vById.m[k]) return { msg: `k [${k}] already exists in vById` };
+        if (!vById.o) return { msg: `v.o is not found by [${id}]` };
+        if (ok === undefined) return { msg: `ok is empty` };
 
-      vById.m[k] = newId;
-      vById.o.splice(ok, 0, k);
+        vById.m[k] = newId;
+        vById.o.splice(ok, 0, k);
 
-      await b.p('repo', { set: { id: newId, v } });
-      await b.p('repo', { set: { id, v: vById } });
+        await b.p('repo', { set: { id: newId, v } });
+        await b.p('repo', { set: { id, v: vById } });
 
-      return { type, id, k, v, newId };
+        return { type, id, k, v, newId };
+      }
+      if (type === 'l' && vById.l) {
+        vById.l.push(newId);
+
+        await b.p('repo', { set: { id: newId, v } });
+        await b.p('repo', { set: { id, v: vById } });
+
+        return { type, id, v, newId };
+      }
+
+      return { msg: 'Not found logic for change vById', vById };
     }
-    if (type === 'l' && vById.l) {
-      vById.l.push(newId);
-
-      await b.p('repo', { set: { id: newId, v } });
-      await b.p('repo', { set: { id, v: vById } });
-
-      return { type, id, v, newId };
-    }
-
-    return { msg: 'Not found logic for change vById', vById };
   }
 
   //SET binary file and save it's ID to specific varID

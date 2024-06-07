@@ -9,7 +9,7 @@ defineProps<{
     <div class="container">
       <div id="welcome">
         <h1>
-          <span> Hello 2 there, </span>
+          <span> Hello there, </span>
           Welcome {{ title }} 👋
         </h1>
       </div>
