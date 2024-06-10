@@ -1,4 +1,4 @@
-interface MetaData {
+interface MetaType {
   i?: {
     id: string;
     t: string;
@@ -6,17 +6,17 @@ interface MetaData {
   };
 }
 
-interface DataMap extends MetaData {
-  m: Record<string, DataEditorEntity | string>;
-  o: string[];
-}
-
-interface DataList extends MetaData {
-  l: string[];
-}
-
-interface DataValue extends MetaData {
+export interface PlainType extends MetaType {
   v: any;
 }
 
-export type DataEditorEntity = DataMap | DataList | DataValue;
+export interface MapType extends MetaType {
+  m: Record<string, DataType | string>;
+  o: string[];
+}
+
+export interface ListType extends MetaType {
+  l: string[];
+}
+
+export type DataType = PlainType | MapType | ListType;

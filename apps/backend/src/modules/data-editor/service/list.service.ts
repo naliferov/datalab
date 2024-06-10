@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
-import { DataEditorEntity } from '../entities/data.type';
+import { DataType, MapType, ListType } from '../entities/data.type';
 
 @Injectable()
-export class MapEditorService {
+export class ListService {
   constructor(private readonly dataRepository: DataRepository) {}
 
-  async setMapKey(mapId, key, data: DataEditorEntity): Promise<string> {
+  isListType(data: any): data is ListType {
+    return data && data.l !== undefined;
+  }
+
+  async add(mapId, key, data: DataType): Promise<string> {
     const map = await this.dataRepository.get(mapId);
 
     //if (map.m[key]) return { msg: `k [${k}] already exists in vById` };
@@ -24,7 +28,7 @@ export class MapEditorService {
     return '';
   }
 
-  async delKey(mapId, key): Promise<string> {
+  async del(mapId, key): Promise<string> {
     //const map = await this.dataRepository.get(mapId);
     return '';
   }

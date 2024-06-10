@@ -1,10 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
-import { MapEditorService } from './service/map-editor.service';
-import { DataEditorEntity } from './entities/data.type';
+import { MapService } from '../service/map.service';
+import { DataType } from '../entities/data.type';
+import { PlainService } from '../service/plain.service';
 
-@Controller('/map')
+@Controller('/data/map')
 export class MapTypeController {
-  constructor(private readonly dataMapService: MapEditorService) {}
+  constructor(
+    private readonly plainService: PlainService,
+    private readonly mapService: MapService,
+  ) {}
 
   @Get(':id')
   async getMapById(@Param('id') mapId: string): Promise<any> {
@@ -15,7 +19,7 @@ export class MapTypeController {
   async setOrUpdateMapKey(
     @Param('id') mapId: string,
     @Body('key') key: string,
-    @Body('data') data: DataEditorEntity,
+    @Body('data') data: DataType,
   ): Promise<string> {
     return '';
     //return await this.dataMapService.setOrUpdateMapKey(mapId, key, data);

@@ -1,42 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
-import { DataEditorEntity } from '../entities/data.type';
+import { DataType, ListType, MapType, PlainType } from '../entities/data.type';
 
 @Injectable()
-export class PlainEditorService {
+export class PlainService {
   constructor(private readonly dataRepository: DataRepository) {}
 
-  async setById(id: string, data: DataEditorEntity): Promise<DataEditorEntity> {
+  isPlainType(data: any): data is PlainType {
+    return data && data.v !== undefined;
+  }
+
+  async setById(id: string, data: DataType): Promise<DataType> {
     await this.dataRepository.set(id, data);
     return data;
   }
 
-  async getById(id: string, depth = 1): Promise<DataEditorEntity> {
+  async getById(id: string, depth = 1): Promise<DataType> {
     const entity = await this.dataRepository.get(id);
+    if (!entity) {
+      return null;
+    }
+
     await this.addNestedEntities(entity, depth);
     return entity;
   }
 
   async delById(id: string): Promise<void> {
     await this.dataRepository.del(id);
-  }
-
-  async setMapKey(mapId, key, data: DataEditorEntity): Promise<string> {
-    const map = await this.dataRepository.get(mapId);
-
-    //if (map.m[key]) return { msg: `k [${k}] already exists in vById` };
-    //if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-    //if (ok === undefined) return { msg: `ok is empty` };
-
-    //data.m[key] = id;
-    //data.o.splice(ok, 0, k);
-    //data.o.push(key);
-
-    //await this.dataRepository.set(id, data);
-    //await b.p('repo', { set: { id: newId, v } });
-    //await b.p('repo', { set: { id, v: vById } });
-
-    return '';
   }
 
   private async addNestedEntities(
@@ -87,6 +77,8 @@ export class PlainEditorService {
       }
     }
   }
+
+  private getVarIds() {}
 
   private getType(v) {
     if (v.b) return 'b';

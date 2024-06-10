@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import { DataEditorEntity } from './entities/data.type';
+import { DataType } from './entities/data.type';
 
 @Injectable()
 export class DataRepository {
   private readonly basePath = path.resolve(__dirname, '..', 'state');
 
-  async get(id: string, format = 'json'): Promise<DataEditorEntity> {
+  async get(id: string, format = 'json'): Promise<DataType> {
     const path = `${this.basePath}/${id}`;
 
     try {
@@ -18,11 +18,7 @@ export class DataRepository {
     }
   }
 
-  async set(
-    id: string,
-    data: DataEditorEntity,
-    format = 'json',
-  ): Promise<void> {
+  async set(id: string, data: DataType, format = 'json'): Promise<void> {
     const path = `${this.basePath}/${id}`;
 
     const str = format === 'json' ? JSON.stringify(data) : data.toString();
