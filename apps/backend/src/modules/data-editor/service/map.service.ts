@@ -1,31 +1,50 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
 import { DataType, MapType } from '../entities/data.type';
+import { MapSetKeyDto } from '../dto/map-set-key.dto';
+import { makeUlid } from 'apps/backend/src/common/utils';
 
 @Injectable()
 export class MapService {
   constructor(private readonly dataRepository: DataRepository) {}
 
-  isMapType(data: any): data is MapType {
-    return data && data.m !== undefined;
+  isMapType(data: DataType): data is MapType {
+    if (typeof data !== 'object' || data === null) {
+      return false;
+    }
+    if (!('m' in data) || !('o' in data)) {
+      return false;
+    }
+
+    return (
+      typeof data.m === 'object' && data.m !== null && Array.isArray(data.o)
+    );
   }
 
-  async setMapKey(mapId, key, data: DataType): Promise<string> {
-    const map = await this.dataRepository.get(mapId);
+  // async validateData(data) {
+  // }
 
-    //if (map.m[key]) return { msg: `k [${k}] already exists in vById` };
-    //if (!vById.o) return { msg: `v.o is not found by [${id}]` };
-    //if (ok === undefined) return { msg: `ok is empty` };
+  async setKey(id, { key, data }: MapSetKeyDto): Promise<DataType | undefined> {
+    const val = await this.dataRepository.get(id);
+    if (!val) {
+      throw new Error(`var with id [${id}] not found`);
+    }
+    if (!this.isMapType(val)) {
+      throw new Error(`Invalid type of var found by id [${id}]`);
+    }
+    if (val.m[key]) {
+      throw new Error(`key [${key}] already exists in vById`);
+    }
 
-    //data.m[key] = id;
-    //data.o.splice(ok, 0, k);
-    //data.o.push(key);
+    //todo validateData
 
-    //await this.dataRepository.set(id, data);
-    //await b.p('repo', { set: { id: newId, v } });
-    //await b.p('repo', { set: { id, v: vById } });
+    const newId = makeUlid();
+    val.m[key] = newId;
+    val.o.push(key);
 
-    return '';
+    await this.dataRepository.set(newId, data);
+    await this.dataRepository.set(id, val);
+    return;
   }
 
   async delKey(mapId, key): Promise<string> {

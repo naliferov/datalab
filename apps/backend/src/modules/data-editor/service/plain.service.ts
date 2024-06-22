@@ -10,6 +10,10 @@ export class PlainService {
     return data && data.v !== undefined;
   }
 
+  //async create(data: DataType): Promise<DataType> {
+  //let newId = await b.p('getUniqId');
+  //}
+
   async setById(id: string, data: DataType): Promise<DataType> {
     await this.dataRepository.set(id, data);
     return data;

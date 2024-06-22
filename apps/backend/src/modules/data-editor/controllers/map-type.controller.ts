@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Put } from '@nestjs/common';
 import { MapService } from '../service/map.service';
-import { DataType } from '../entities/data.type';
 import { PlainService } from '../service/plain.service';
+import { MapSetKeyDto } from '../dto/map-set-key.dto';
+import { DataType } from '../entities/data.type';
 
 @Controller('/data/map')
 export class MapTypeController {
@@ -10,28 +11,21 @@ export class MapTypeController {
     private readonly mapService: MapService,
   ) {}
 
-  @Get(':id')
-  async getMapById(@Param('id') mapId: string): Promise<any> {
-    //return await this.dataMapService.getMapById(mapId);
-  }
-
   @Put(':id/key')
-  async setOrUpdateMapKey(
-    @Param('id') mapId: string,
-    @Body('key') key: string,
-    @Body('data') data: DataType,
-  ): Promise<string> {
-    return '';
-    //return await this.dataMapService.setOrUpdateMapKey(mapId, key, data);
+  async setMapKey(
+    @Param('id') id: string,
+    @Body() mapSetKeyDto: MapSetKeyDto,
+  ): Promise<DataType> {
+    return this.mapService.setKey(id, mapSetKeyDto);
   }
 
   @Delete(':id/key')
-  async delMapKey(
+  async delKey(
     @Param('id') mapId: string,
     @Body('key') key: string,
   ): Promise<string> {
     return '';
-    //return await this.dataMapService.delMapKey(mapId, key);
+    //return await this.mapService.delMapKey(mapId, key);
   }
 
   @Put(':id/change-order')

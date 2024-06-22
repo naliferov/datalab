@@ -7,7 +7,7 @@ interface MetaType {
 }
 
 export interface PlainType extends MetaType {
-  v: any;
+  v: undefined | null | boolean | number | string;
 }
 
 export interface MapType extends MetaType {
