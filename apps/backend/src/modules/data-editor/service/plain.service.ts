@@ -1,13 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
-import { DataType, ListType, MapType, PlainType } from '../entities/data.type';
+import {
+  DataType,
+  BinaryType,
+  ListType,
+  MapType,
+  PlainType,
+} from '../entities/data.type';
+import { MapService } from './map.service';
 
 @Injectable()
 export class PlainService {
-  constructor(private readonly dataRepository: DataRepository) {}
+  constructor(
+    private readonly dataRepository: DataRepository,
+    private mapService: MapService,
+  ) {}
 
-  isPlainType(data: any): data is PlainType {
-    return data && data.v !== undefined;
+  isBinaryType(data: unknown): data is BinaryType {
+    return typeof data === 'object' && 'b' in data && Boolean(data.b);
+  }
+
+  isPlainType(data: unknown): data is PlainType {
+    return typeof data === 'object' && 'v' in data;
   }
 
   //async create(data: DataType): Promise<DataType> {
@@ -31,6 +45,36 @@ export class PlainService {
 
   async delById(id: string): Promise<void> {
     await this.dataRepository.del(id);
+  }
+
+  async getVarIds(varId): Promise<string[]> {
+    const ids = [varId];
+
+    const getIds = async (v: DataType) => {
+      if (this.isBinaryType(v)) {
+        ids.push(v.b);
+      } else if (this.mapService.isMapType(v)) {
+        for (const k in v.m) {
+          const id = v.m[k] as string;
+          ids.push(id);
+
+          const newVar = await this.dataRepository.get(id);
+          await getIds(newVar);
+        }
+      } else if (v.l) {
+        for (const id of v.l) {
+          ids.push(id);
+
+          //find var by id;
+          //await getIds();
+        }
+      }
+    };
+
+    const v = await this.dataRepository.get(varId);
+    await getIds(v);
+
+    return ids;
   }
 
   private async addNestedEntities(
@@ -81,8 +125,6 @@ export class PlainService {
       }
     }
   }
-
-  private getVarIds() {}
 
   private getType(v) {
     if (v.b) return 'b';

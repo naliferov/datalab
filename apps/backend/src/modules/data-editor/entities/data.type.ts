@@ -6,7 +6,13 @@ interface MetaType {
   };
 }
 
+export interface BinaryType extends MetaType {
+  b: string;
+}
+
 export interface PlainType extends MetaType {
+  //todo rename to ScalarType?
+  //also need to add serialization names and normal type names?
   v: undefined | null | boolean | number | string;
 }
 
@@ -19,4 +25,4 @@ export interface ListType extends MetaType {
   l: string[];
 }
 
-export type DataType = PlainType | MapType | ListType;
+export type DataType = BinaryType | PlainType | MapType | ListType;
