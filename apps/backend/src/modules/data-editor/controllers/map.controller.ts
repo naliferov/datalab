@@ -1,15 +1,15 @@
 import { Body, Controller, Delete, Param, Put } from '@nestjs/common';
 import { MapService } from '../service/map.service';
-import { PlainService } from '../service/plain.service';
+import { DataService } from '../service/data.service';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
 import { DataType } from '../entities/data.type';
-import { ParseStrPipe } from 'apps/backend/src/common/pipe/parse-str.pipe';
-import { ApiResponse } from 'apps/backend/src/common/api-response';
+import { ParseStrPipe } from '../../../common/pipe/parse-str.pipe';
+import { ApiResponse } from '../../../common/api-response';
 
 @Controller('/data/map')
-export class MapTypeController {
+export class MapController {
   constructor(
-    private readonly plainService: PlainService,
+    private readonly dataService: DataService,
     private readonly mapService: MapService,
   ) {}
 

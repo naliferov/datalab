@@ -1,36 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
-import { DataType, MapType } from '../entities/data.type';
+import { DataType } from '../entities/data.type';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
-import { makeUlid } from 'apps/backend/src/common/utils';
-import { find, map } from 'rxjs';
+import { makeUlid } from '../../../common/utils';
+import { DataService } from './data.service';
 
 @Injectable()
 export class MapService {
-  constructor(private readonly dataRepository: DataRepository) {}
-
-  isMapType(data: DataType): data is MapType {
-    if (typeof data !== 'object' || data === null) {
-      return false;
-    }
-    if (!('m' in data) || !('o' in data)) {
-      return false;
-    }
-
-    return (
-      typeof data.m === 'object' && data.m !== null && Array.isArray(data.o)
-    );
-  }
+  constructor(
+    private readonly dataRepository: DataRepository,
+    private readonly dataService: DataService,
+  ) {}
 
   // async validateData(data) {
   // }
 
-  async setKey(id, { key, data }: MapSetKeyDto): Promise<DataType | undefined> {
+  async setKey(id, { key, data }: MapSetKeyDto): Promise<DataType> {
     const val = await this.dataRepository.get(id);
     if (!val) {
       throw new Error(`var with id [${id}] not found`);
     }
-    if (!this.isMapType(val)) {
+    if (!this.dataService.isMapType(val)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
     if (val.m[key]) {
@@ -45,7 +35,7 @@ export class MapService {
 
     await this.dataRepository.set(newId, data);
     await this.dataRepository.set(id, val);
-    return;
+    return val;
   }
 
   async delKey(id: string, key: string): Promise<void> {
@@ -53,7 +43,7 @@ export class MapService {
     if (!val) {
       throw new Error(`var with id [${id}] not found`);
     }
-    if (!this.isMapType(val)) {
+    if (!this.dataService.isMapType(val)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
     if (!val.m[key]) {
@@ -61,16 +51,15 @@ export class MapService {
     }
 
     const oldId = val.m[key];
-    const varIds = await this.getVarIds(oldId);
+    const varIds = await this.dataService.getVarIds(oldId);
     for (const id of varIds) {
-      console.log(id);
-      //await this.dataRepository.del(id);
+      await this.dataRepository.del(id);
     }
 
     delete val.m[key];
     val.o = val.o.filter((x) => x !== key);
 
-    //this.dataRepository.set(id, val);
+    this.dataRepository.set(id, val);
   }
 
   changeOrder(): string {

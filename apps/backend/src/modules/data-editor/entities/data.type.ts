@@ -13,7 +13,7 @@ export interface BinaryType extends MetaType {
 export interface PlainType extends MetaType {
   //todo rename to ScalarType?
   //also need to add serialization names and normal type names?
-  v: undefined | null | boolean | number | string;
+  v: null | boolean | number | string;
 }
 
 export interface MapType extends MetaType {

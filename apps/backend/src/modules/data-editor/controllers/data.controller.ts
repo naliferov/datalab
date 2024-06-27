@@ -6,12 +6,11 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Post,
   Put,
   Query,
 } from '@nestjs/common';
 import { DataType } from '../entities/data.type';
-import { PlainService } from '../service/plain.service';
+import { DataService } from '../service/data.service';
 import { MapService } from '../service/map.service';
 import { ListService } from '../service/list.service';
 import { ApiResponse } from '../../../common/api-response';
@@ -19,7 +18,7 @@ import { ApiResponse } from '../../../common/api-response';
 @Controller('/data')
 export class DataController {
   constructor(
-    private readonly plainTypeService: PlainService,
+    private readonly dataService: DataService,
     private readonly mapTypeService: MapService,
     private readonly listTypeService: ListService,
   ) {}
@@ -31,7 +30,7 @@ export class DataController {
   ): Promise<ApiResponse<DataType>> {
     return {
       status: 'success',
-      data: await this.plainTypeService.getById(id, depth),
+      data: await this.dataService.getById(id, depth),
     };
   }
 
@@ -40,15 +39,17 @@ export class DataController {
     @Param('id') id: string,
     @Body('data') data: DataType,
   ): Promise<ApiResponse<DataType>> {
+    //validate data
+
     return {
       status: 'success',
-      data: await this.plainTypeService.setById(id, data),
+      data: await this.dataService.setById(id, data),
     };
   }
 
   @Delete(':id')
   async delById(@Param('id') id: string): Promise<ApiResponse> {
-    const data = await this.plainTypeService.getById(id);
+    const data = await this.dataService.getById(id);
     if (!data) {
       return {
         status: 'fail',
@@ -56,8 +57,8 @@ export class DataController {
       };
     }
 
-    if (this.plainTypeService.isPlainType(data)) {
-      this.plainTypeService.delById(id);
+    if (this.dataService.isPlainType(data)) {
+      this.dataService.delById(id);
       return { status: 'success' };
     }
 

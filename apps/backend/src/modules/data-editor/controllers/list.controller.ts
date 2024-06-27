@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
 import { ListService } from '../service/list.service';
 
 @Controller('/data/list')
-export class ListTypeController {
+export class ListController {
   constructor(private readonly listService: ListService) {}
   @Post(':id')
   async changeType(@Param('id') id: string): Promise<any> {

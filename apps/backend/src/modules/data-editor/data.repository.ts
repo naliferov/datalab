@@ -7,14 +7,17 @@ import { DataType } from './entities/data.type';
 export class DataRepository {
   private readonly basePath = path.resolve(__dirname, '..', 'state');
 
-  async get(id: string, format = 'json'): Promise<DataType> {
+  //todo add init method for checking if folder exists
+  //add logger
+
+  async get(id: string, format = 'json'): Promise<DataType | undefined> {
     const path = `${this.basePath}/${id}`;
 
     try {
       const data = await fs.readFile(path);
       return format === 'json' ? JSON.parse(data.toString()) : data;
     } catch (e) {
-      console.log(e.message);
+      console.error(e.message);
     }
   }
 
@@ -27,11 +30,11 @@ export class DataRepository {
 
   async del(id: string): Promise<void> {
     const path = `${this.basePath}/${id}`;
-    await fs.unlink(path);
+
+    try {
+      await fs.unlink(path);
+    } catch (e) {
+      console.error(e.message);
+    }
   }
-
-  // const { id } = x.del;
-  //     const path = `${statePath}/${id}`;
-
-  //     return b.p('fs', { del: { path } });
 }
