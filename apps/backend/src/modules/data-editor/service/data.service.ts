@@ -53,6 +53,7 @@ export class DataService {
     if (!entity) {
       return;
     }
+    entity.i = { t: this.getType(entity), id };
 
     await this.addNestedEntities(entity, depth);
     return entity;
@@ -102,16 +103,7 @@ export class DataService {
     return ids;
   }
 
-  private async addNestedEntities(
-    v,
-    depth,
-    fetchVarIds = new Set(),
-    getMeta = false,
-  ) {
-    if (!v.i) {
-      v.i = { t: this.getType(v) };
-    }
-
+  private async addNestedEntities(v, depth, fetchVarIds = new Set()) {
     const isNeedGetVar = Boolean(fetchVarIds && v.i && fetchVarIds.has(v.i.id));
     if (!isNeedGetVar && depth <= 0) {
       if (v.m || v.l) {
@@ -134,7 +126,6 @@ export class DataService {
           nestedV,
           depth - 1,
           fetchVarIds,
-          getMeta,
         );
       });
     }

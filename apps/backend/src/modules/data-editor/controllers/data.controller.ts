@@ -39,8 +39,7 @@ export class DataController {
     @Param('id') id: string,
     @Body('data') data: DataType,
   ): Promise<ApiResponse<DataType>> {
-    //validate data
-
+    //todo validate data
     return {
       status: 'success',
       data: await this.dataService.setById(id, data),
@@ -57,42 +56,14 @@ export class DataController {
       };
     }
 
-    if (this.dataService.isPlainType(data)) {
-      this.dataService.delById(id);
-      return { status: 'success' };
+    if (!this.dataService.isPlainType(data)) {
+      throw new Error(`Invalid type of var found by id [${id}]`);
     }
 
-    // if (this.mapTypeService.isMapType(data)) {
-    //   this.mapTypeService.delById(id);
-    //   return { status: 'success' };
-    // }
-
-    // if (this.listTypeService.isListType(data)) {
-    //   this.mapTypeService.delById(id);
-    //   return { status: 'success' };
-    // }
-
-    return { status: 'fail', errors: [] };
+    //todo detect usage of var?
+    this.dataService.delById(id);
+    return { status: 'success' };
   }
-
-  //maybe use setById instead, but add validation for type, and if i replace map, need to delete all items
-  //todo also need add garbage collection for tree
-  // @Put(':id/change-type')
-  // async changeType(@Param('id') id: string): Promise<any> {
-  //   await this.plainTypeService.delById(id);
-  //   return {
-  //     message: 'success',
-  //   };
-  // }
-
-  // @Put(':id/copy')
-  // async copy(@Param('id') id: string): Promise<any> {
-  //   //type
-  //   //await this.plainEditorService.delById(id);
-  //   return {
-  //     message: 'success',
-  //   };
-  // }
 
   // @Put(':id/move')
   // async move(@Param('id') id: string): Promise<any> {

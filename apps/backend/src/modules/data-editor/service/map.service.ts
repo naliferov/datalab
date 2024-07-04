@@ -62,7 +62,49 @@ export class MapService {
     this.dataRepository.set(id, val);
   }
 
-  changeOrder(): string {
-    return '';
+  async renameKey(id: string, oldKey: string, newKey: string): Promise<void> {
+    const val = await this.dataRepository.get(id);
+    if (!val) {
+      throw new Error(`var with id [${id}] not found`);
+    }
+    if (!this.dataService.isMapType(val)) {
+      throw new Error(`Invalid type of var found by id [${id}]`);
+    }
+    if (!val.m[oldKey]) {
+      throw new Error(`key [${oldKey}] not found in vById`);
+    }
+    if (val.m[newKey]) {
+      throw new Error(`key [${newKey}] already exists in vById`);
+    }
+
+    const oldId = val.m[oldKey];
+    val.m[newKey] = oldId;
+    delete val.m[oldKey];
+
+    val.o = val.o.map((x) => (x === oldKey ? newKey : x));
+
+    this.dataRepository.set(id, val);
+  }
+
+  async changeOrder(id: string, key: string, newIndex: number): Promise<any> {
+    const val = await this.dataRepository.get(id);
+    if (!val) {
+      throw new Error(`var with id [${id}] not found`);
+    }
+    if (!this.dataService.isMapType(val)) {
+      throw new Error(`Invalid type of var found by id [${id}]`);
+    }
+    if (newIndex < 0 || newIndex >= val.o.length) {
+      throw new Error('Invalid index');
+    }
+
+    const oldIndex = val.o.indexOf(key);
+    if (oldIndex === -1) {
+      throw new Error(`key [${key}] not found in vById`);
+    }
+    val.o.splice(oldIndex, 1);
+    val.o.splice(newIndex, 0, key);
+
+    this.dataRepository.set(id, val);
   }
 }

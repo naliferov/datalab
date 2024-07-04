@@ -1,4 +1,11 @@
-import { Body, Controller, Delete, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  ParseIntPipe,
+  Put,
+} from '@nestjs/common';
 import { MapService } from '../service/map.service';
 import { DataService } from '../service/data.service';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
@@ -13,7 +20,7 @@ export class MapController {
     private readonly mapService: MapService,
   ) {}
 
-  @Put(':id/key')
+  @Put('key/:id')
   async setKey(
     @Param('id') id: string,
     @Body() mapSetKeyDto: MapSetKeyDto,
@@ -21,12 +28,32 @@ export class MapController {
     return this.mapService.setKey(id, mapSetKeyDto);
   }
 
-  @Delete(':id/key')
+  @Delete('key/:id')
   async delKey(
     @Param('id') id: string,
     @Body('key', ParseStrPipe) key: string,
   ): Promise<ApiResponse> {
     await this.mapService.delKey(id, key);
+    return { status: 'success' };
+  }
+
+  @Put('rename-key/:id')
+  async renameKey(
+    @Param('id') id: string,
+    @Body('oldKey', ParseStrPipe) oldKey: string,
+    @Body('newKey', ParseStrPipe) newKey: string,
+  ): Promise<ApiResponse> {
+    await this.mapService.renameKey(id, oldKey, newKey);
+    return { status: 'success' };
+  }
+
+  @Put('change-order/:id')
+  async changeOrder(
+    @Param('id') id: string,
+    @Body('key', ParseStrPipe) key: string,
+    @Body('index', ParseIntPipe) newIndex: number,
+  ): Promise<ApiResponse> {
+    await this.mapService.changeOrder(id, key, newIndex);
     return { status: 'success' };
   }
 }
