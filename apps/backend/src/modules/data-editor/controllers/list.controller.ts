@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ListService } from '../service/list.service';
 import { DataType } from '../entities/data.type';
-import { ParseStrPipe } from 'apps/backend/src/common/pipe/parse-str.pipe';
+import { ApiResponse } from '../../../common/api-response';
 
 @Controller('/data/list')
 export class ListController {
@@ -19,10 +19,11 @@ export class ListController {
   async add(
     @Param('id') id: string,
     @Body('data') data: DataType,
-  ): Promise<any> {
-    await this.listService.add(id, data);
+  ): Promise<ApiResponse<DataType>> {
+    const list = await this.listService.add(id, data);
     return {
-      message: 'success',
+      status: 'success',
+      data: list,
     };
   }
 
@@ -30,10 +31,10 @@ export class ListController {
   async delete(
     @Param('id') id: string,
     @Query('index', ParseIntPipe) index: number,
-  ): Promise<unknown> {
+  ): Promise<ApiResponse> {
     await this.listService.del(id, index);
     return {
-      message: 'success',
+      status: 'success',
     };
   }
 
@@ -42,10 +43,10 @@ export class ListController {
     @Param('id') id: string,
     @Body('oldIndex') oldIndex: number,
     @Body('newIndex') newIndex: number,
-  ): Promise<any> {
+  ): Promise<ApiResponse> {
     await this.listService.changeOrder(id, oldIndex, newIndex);
     return {
-      message: 'success',
+      status: 'success',
     };
   }
 }

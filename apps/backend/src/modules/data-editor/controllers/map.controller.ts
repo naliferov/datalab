@@ -24,8 +24,11 @@ export class MapController {
   async setKey(
     @Param('id') id: string,
     @Body() mapSetKeyDto: MapSetKeyDto,
-  ): Promise<DataType> {
-    return this.mapService.setKey(id, mapSetKeyDto);
+  ): Promise<ApiResponse<DataType>> {
+    return {
+      status: 'success',
+      data: await this.mapService.setKey(id, mapSetKeyDto),
+    };
   }
 
   @Delete('key/:id')
