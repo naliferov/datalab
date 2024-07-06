@@ -14,19 +14,28 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+
   //app.useGlobalPipes(new Transformation());
   //app.useGlobalPipes(new NormalizeQueryParamsPipe());
 
   app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'dist')));
 
-  const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+  app.use(
+    '/api',
+    express.static(
+      path.join(__dirname, '..', 'node_modules', 'swagger-ui-dist'),
+    ),
+  );
+  const options = new DocumentBuilder()
+    .setTitle('Varcraft API')
+    .setDescription('Varcraft API description')
     .setVersion('1.0')
-    .addTag('cats')
+    //.addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api', app, document, {
+    jsonDocumentUrl: 'api-json',
+  });
 
   await app.listen(3000);
 
