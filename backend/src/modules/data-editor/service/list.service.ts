@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DataRepository } from '../data.repository';
 import { DataType } from '../entities/data.type';
-import { DataService } from './data.service';
+import { EntityService } from './entity.service';
 import { makeUlid } from '../../../common/utils';
 
 @Injectable()
 export class ListService {
   constructor(
     private readonly dataRepository: DataRepository,
-    private readonly dataService: DataService,
+    private readonly dataService: EntityService,
   ) {}
 
   async add(id: string, data: DataType): Promise<DataType | undefined> {

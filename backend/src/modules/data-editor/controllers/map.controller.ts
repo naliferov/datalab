@@ -7,7 +7,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { MapService } from '../service/map.service';
-import { DataService } from '../service/data.service';
+import { EntityService } from '../service/entity.service';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
 import { DataType } from '../entities/data.type';
 import { ParseStrPipe } from '../../../common/pipe/parse-str.pipe';
@@ -16,7 +16,7 @@ import { ApiResponse } from '../../../common/api-response';
 @Controller('/data/map')
 export class MapController {
   constructor(
-    private readonly dataService: DataService,
+    private readonly dataService: EntityService,
     private readonly mapService: MapService,
   ) {}
 

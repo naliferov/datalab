@@ -5,14 +5,19 @@ import { DataType } from './entities/data.type';
 
 @Injectable()
 export class DataRepository {
-  private readonly basePath = path.resolve(__dirname, '..', 'state');
+  private readonly basePath = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'state',
+  ); //todo set path here
 
   //todo add init method for checking if folder exists
   //add logger
 
   async get(id: string, format = 'json'): Promise<DataType | undefined> {
     const path = `${this.basePath}/${id}`;
-
     try {
       const data = await fs.readFile(path);
       return format === 'json' ? JSON.parse(data.toString()) : data;

@@ -3,13 +3,13 @@ import { DataRepository } from '../data.repository';
 import { DataType } from '../entities/data.type';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
 import { makeUlid } from '../../../common/utils';
-import { DataService } from './data.service';
+import { EntityService } from './entity.service';
 
 @Injectable()
 export class MapService {
   constructor(
     private readonly dataRepository: DataRepository,
-    private readonly dataService: DataService,
+    private readonly dataService: EntityService,
   ) {}
 
   // async validateData(data) {

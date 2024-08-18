@@ -9,7 +9,7 @@ import {
 } from '../entities/data.type';
 
 @Injectable()
-export class DataService {
+export class EntityService {
   constructor(private readonly dataRepository: DataRepository) {}
 
   isBinaryType(data: unknown): data is BinaryType {
