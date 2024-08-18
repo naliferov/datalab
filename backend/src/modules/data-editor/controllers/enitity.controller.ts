@@ -8,51 +8,51 @@ import {
   ParseIntPipe,
   Put,
   Query,
-} from '@nestjs/common';
-import { DataType } from '../entities/data.type';
-import { DataService } from '../service/data.service';
-import { MapService } from '../service/map.service';
-import { ListService } from '../service/list.service';
-import { ApiResponse } from '../../../common/api-response';
+} from "@nestjs/common";
+import { DataType } from "../entities/data.type";
+import { DataService } from "../service/data.service";
+import { MapService } from "../service/map.service";
+import { ListService } from "../service/list.service";
+import { ApiResponse } from "../../../common/api-response";
 
-@Controller('/data')
-export class DataController {
+@Controller("/data/entity")
+export class EntityController {
   constructor(
     private readonly dataService: DataService,
     private readonly mapTypeService: MapService,
-    private readonly listTypeService: ListService,
+    private readonly listTypeService: ListService
   ) {}
 
-  @Get(':id')
+  @Get(":id")
   async getById(
-    @Param('id') id: string,
-    @Query('depth', new DefaultValuePipe(1), ParseIntPipe) depth, //todo add parameter name to error message
+    @Param("id") id: string,
+    @Query("depth", new DefaultValuePipe(1), ParseIntPipe) depth //todo add parameter name to error message
   ): Promise<ApiResponse<DataType>> {
     return {
-      status: 'success',
+      status: "success",
       data: await this.dataService.getById(id, depth),
     };
   }
 
-  @Put(':id')
+  @Put(":id")
   async setById(
-    @Param('id') id: string,
-    @Body('data') data: DataType,
+    @Param("id") id: string,
+    @Body("data") data: DataType
   ): Promise<ApiResponse<DataType>> {
     //todo validate data
     return {
-      status: 'success',
+      status: "success",
       data: await this.dataService.setById(id, data),
     };
   }
 
-  @Delete(':id')
-  async delById(@Param('id') id: string): Promise<ApiResponse> {
+  @Delete(":id")
+  async delById(@Param("id") id: string): Promise<ApiResponse> {
     const data = await this.dataService.getById(id);
     if (!data) {
       return {
-        status: 'fail',
-        errors: [{ message: 'data for delete not found' }],
+        status: "fail",
+        errors: [{ message: "data for delete not found" }],
       };
     }
 
@@ -62,7 +62,7 @@ export class DataController {
 
     //todo detect usage of var?
     this.dataService.delById(id);
-    return { status: 'success' };
+    return { status: "success" };
   }
 
   // @Put(':id/move')
