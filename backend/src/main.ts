@@ -15,7 +15,6 @@ async function bootstrap() {
     }),
   );
 
-  
   //app.useGlobalPipes(new Transformation());
   //app.useGlobalPipes(new NormalizeQueryParamsPipe());
 
