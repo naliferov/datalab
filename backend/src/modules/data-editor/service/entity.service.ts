@@ -3,7 +3,7 @@ import { DataRepository } from '../data.repository';
 import {
   DataType,
   BinaryType,
-  PlainType,
+  EntityType,
   MapType,
   ListType,
 } from '../entities/data.type';
@@ -16,7 +16,7 @@ export class EntityService {
     return typeof data === 'object' && data !== null && 'b' in data;
   }
 
-  isPlainType(data: unknown): data is PlainType {
+  isEntityType(data: unknown): data is EntityType {
     return typeof data === 'object' && data !== null && 'v' in data;
   }
 

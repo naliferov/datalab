@@ -1,4 +1,4 @@
-interface MetaType {
+interface BaseType {
   i?: {
     id: string;
     t: string;
@@ -6,22 +6,22 @@ interface MetaType {
   };
 }
 
-export interface BinaryType extends MetaType {
+export interface BinaryType extends BaseType {
   b: string;
 }
 
-export interface PlainType extends MetaType {
+export interface EntityType extends BaseType {
   //also need to add serialization names and normal type names?
   v: null | boolean | number | string;
 }
 
-export interface MapType extends MetaType {
+export interface MapType extends BaseType {
   m: Record<string, DataType | string>;
   o: string[];
 }
 
-export interface ListType extends MetaType {
+export interface ListType extends BaseType {
   l: string[];
 }
 
-export type DataType = BinaryType | PlainType | MapType | ListType;
+export type DataType = BinaryType | EntityType | MapType | ListType;

@@ -11,17 +11,11 @@ import {
 } from '@nestjs/common';
 import { DataType } from '../entities/data.type';
 import { EntityService } from '../service/entity.service';
-import { MapService } from '../service/map.service';
-import { ListService } from '../service/list.service';
 import { ApiResponse } from '../../../common/api-response';
 
 @Controller('/data/entity')
 export class EntityController {
-  constructor(
-    private readonly dataService: EntityService,
-    private readonly mapTypeService: MapService,
-    private readonly listTypeService: ListService,
-  ) {}
+  constructor(private readonly dataService: EntityService) {}
 
   @Get(':id')
   async getById(
@@ -56,21 +50,11 @@ export class EntityController {
       };
     }
 
-    if (!this.dataService.isPlainType(data)) {
+    if (!this.dataService.isEntityType(data)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
 
-    //todo detect usage of var?
     this.dataService.delById(id);
     return { status: 'success' };
   }
-
-  // @Put(':id/move')
-  // async move(@Param('id') id: string): Promise<any> {
-  //   //type
-  //   //await this.plainEditorService.delById(id);
-  //   return {
-  //     message: 'success',
-  //   };
-  // }
 }
