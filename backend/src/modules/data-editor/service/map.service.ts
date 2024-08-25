@@ -4,6 +4,7 @@ import { DataType } from '../entities/data.type';
 import { MapSetKeyDto } from '../dto/map-set-key.dto';
 import { makeUlid } from '../../../common/utils';
 import { EntityService } from './entity.service';
+import { UnprocessableEntityError } from 'src/common/error/unprocessable-entity-error';
 
 @Injectable()
 export class MapService {
@@ -12,19 +13,20 @@ export class MapService {
     private readonly dataService: EntityService,
   ) {}
 
-  // async validateData(data) {
-  // }
-
   async setKey(id, { key, data }: MapSetKeyDto): Promise<DataType> {
     const val = await this.dataRepository.get(id);
     if (!val) {
-      throw new Error(`var with id [${id}] not found`);
+      throw new UnprocessableEntityError(`var222 ww with id [${id}] not found`);
     }
     if (!this.dataService.isMapType(val)) {
-      throw new Error(`Invalid type of var found by id [${id}]`);
+      throw new UnprocessableEntityError(
+        `Invalid type of var found by id [${id}]`,
+      );
     }
     if (val.m[key]) {
-      throw new Error(`key [${key}] already exists in vById`);
+      throw new UnprocessableEntityError(
+        `key [${key}] already exists in map with id [${id}]`,
+      );
     }
 
     //todo validateData
@@ -59,22 +61,26 @@ export class MapService {
     delete val.m[key];
     val.o = val.o.filter((x) => x !== key);
 
-    this.dataRepository.set(id, val);
+    await this.dataRepository.set(id, val);
   }
 
   async renameKey(id: string, oldKey: string, newKey: string): Promise<void> {
     const val = await this.dataRepository.get(id);
     if (!val) {
-      throw new Error(`var with id [${id}] not found`);
+      throw new UnprocessableEntityError(`var with id [${id}] not found`);
     }
     if (!this.dataService.isMapType(val)) {
-      throw new Error(`Invalid type of var found by id [${id}]`);
+      throw new UnprocessableEntityError(
+        `Invalid type of var found by id [${id}]`,
+      );
     }
     if (!val.m[oldKey]) {
-      throw new Error(`key [${oldKey}] not found in vById`);
+      throw new UnprocessableEntityError(`key [${oldKey}] not found in vById`);
     }
     if (val.m[newKey]) {
-      throw new Error(`key [${newKey}] already exists in vById`);
+      throw new UnprocessableEntityError(
+        `key [${newKey}] already exists in vById`,
+      );
     }
 
     const oldId = val.m[oldKey];
@@ -83,28 +89,30 @@ export class MapService {
 
     val.o = val.o.map((x) => (x === oldKey ? newKey : x));
 
-    this.dataRepository.set(id, val);
+    await this.dataRepository.set(id, val);
   }
 
   async changeOrder(id: string, key: string, newIndex: number): Promise<any> {
     const val = await this.dataRepository.get(id);
     if (!val) {
-      throw new Error(`var with id [${id}] not found`);
+      throw new UnprocessableEntityError(`var with id [${id}] not found`);
     }
     if (!this.dataService.isMapType(val)) {
-      throw new Error(`Invalid type of var found by id [${id}]`);
+      throw new UnprocessableEntityError(
+        `Invalid type of var found by id [${id}]`,
+      );
     }
     if (newIndex < 0 || newIndex >= val.o.length) {
-      throw new Error('Invalid index');
+      throw new UnprocessableEntityError('Invalid index');
     }
 
     const oldIndex = val.o.indexOf(key);
     if (oldIndex === -1) {
-      throw new Error(`key [${key}] not found in vById`);
+      throw new UnprocessableEntityError(`key [${key}] not found in vById`);
     }
     val.o.splice(oldIndex, 1);
     val.o.splice(newIndex, 0, key);
 
-    this.dataRepository.set(id, val);
+    await this.dataRepository.set(id, val);
   }
 }

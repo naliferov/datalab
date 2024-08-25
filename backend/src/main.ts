@@ -4,6 +4,7 @@ import * as path from 'path';
 import { Request, Response } from 'express';
 import * as express from 'express';
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from './common/global-exception-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestApplication>(AppModule);
@@ -13,6 +14,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   //app.useGlobalPipes(new Transformation());
   //app.useGlobalPipes(new NormalizeQueryParamsPipe());
