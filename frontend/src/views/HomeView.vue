@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import VarcraftTree from '../components/VarcraftTree.vue'
 </script>
 
 <template>
   <main>
-    <TheWelcome />
+    <VarcraftTree />
   </main>
 </template>
