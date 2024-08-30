@@ -22,7 +22,7 @@ export class ListService {
 
     //todo validateData
     const newId = makeUlid();
-    val.l.push(newId);
+    val.list.push(newId);
 
     await this.dataRepository.set(newId, data);
     await this.dataRepository.set(id, val);
@@ -38,18 +38,18 @@ export class ListService {
     if (!this.dataService.isListType(val)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
-    if (!val.l[index]) {
+    if (!val.list[index]) {
       throw new Error(`index [${index}] not found in value by id [${id}]`);
     }
 
-    const idOfIndex = val.l[index];
+    const idOfIndex = val.list[index];
 
     const varIds = await this.dataService.getVarIds(idOfIndex);
     for (const id of varIds) {
       await this.dataRepository.del(id);
     }
 
-    val.l.splice(index, 1);
+    val.list.splice(index, 1);
     this.dataRepository.set(id, val);
   }
 
@@ -65,15 +65,15 @@ export class ListService {
     if (!this.dataService.isListType(val)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
-    if (oldIndex < 0 || oldIndex >= val.l.length) {
+    if (oldIndex < 0 || oldIndex >= val.list.length) {
       throw new Error(`Invalid old index [${oldIndex}]`);
     }
-    if (newIndex < 0 || newIndex >= val.l.length) {
+    if (newIndex < 0 || newIndex >= val.list.length) {
       throw new Error(`Invalid new index [${newIndex}]`);
     }
 
-    const varId = val.l.splice(oldIndex, 1)[0];
-    val.l.splice(newIndex, 0, varId);
+    const varId = val.list.splice(oldIndex, 1)[0];
+    val.list.splice(newIndex, 0, varId);
 
     await this.dataRepository.set(id, val);
   }

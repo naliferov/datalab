@@ -14,7 +14,7 @@ import { EntityService } from '../service/entity.service';
 import { ApiResponse } from '../../../common/api-response';
 
 @Controller('/data/entity')
-export class EntityController {
+export class BinaryController {
   constructor(private readonly dataService: EntityService) {}
 
   @Get(':id')

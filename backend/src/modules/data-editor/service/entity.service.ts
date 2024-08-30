@@ -3,7 +3,7 @@ import { DataRepository } from '../data.repository';
 import {
   DataType,
   BinaryType,
-  EntityType,
+  PrimitiveType,
   MapType,
   ListType,
 } from '../entities/data.type';
@@ -16,7 +16,7 @@ export class EntityService {
     return typeof data === 'object' && data !== null && 'b' in data;
   }
 
-  isEntityType(data: unknown): data is EntityType {
+  isPrimitiveType(data: unknown): data is PrimitiveType {
     return typeof data === 'object' && data !== null && 'v' in data;
   }
 
@@ -53,7 +53,7 @@ export class EntityService {
     if (!entity) {
       return;
     }
-    entity.i = { t: this.getType(entity), id };
+    entity.meta = { id, type: this.getType(entity) };
 
     await this.addNestedEntities(entity, depth);
     return entity;
@@ -68,10 +68,10 @@ export class EntityService {
 
     const getIds = async (v: DataType) => {
       if (this.isBinaryType(v)) {
-        ids.push(v.b);
+        ids.push(v.binary);
       } else if (this.isMapType(v)) {
-        for (const k in v.m) {
-          const id = v.m[k] as string;
+        for (const k in v.map) {
+          const id = v.map[k] as string;
           ids.push(id);
 
           const newVar = await this.dataRepository.get(id);
@@ -81,10 +81,10 @@ export class EntityService {
           await getIds(newVar);
         }
       } else if (this.isListType(v)) {
-        for (const id of v.l) {
+        for (const id of v.list) {
           ids.push(id);
 
-          const newVar = await this.dataRepository.get(id);
+          const newVar = await this.dataRepository.get(id as string);
           if (!newVar) {
             console.log('newVar not found');
             continue;
@@ -103,24 +103,26 @@ export class EntityService {
     return ids;
   }
 
-  private async addNestedEntities(v, depth, fetchVarIds = new Set()) {
-    const isNeedGetVar = Boolean(fetchVarIds && v.i && fetchVarIds.has(v.i.id));
+  private async addNestedEntities(v: any, depth, fetchVarIds = new Set()) {
+    const isNeedGetVar = Boolean(
+      fetchVarIds && v.meta && fetchVarIds.has(v.meta.id),
+    );
     if (!isNeedGetVar && depth <= 0) {
-      if (v.m || v.l) {
-        if (v.i) {
-          v.i.openable = true;
+      if (v.map || v.list) {
+        if (v.meta) {
+          v.meta.openable = true;
         }
         return v;
       }
     }
 
-    if (v.l || v.m) {
+    if (v.list || v.list) {
       await this.iterate(v, async (parent, k, id) => {
         const nestedV = await this.dataRepository.get(id);
         if (!nestedV) {
           return;
         }
-        nestedV.i = { id, t: this.getType(nestedV) };
+        nestedV.meta = { id, type: this.getType(nestedV) };
 
         parent[k] = await this.addNestedEntities(
           nestedV,
@@ -134,22 +136,22 @@ export class EntityService {
   }
 
   private async iterate(v, cb) {
-    if (v.l) {
-      for (let k = 0; k < v.l.length; k++) {
-        await cb(v.l, k, v.l[k]);
+    if (v.list) {
+      for (let k = 0; k < v.list.length; k++) {
+        await cb(v.list, k, v.list[k]);
       }
-    } else if (v.m) {
-      for (const k in v.m) {
-        await cb(v.m, k, v.m[k]);
+    } else if (v.map) {
+      for (const k in v.map) {
+        await cb(v.map, k, v.map[k]);
       }
     }
   }
 
   private getType(v) {
-    if (v.b) return 'b';
-    if (v.m) return 'm';
-    if (v.l) return 'l';
-    if (v.v) return 'v';
+    if (v.binary) return 'binary';
+    if (v.map) return 'map';
+    if (v.list) return 'list';
+    if (v.value) return 'value';
     return 'unknown';
   }
 }

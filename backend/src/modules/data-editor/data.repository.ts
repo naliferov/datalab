@@ -20,6 +20,9 @@ export class DataRepository {
     const path = `${this.basePath}/${id}`;
     try {
       const data = await fs.readFile(path);
+
+      //unserialize data
+
       return format === 'json' ? JSON.parse(data.toString()) : data;
     } catch (e) {
       console.error(e.message);
@@ -28,6 +31,8 @@ export class DataRepository {
 
   async set(id: string, data: DataType, format = 'json'): Promise<void> {
     const path = `${this.basePath}/${id}`;
+
+    //serialize data
 
     const str = format === 'json' ? JSON.stringify(data) : data.toString();
     await fs.writeFile(path, str);

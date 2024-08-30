@@ -23,7 +23,7 @@ export class MapService {
         `Invalid type of var found by id [${id}]`,
       );
     }
-    if (val.m[key]) {
+    if (val.map[key]) {
       throw new UnprocessableEntityError(
         `key [${key}] already exists in map with id [${id}]`,
       );
@@ -32,8 +32,8 @@ export class MapService {
     //todo validateData
 
     const newId = makeUlid();
-    val.m[key] = newId;
-    val.o.push(key);
+    val.map[key] = newId;
+    val.order.push(key);
 
     await this.dataRepository.set(newId, data);
     await this.dataRepository.set(id, val);
@@ -48,18 +48,18 @@ export class MapService {
     if (!this.dataService.isMapType(val)) {
       throw new Error(`Invalid type of var found by id [${id}]`);
     }
-    if (!val.m[key]) {
+    if (!val.map[key]) {
       throw new Error(`key [${key}] not found in vById`);
     }
 
-    const oldId = val.m[key];
+    const oldId = val.map[key];
     const varIds = await this.dataService.getVarIds(oldId);
     for (const id of varIds) {
       await this.dataRepository.del(id);
     }
 
-    delete val.m[key];
-    val.o = val.o.filter((x) => x !== key);
+    delete val.map[key];
+    val.order = val.order.filter((x) => x !== key);
 
     await this.dataRepository.set(id, val);
   }
@@ -74,20 +74,20 @@ export class MapService {
         `Invalid type of var found by id [${id}]`,
       );
     }
-    if (!val.m[oldKey]) {
+    if (!val.map[oldKey]) {
       throw new UnprocessableEntityError(`key [${oldKey}] not found in vById`);
     }
-    if (val.m[newKey]) {
+    if (val.map[newKey]) {
       throw new UnprocessableEntityError(
         `key [${newKey}] already exists in vById`,
       );
     }
 
-    const oldId = val.m[oldKey];
-    val.m[newKey] = oldId;
-    delete val.m[oldKey];
+    const oldId = val.map[oldKey];
+    val.map[newKey] = oldId;
+    delete val.map[oldKey];
 
-    val.o = val.o.map((x) => (x === oldKey ? newKey : x));
+    val.order = val.order.map((x) => (x === oldKey ? newKey : x));
 
     await this.dataRepository.set(id, val);
   }
@@ -102,16 +102,16 @@ export class MapService {
         `Invalid type of var found by id [${id}]`,
       );
     }
-    if (newIndex < 0 || newIndex >= val.o.length) {
+    if (newIndex < 0 || newIndex >= val.order.length) {
       throw new UnprocessableEntityError('Invalid index');
     }
 
-    const oldIndex = val.o.indexOf(key);
+    const oldIndex = val.order.indexOf(key);
     if (oldIndex === -1) {
       throw new UnprocessableEntityError(`key [${key}] not found in vById`);
     }
-    val.o.splice(oldIndex, 1);
-    val.o.splice(newIndex, 0, key);
+    val.order.splice(oldIndex, 1);
+    val.order.splice(newIndex, 0, key);
 
     await this.dataRepository.set(id, val);
   }

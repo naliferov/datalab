@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import VarcraftTree from '../components/VarcraftTree.vue'
+import Tree from '../components/tree/Tree.vue'
 </script>
 
 <template>
   <main>
-    <VarcraftTree />
+    <Tree />
   </main>
 </template>

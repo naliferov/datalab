@@ -1,27 +1,27 @@
 interface BaseType {
-  i?: {
+  meta?: {
     id: string;
-    t: string;
+    type: string;
     openable?: boolean;
   };
 }
 
 export interface BinaryType extends BaseType {
-  b: string;
+  binary: string;
 }
 
-export interface EntityType extends BaseType {
-  //also need to add serialization names and normal type names?
-  v: null | boolean | number | string;
+export interface PrimitiveType extends BaseType {
+  value: null | boolean | number | string;
+  isBinary?: boolean;
 }
 
 export interface MapType extends BaseType {
-  m: Record<string, DataType | string>;
-  o: string[];
+  map: Record<string, DataType | string>;
+  order: string[];
 }
 
 export interface ListType extends BaseType {
-  l: string[];
+  list: (string | DataType)[];
 }
 
-export type DataType = BinaryType | EntityType | MapType | ListType;
+export type DataType = BinaryType | PrimitiveType | MapType | ListType;

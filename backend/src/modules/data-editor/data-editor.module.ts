@@ -6,10 +6,16 @@ import { MapController } from './controllers/map.controller';
 import { EntityService } from './service/entity.service';
 import { MapService } from './service/map.service';
 import { ListService } from './service/list.service';
+import { BinaryController } from './controllers/binary.controller';
 
 @Module({
   imports: [],
-  controllers: [EntityController, MapController, ListController],
+  controllers: [
+    BinaryController,
+    EntityController,
+    MapController,
+    ListController,
+  ],
   providers: [DataRepository, EntityService, MapService, ListService],
 })
 export class DataEditorModule {}

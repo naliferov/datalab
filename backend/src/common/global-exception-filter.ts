@@ -17,7 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     //const request = ctx.getRequest<Request>();
 
     let status: number;
-    let errors = [];
+    const errors = [];
 
     if (exception instanceof UnprocessableEntityError) {
       status = 400;
