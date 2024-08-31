@@ -13,5 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Deploy to Production
-        run: echo "Deploying to production..."
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_KEY }}
+
+      - name: Test SSH Connection and Print Date
+        run: |
+          ssh -o StrictHostKeyChecking=no root@165.22.77.100 'date'
