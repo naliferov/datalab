@@ -18,6 +18,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DO_SSH_KEY }}
 
-      - name: Test SSH Connection and Print Date
+      - name: Build and deploy
         run: |
-          ssh -o StrictHostKeyChecking=no root@165.22.77.100 'date'
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.DO_IP }} 'date'
