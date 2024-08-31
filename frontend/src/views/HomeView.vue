@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Tree from '../components/tree/Tree.vue'
+import TreeContainer from '../components/tree/TreeContainer.vue'
 </script>
 
 <template>
   <main>
-    <Tree />
+    <TreeContainer />
   </main>
 </template>

@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 interface TreeNode {
   id: string
-  m: {}
-  //additionalInfo?: string
+  m?: {}
+  name?: string
 }
 
 export const useTreeStore = defineStore('tree', () => {
